@@ -24,6 +24,13 @@
     "StatusBar": {
       "style": "DARK",
       "backgroundColor": "#09080f"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "updateUrl": "",
+      "appReadyTimeout": 10000,
+      "version": "3.3.0"
     }
   }
 }

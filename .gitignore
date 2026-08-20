@@ -14,6 +14,7 @@ android/app/debug/
 www/index.html
 www/native-bridge.js
 www/icon.png
+www/bundle-version.json
 www/fonts/*.woff2
 !www/fonts/.gitkeep
 android/**/*.apk

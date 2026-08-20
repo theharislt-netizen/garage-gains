@@ -13,6 +13,14 @@ Minimum Android version: **8.0 (API 24)**. Target: Android 16 (API 36).
 
 Your workout data stays on the device (`localStorage` inside the app). Use **Settings → Export Backup** to share/save a JSON backup through Android's share sheet.
 
+## Auto-updates
+
+Install **3.3.0** once (this APK). After that, opening RIGCORE checks GitHub for a newer web bundle and swaps it in automatically. Workout logs stay on the phone.
+
+That covers HTML/CSS/JS changes (the workout app itself). A new APK is only needed if native Android code changes (permissions, plugins, signing).
+
+The published bundle lives in `live-update/` (`manifest.json` + `www.zip`) and is refreshed by `npm run prepare:www`.
+
 ## What this wrap does
 
 The HTML app is packaged with [Capacitor 8](https://capacitorjs.com/) into a native WebView:
@@ -73,4 +81,4 @@ capacitor.config.json  App id com.rigcore.app
 
 ## Version
 
-App version **3.2.0** (`versionCode` 320), matching the in-app About screen.
+App version **3.3.0** (`versionCode` 330). Live web bundles use a content-hash version such as `3.3.0-g…`.

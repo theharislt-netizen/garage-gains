@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import * as esbuild from 'esbuild';
+import { makeLiveBundle } from './make-live-bundle.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const www = join(root, 'www');
@@ -128,4 +129,5 @@ if (await exists(iconSrc)) {
   await copyFile(iconSrc, join(www, 'icon.png'));
 }
 
+await makeLiveBundle();
 console.log('www/ prepared');
