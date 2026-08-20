@@ -135,10 +135,22 @@ function wireHaptics() {
 
 const UPDATE_REPO = 'theharislt-netizen/garage-gains';
 const UPDATE_REFS = ['main', 'cursor/android-apk-eee8'];
+const TOKEN_KEY = 'rigcore_githubToken';
 let updateCheckInFlight = false;
 
 function toast(msg) {
   if (typeof window.showToast === 'function') window.showToast(msg);
+}
+
+function getGithubToken() {
+  return (localStorage.getItem(TOKEN_KEY) || '').trim();
+}
+
+function authHeaders() {
+  const headers = { 'User-Agent': 'RIGCORE-Android', Accept: 'application/vnd.github+json' };
+  const token = getGithubToken();
+  if (token) headers.Authorization = 'Bearer ' + token;
+  return headers;
 }
 
 async function localBundleVersion() {
@@ -157,21 +169,60 @@ async function localBundleVersion() {
   return 'builtin';
 }
 
+function parseGithubJson(data) {
+  if (!data) return null;
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch { return null; }
+  }
+  return data;
+}
+
+async function fetchManifestFromRaw(ref) {
+  const url = `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/manifest.json?t=${Date.now()}`;
+  const res = await CapacitorHttp.get({ url, headers: { 'User-Agent': 'RIGCORE-Android' }, connectTimeout: 8000, readTimeout: 12000 });
+  if (res.status !== 200 || !res.data) return null;
+  const data = parseGithubJson(res.data);
+  if (!data?.version) return null;
+  return {
+    version: data.version,
+    zipUrl: `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/www.zip?v=${encodeURIComponent(data.version)}`,
+  };
+}
+
+async function fetchManifestFromApi(ref) {
+  const headers = authHeaders();
+  const manUrl = `https://api.github.com/repos/${UPDATE_REPO}/contents/live-update/manifest.json?ref=${encodeURIComponent(ref)}`;
+  const manRes = await CapacitorHttp.get({ url: manUrl, headers, connectTimeout: 8000, readTimeout: 15000 });
+  if (manRes.status !== 200 || !manRes.data) return null;
+  const manMeta = parseGithubJson(manRes.data);
+  let manifest = null;
+  if (manMeta?.content && manMeta.encoding === 'base64') {
+    try { manifest = JSON.parse(atob(manMeta.content.replace(/\n/g, ''))); } catch (_) { manifest = null; }
+  } else {
+    manifest = parseGithubJson(manMeta);
+  }
+  if (!manifest?.version) return null;
+
+  const zipUrlApi = `https://api.github.com/repos/${UPDATE_REPO}/contents/live-update/www.zip?ref=${encodeURIComponent(ref)}`;
+  const zipRes = await CapacitorHttp.get({ url: zipUrlApi, headers, connectTimeout: 8000, readTimeout: 15000 });
+  const zipMeta = parseGithubJson(zipRes.data);
+  const zipUrl = zipMeta?.download_url;
+  if (!zipUrl) return null;
+  return { version: manifest.version, zipUrl };
+}
+
 async function fetchLatestManifest() {
   for (const ref of UPDATE_REFS) {
-    const url = `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/manifest.json?t=${Date.now()}`;
     try {
-      const res = await CapacitorHttp.get({ url, connectTimeout: 10000, readTimeout: 15000 });
-      if (res.status !== 200 || !res.data) continue;
-      const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-      if (!data?.version) continue;
-      const zipUrl = (Array.isArray(data.urls) ? data.urls.find((u) => u.includes(`/${ref}/`)) : null)
-        || data.url
-        || `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/www.zip`;
-      return { ...data, zipUrl: zipUrl + (zipUrl.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(data.version) };
-    } catch (_) { /* try next ref */ }
+      const raw = await fetchManifestFromRaw(ref);
+      if (raw) return raw;
+    } catch (_) { /* private repos 404 here */ }
+    try {
+      const api = await fetchManifestFromApi(ref);
+      if (api) return api;
+    } catch (_) { /* token missing or invalid */ }
   }
-  return null;
+  return getGithubToken() ? null : { privateRepo: true };
 }
 
 function wireUpdateStatus(version, extra) {
@@ -179,17 +230,44 @@ function wireUpdateStatus(version, extra) {
   const versionRow = [...rows].find((r) => r.textContent.includes('Version'));
   if (versionRow) {
     const val = versionRow.querySelector('.l2') || versionRow.lastElementChild;
-    if (val) val.textContent = version.replace(/^3\.3\.0-g/, '3.3 · ');
+    if (val) val.textContent = String(version).replace(/^3\.3\.\d+-g/, '3.3 · ');
   }
+  const card = versionRow && versionRow.parentElement;
+  if (!card) return;
+
   let row = document.getElementById('liveUpdateRow');
-  if (!row && versionRow && versionRow.parentElement) {
+  if (!row) {
     row = document.createElement('div');
     row.id = 'liveUpdateRow';
     row.className = 'settings-row';
-    versionRow.parentElement.appendChild(row);
+    card.appendChild(row);
   }
-  if (row) {
-    row.innerHTML = `<div>Auto-update<div class="l2">${extra || 'Checks GitHub when you open the app'}</div></div><div class="l2 mono">On</div>`;
+  row.innerHTML = `<div>Auto-update<div class="l2">${extra || 'Checks GitHub when you open the app'}</div></div><div class="l2 mono">On</div>`;
+
+  let tokenWrap = document.getElementById('liveUpdateTokenWrap');
+  if (!tokenWrap) {
+    tokenWrap = document.createElement('div');
+    tokenWrap.id = 'liveUpdateTokenWrap';
+    tokenWrap.style.marginTop = '12px';
+    card.appendChild(tokenWrap);
+  }
+  const saved = getGithubToken();
+  tokenWrap.innerHTML = `
+    <div class="l2" style="margin-bottom:6px;">If the GitHub repo is private, paste a token with Contents: Read. Leave blank if the repo is public.</div>
+    <div class="log-form">
+      <input id="githubTokenInput" type="password" autocomplete="off" placeholder="ghp_…" value="${saved.replace(/"/g, '&quot;')}">
+      <button class="btn" id="githubTokenSave" type="button">Save</button>
+    </div>`;
+  const saveBtn = document.getElementById('githubTokenSave');
+  const input = document.getElementById('githubTokenInput');
+  if (saveBtn && input) {
+    saveBtn.addEventListener('click', () => {
+      const v = input.value.trim();
+      if (v) localStorage.setItem(TOKEN_KEY, v);
+      else localStorage.removeItem(TOKEN_KEY);
+      toast(v ? 'Token saved' : 'Token cleared');
+      checkAndApplyUpdate();
+    });
   }
 }
 
@@ -202,6 +280,10 @@ async function checkAndApplyUpdate() {
     const manifest = await fetchLatestManifest();
     if (!manifest) {
       wireUpdateStatus(current, 'Could not reach GitHub — using this copy');
+      return;
+    }
+    if (manifest.privateRepo) {
+      wireUpdateStatus(current, 'Repo is private — make it public or save a token below');
       return;
     }
     if (manifest.version === current) {

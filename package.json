@@ -1,6 +1,6 @@
 {
   "name": "rigcore",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "private": true,
   "description": "RIGCORE — garage gym tracker wrapped as a native Android app",
   "scripts": {

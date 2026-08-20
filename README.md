@@ -21,6 +21,11 @@ That covers HTML/CSS/JS changes (the workout app itself). A new APK is only need
 
 The published bundle lives in `live-update/` (`manifest.json` + `www.zip`) and is refreshed by `npm run prepare:www`.
 
+This GitHub repo is **private**, so phones cannot download those files anonymously. Pick one:
+
+1. **Make the repo public** (GitHub → Settings → Change repository visibility). After that, opening RIGCORE is enough.
+2. Keep it private and paste a GitHub token with **Contents: Read** in **Settings → About**.
+
 ## What this wrap does
 
 The HTML app is packaged with [Capacitor 8](https://capacitorjs.com/) into a native WebView:
@@ -81,4 +86,4 @@ capacitor.config.json  App id com.rigcore.app
 
 ## Version
 
-App version **3.3.0** (`versionCode` 330). Live web bundles use a content-hash version such as `3.3.0-g…`.
+App version **3.3.1** (`versionCode` 331). Live web bundles use a content-hash version such as `3.3.0-g…`.
