@@ -678,6 +678,7 @@
     color: var(--text); font-family: 'JetBrains Mono'; font-size: 15px; padding: 10px; text-align: center;
   }
   .ob-nav { display: flex; gap: 10px; padding: 14px 0 calc(14px + env(safe-area-inset-bottom)); flex-shrink: 0; }
+  .ob-nav.stack { flex-direction: column; }
   .ob-btn-back { flex: 0 0 auto; padding: 14px 18px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
   .ob-btn-next { flex: 1; padding: 14px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--a1), var(--a2)); border: none; color: #08070d; font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
   .ob-btn-next:disabled { opacity: 0.4; }
@@ -1059,7 +1060,7 @@
     <div class="ml-badge-frame" id="mlBadgeFrame">
       <div class="ml-icon" id="nameBadgeIcon"></div>
       <div class="name-badge rank-f1" id="nameBadge">
-        <span class="nb-name" id="nbNameText">HARIS</span>
+        <span class="nb-name" id="nbNameText">—</span>
         <span class="rank-tag" id="rankTag">Warrior</span>
       </div>
       <div class="nb-streak" id="nbStreak">🔥<span id="nbStreakVal">0</span></div>
@@ -1183,7 +1184,7 @@
       <div class="stats-profile-row">
         <div class="ml-icon" id="statsBadgeIcon"></div>
         <div class="name-badge rank-f1" id="statsNameBadge" style="cursor:pointer;">
-          <span class="nb-name" id="statsNbNameText">HARIS</span>
+          <span class="nb-name" id="statsNbNameText">—</span>
           <span class="rank-tag" id="statsRankTag">Warrior</span>
         </div>
       </div>
@@ -1352,7 +1353,7 @@
     </div>
     <div class="section-title">Data</div>
     <div class="card">
-      <div class="settings-row"><div>Keep your progress<div class="l2">This is Garage Gains — same app, same save key as before. Workouts stay in this browser. A new download is a blank copy unless you restore a backup first. Share or copy one now, then import it after reinstalling.</div></div></div>
+      <div class="settings-row"><div>Keep your progress<div class="l2">Code updates are saved on GitHub. Your points, items, and name stay only in this browser. Opening a newly downloaded copy starts empty. Keep using this same file, and share a backup now so you can restore if you ever have to switch files.</div></div></div>
       <button class="btn" id="shareBackupBtn">Share / Copy Backup</button>
       <button class="btn" id="exportBtn" style="margin-top:8px;">Download Backup File</button>
       <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file, or paste a backup you copied earlier</div></div></div>
@@ -1367,7 +1368,7 @@
     <div class="section-title">About</div>
     <div class="card">
       <div class="settings-row"><div>App</div><div class="l2">Garage Gains</div></div>
-      <div class="settings-row"><div>Version</div><div class="l2 mono">3.2</div></div>
+      <div class="settings-row"><div>Version</div><div class="l2 mono">3.3</div></div>
       <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
     </div>
   </section>
@@ -5233,7 +5234,8 @@ function reloadAfterRestore() {
   window.__expandedEx = null; window.__expandedUpcoming = null; window.__activeInstance = null;
   uiActiveSetIdx = {};
   showToast('Backup restored');
-  renderThemeGrid(); renderToday(); renderProfilesList();
+  renderThemeGrid(); renderHeader(); renderToday(); renderProfilesList();
+  maybeShowOnboarding();
 }
 function downloadBackupFile() {
   const blob = new Blob([JSON.stringify(collectFullBackup(), null, 2)], { type: 'application/json' });
@@ -7077,7 +7079,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // =========================================================
 // ONBOARDING FLOW — new-profile setup wizard
 // =========================================================
-const OB_STEPS = ['name', 'weight', 'freq', 'equipment', 'goal', 'bodytype', 'focus'];
+const OB_STEPS = ['recover', 'name', 'weight', 'freq', 'equipment', 'goal', 'bodytype', 'focus'];
 function maybeShowOnboarding() {
   const meta = getCurrentProfileMeta();
   const overlay = document.getElementById('onboardingOverlay');
@@ -7092,12 +7094,37 @@ function maybeShowOnboarding() {
 function renderOnboarding() {
   const ob = window.__ob;
   const stepId = OB_STEPS[ob.step];
-  document.getElementById('obProgress').innerHTML = OB_STEPS.map((s, i) =>
-    `<div class="ob-dot${i === ob.step ? ' active' : (i < ob.step ? ' done' : '')}"></div>`).join('');
-
+  const progress = document.getElementById('obProgress');
   const content = document.getElementById('obStepContent');
   const nav = document.getElementById('obNav');
   let canNext = true;
+
+  if (stepId === 'recover') {
+    progress.style.visibility = 'hidden';
+    progress.innerHTML = '';
+    content.innerHTML = `<div class="ob-title">This copy is empty</div>
+      <div class="ob-sub">GitHub only stores the app. Your Harris profile, points, and items stay in the original file on this phone. A new download cannot see that save.</div>
+      <div class="ob-option-card" style="text-align:left; margin-bottom:10px;">
+        <div class="nm">Get your profile back</div>
+        <div class="ds" style="margin-top:6px; line-height:1.45;">Open the older Garage Gains file (Files → Downloads, or the home-screen icon you already had). In that copy go to Settings and tap Share / Copy Backup. Then come back here and import it.</div>
+      </div>`;
+    nav.classList.add('stack');
+    nav.innerHTML = `
+      <button class="ob-btn-next" id="obImportBackup">Import backup</button>
+      <button class="ob-btn-skip" id="obPasteBackup">Paste backup</button>
+      <button class="ob-btn-back" id="obStartNew">Start a new profile</button>`;
+    document.getElementById('obImportBackup').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('obPasteBackup').addEventListener('click', () => pasteBackupFromClipboard());
+    document.getElementById('obStartNew').addEventListener('click', () => { ob.step = OB_STEPS.indexOf('name'); renderOnboarding(); });
+    return;
+  }
+
+  progress.style.visibility = '';
+  nav.classList.remove('stack');
+  const setupSteps = OB_STEPS.filter(s => s !== 'recover');
+  const setupIdx = setupSteps.indexOf(stepId);
+  progress.innerHTML = setupSteps.map((s, i) =>
+    `<div class="ob-dot${i === setupIdx ? ' active' : (i < setupIdx ? ' done' : '')}"></div>`).join('');
 
   if (stepId === 'name') {
     content.innerHTML = `<div class="ob-title">What's your name?</div><div class="ob-sub">So the app can greet you right.</div>
@@ -7145,11 +7172,13 @@ function renderOnboarding() {
 
   const isLast = ob.step === OB_STEPS.length - 1;
   nav.innerHTML = `
-    ${ob.step > 0 ? `<button class="ob-btn-back" id="obBack">Back</button>` : ''}
+    ${ob.step > OB_STEPS.indexOf('name') ? `<button class="ob-btn-back" id="obBack">Back</button>` : `<button class="ob-btn-back" id="obBackToRecover">Back</button>`}
     ${stepId === 'weight' ? `<button class="ob-btn-skip" id="obSkip">Skip</button>` : ''}
     <button class="ob-btn-next" id="obNext" ${canNext ? '' : 'disabled'}>${isLast ? 'Finish' : 'Next'}</button>`;
 
   attachOnboardingListeners(stepId);
+  const backToRecover = document.getElementById('obBackToRecover');
+  if (backToRecover) backToRecover.addEventListener('click', () => { ob.step = 0; renderOnboarding(); });
 }
 function renderEquipGridItems(selected, search) {
   const q = (search || '').toLowerCase();
@@ -7541,6 +7570,9 @@ document.getElementById('newProfileBtn').addEventListener('click', createProfile
 // function and its one call site in init() below.
 function seedTestingGoldOnce() {
   if (state.__testGoldSeededV26) return;
+  const meta = getCurrentProfileMeta();
+  const hasWorkouts = state.workoutLog && Object.keys(state.workoutLog).length > 0;
+  if (meta && !meta.onboarded && !hasWorkouts) return;
   state.gold = (state.gold || 0) + 1000;
   state.__testGoldSeededV26 = true;
   save();
