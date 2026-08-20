@@ -527,6 +527,11 @@
   body.rest-focus #restTimerSlot .rest-timer { margin-top: 18px; padding: 34px 20px; }
   body.rest-focus #restTimerSlot .rt-clock { font-size: 52px; }
 
+  /* Instance fight: only the name/gold badge stays. Date, weekly strip, and
+     points bar must not peek through, or a black gap appears under the header. */
+  body.instance-no-scroll #stickySub,
+  body.instance-no-scroll .weekly-strip { display: none !important; }
+
   /* --- Streak icon tier escalation --- */
   .streak-chip { transition: all 0.3s ease; border-radius: 100px; padding: 3px 10px; }
   .streak-chip.streak-t1 { color: var(--gain); }
@@ -1341,10 +1346,12 @@
     </div>
     <div class="section-title">Data</div>
     <div class="card">
-      <div class="settings-row"><div>Export data<div class="l2">Save a backup file to your phone</div></div></div>
-      <button class="btn" id="exportBtn">Export Backup</button>
-      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore from a backup file</div></div></div>
-      <button class="btn" id="importBtn">Import Backup</button>
+      <div class="settings-row"><div>Keep your progress<div class="l2">Saves live in this browser. Downloading a new copy of the app starts empty unless you restore a backup first. Share or copy one now, then import it after reinstalling.</div></div></div>
+      <button class="btn" id="shareBackupBtn">Share / Copy Backup</button>
+      <button class="btn" id="exportBtn" style="margin-top:8px;">Download Backup File</button>
+      <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file, or paste a backup you copied earlier</div></div></div>
+      <button class="btn" id="importBtn">Import Backup File</button>
+      <button class="btn" id="pasteBackupBtn" style="margin-top:8px;">Paste Backup</button>
       <input type="file" id="importFile" accept="application/json">
       <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
       <button class="btn" id="recalcPointsBtn">Recalculate Points</button>
@@ -3085,14 +3092,20 @@ function applySeasonRankIcon(el) {
 function setInstanceDashboardChrome(inInstance) {
   const weekly = document.getElementById('weeklyStrip');
   const led = document.getElementById('ledWrap');
+  const sub = document.getElementById('stickySub');
   const todayViewActive = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
+  const activeTab = document.querySelector('.tab.active');
+  const viewName = activeTab ? activeTab.dataset.view : 'today';
   if (inInstance) {
     if (weekly) weekly.style.display = 'none';
     if (led) led.style.display = 'none';
+    if (sub) sub.style.display = 'none';
   } else {
     if (weekly) weekly.style.display = todayViewActive ? 'flex' : 'none';
     if (led) led.style.display = todayViewActive ? 'block' : 'none';
+    if (sub) sub.style.display = (viewName === 'inventory' || viewName === 'rank' || viewName === 'stats') ? 'none' : '';
   }
+  if (viewName !== 'stats') syncHeaderHeight();
 }
 
 const WARMUP_QUEST_TEMPLATES = [
@@ -5162,6 +5175,92 @@ function save() {
   catch(e) { console.error('save failed', e); showToast('Save failed — storage may be full'); }
 }
 
+function collectFullBackup() {
+  save();
+  saveRegistry();
+  const profiles = {};
+  (registry.profiles || []).forEach(p => {
+    try {
+      const raw = localStorage.getItem(profileStorageKey(p.id));
+      profiles[p.id] = raw ? JSON.parse(raw) : (p.id === registry.currentId ? state : null);
+    } catch (e) {
+      profiles[p.id] = p.id === registry.currentId ? state : null;
+    }
+  });
+  return { kind: 'garageGainsFull', version: 1, exportedAt: new Date().toISOString(), registry, profiles };
+}
+function applyBackupPayload(parsed) {
+  if (!parsed || typeof parsed !== 'object') throw new Error('invalid');
+  if (parsed.kind === 'garageGainsFull' && parsed.registry && parsed.profiles) {
+    registry = parsed.registry;
+    saveRegistry();
+    Object.keys(parsed.profiles).forEach(id => {
+      const blob = parsed.profiles[id];
+      if (blob) localStorage.setItem(profileStorageKey(id), JSON.stringify(blob));
+    });
+    state = load();
+    return;
+  }
+  state = Object.assign(defaultState(), parsed);
+  save();
+}
+function reloadAfterRestore() {
+  document.body.setAttribute('data-theme', state.theme || 'rig');
+  window.__expandedEx = null; window.__expandedUpcoming = null; window.__activeInstance = null;
+  uiActiveSetIdx = {};
+  showToast('Backup restored');
+  renderThemeGrid(); renderToday(); renderProfilesList();
+}
+function downloadBackupFile() {
+  const blob = new Blob([JSON.stringify(collectFullBackup(), null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `garage-gains-backup-${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Backup downloaded — keep this file somewhere safe');
+}
+async function shareOrCopyBackup() {
+  const json = JSON.stringify(collectFullBackup(), null, 2);
+  try {
+    const file = new File([json], `garage-gains-backup-${todayStr()}.json`, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'RIGCORE backup' });
+      showToast('Backup shared');
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'RIGCORE backup', text: json });
+      showToast('Backup shared');
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  try {
+    await navigator.clipboard.writeText(json);
+    showToast('Backup copied — paste into Notes or email before reinstalling');
+  } catch (e2) {
+    downloadBackupFile();
+  }
+}
+async function pasteBackupFromClipboard() {
+  let text = '';
+  try { text = await navigator.clipboard.readText(); } catch (e) { text = ''; }
+  if (!text || text.trim()[0] !== '{') {
+    text = prompt('Paste your backup JSON here') || '';
+  }
+  if (!text.trim()) return;
+  try {
+    applyBackupPayload(JSON.parse(text));
+    reloadAfterRestore();
+  } catch (err) {
+    showToast('Import failed — invalid backup');
+  }
+}
+
 function switchProfile(id) {
   if (id === registry.currentId) return;
   save(); // flush the outgoing profile first
@@ -5302,9 +5401,6 @@ function switchView(name) {
   if (name !== 'today') renderRankBar();
   document.getElementById('weeklyStrip').style.display = (name === 'today' && !window.__activeInstance) ? 'flex' : 'none';
   resetStickyScroll();
-  // Stats builds its own non-sticky profile block + rank bar directly in the page
-  // content, so the fixed overlay header would just be redundant there — hide it
-  // entirely on that tab and drop the top padding that made room for it.
   const header = document.getElementById('stickyHeader');
   if (name === 'stats') {
     header.style.display = 'none';
@@ -5312,12 +5408,7 @@ function switchView(name) {
   } else {
     header.style.display = '';
   }
-  // v2.1.3: Inventory needs the vertical room the sub-header (rank bar + day
-  // info) normally takes, but — unlike Stats — the name banner itself should
-  // stay visible same as every other tab. So only the sub-section is hidden
-  // here, not the whole header; syncHeaderHeight() below naturally accounts
-  // for this since a display:none element reports zero scrollHeight.
-  document.getElementById('stickySub').style.display = (name === 'inventory' || name === 'rank') ? 'none' : '';
+  document.getElementById('stickySub').style.display = (name === 'inventory' || name === 'rank' || (name === 'today' && window.__activeInstance)) ? 'none' : '';
   if (name === 'stats') renderStats();
   if (name === 'settings') { renderSettingsEquipment(); renderExercisesManager(); renderWorkoutEditor(); renderProfilesList(); renderScheduleEditor(); renderFeedbackToggles(); renderProblemProfileEditor(); }
   if (name === 'inventory') renderInventoryTab();
@@ -6139,8 +6230,8 @@ function renderToday() {
   // only leaveInstance()/finishing does.
   if (window.__activeInstance) {
     document.getElementById('dashboardNormalContent').style.display = 'none';
-    setInstanceDashboardChrome(true);
     document.body.classList.add('instance-no-scroll');
+    setInstanceDashboardChrome(true);
     const instViewFix = document.getElementById('instanceView');
     instViewFix.classList.add('instance-fixed-scroll');
     instViewFix.style.top = document.body.style.paddingTop || '0px';
@@ -6930,25 +7021,17 @@ document.getElementById('streakModalClose').addEventListener('click', closeStrea
 document.getElementById('streakTierModal').addEventListener('click', (e) => {
   if (e.target.id === 'streakTierModal') closeStreakModal();
 });
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `garage-gains-backup-${todayStr()}.json`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('Backup downloaded');
-});
+document.getElementById('exportBtn').addEventListener('click', () => downloadBackupFile());
+document.getElementById('shareBackupBtn').addEventListener('click', () => { shareOrCopyBackup(); });
+document.getElementById('pasteBackupBtn').addEventListener('click', () => { pasteBackupFromClipboard(); });
 document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
 document.getElementById('importFile').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = (evt) => {
     try {
-      const parsed = JSON.parse(evt.target.result);
-      state = Object.assign(defaultState(), parsed);
-      save();
-      document.body.setAttribute('data-theme', state.theme || 'rig');
-      showToast('Backup restored');
-      renderThemeGrid(); renderToday();
+      applyBackupPayload(JSON.parse(evt.target.result));
+      reloadAfterRestore();
     } catch(err) { showToast('Import failed — invalid file'); }
   };
   reader.readAsText(file); e.target.value = '';
@@ -7461,7 +7544,8 @@ function syncHeaderHeight() {
   const sub = document.getElementById('stickySub');
   if (!nameRow || !sub) return;
   const nameH = nameRow.getBoundingClientRect().height;
-  const subH = sub.scrollHeight;
+  const subHidden = window.getComputedStyle(sub).display === 'none';
+  const subH = subHidden ? 0 : sub.scrollHeight;
   document.body.style.paddingTop = (nameH + subH) + 'px';
 }
 window.addEventListener('resize', syncHeaderHeight);
