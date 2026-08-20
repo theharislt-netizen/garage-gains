@@ -1153,6 +1153,13 @@
     <div class="ob-nav" id="obNav"></div>
   </div>
 </div>
+<div id="harisRestoreOverlay" class="ob-overlay" style="display:none; z-index:400;">
+  <div class="ob-panel" style="justify-content:center;">
+    <div class="ob-title">HARIS is back</div>
+    <div class="ob-sub">64 points · 45 gold · Grinder’s Chair equipped. This is your recovered RIGCORE save.</div>
+    <div class="ob-nav"><button class="ob-btn-next" type="button" id="harisRestoreOk">Continue</button></div>
+  </div>
+</div>
 
 <main>
   <section id="view-today" class="view active">
@@ -1369,7 +1376,7 @@
     <div class="section-title">About</div>
     <div class="card">
       <div class="settings-row"><div>App</div><div class="l2">RIGCORE</div></div>
-      <div class="settings-row"><div>Version</div><div class="l2 mono">3.4</div></div>
+      <div class="settings-row"><div>Version</div><div class="l2 mono">3.5</div></div>
       <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
     </div>
   </section>
@@ -5180,17 +5187,34 @@ function saveRegistry() { localStorage.setItem(REGISTRY_KEY, JSON.stringify(regi
 function cloneBuiltinSave() {
   return JSON.parse(JSON.stringify(BUILTIN_SAVE));
 }
+function isRecoveredHarisSave(s) {
+  if (!s || typeof s !== 'object') return false;
+  const name = String((s.profile && s.profile.displayName) || '').toUpperCase();
+  const items = (s.inventory && s.inventory.permanent) || [];
+  const hasChair = items.some(i => i && (i.instanceId === 'i1787222238762701' || i.itemId === 'grindersChair'));
+  return hasChair && (s.totalPoints || 0) >= 64 && (name === 'HARIS' || name === 'HARRIS');
+}
 function hydrateBuiltinSaveIfNeeded() {
   try {
-    if (localStorage.getItem(STORE_KEY)) return;
+    let current = null;
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      current = raw ? JSON.parse(raw) : null;
+    } catch (e) { current = null; }
+    if (isRecoveredHarisSave(current)) return;
     localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign(defaultState(), cloneBuiltinSave())));
     const name = (BUILTIN_SAVE.profile && BUILTIN_SAVE.profile.displayName) || 'HARIS';
-    if (!localStorage.getItem(REGISTRY_KEY)) {
-      localStorage.setItem(REGISTRY_KEY, JSON.stringify({
-        profiles: [{ id: 'p1', name, onboarded: true }],
-        currentId: 'p1'
-      }));
+    let reg = null;
+    try { reg = JSON.parse(localStorage.getItem(REGISTRY_KEY) || 'null'); } catch (e) { reg = null; }
+    if (!reg || !Array.isArray(reg.profiles) || !reg.profiles.length) {
+      reg = { profiles: [{ id: 'p1', name, onboarded: true }], currentId: 'p1' };
+    } else {
+      const p = reg.profiles.find(x => x.id === (reg.currentId || 'p1')) || reg.profiles[0];
+      if (p) { p.onboarded = true; p.name = name; }
+      reg.currentId = p ? p.id : 'p1';
     }
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(reg));
+    window.__harisJustRestored = true;
   } catch (e) { console.error('builtin hydrate failed', e); }
 }
 function applyProfileState(parsed) {
@@ -7840,10 +7864,18 @@ function init() {
   document.body.setAttribute('data-theme', state.theme || 'rig');
   seedTestingGoldOnce();
   renderThemeGrid();
+  renderHeader();
   renderToday();
   renderProfilesList();
   syncHeaderHeight();
   maybeShowOnboarding();
+  if (window.__harisJustRestored) {
+    const overlay = document.getElementById('harisRestoreOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    const ok = document.getElementById('harisRestoreOk');
+    if (ok) ok.addEventListener('click', () => { overlay.style.display = 'none'; });
+    showToast('HARIS restored — 64 pts');
+  }
 }
 
 // --- Header height sync: the header is `position:fixed` (out of normal document flow)
