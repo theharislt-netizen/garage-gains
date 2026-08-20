@@ -1,0 +1,15 @@
+---
+description: Commit and push finished work to GitHub so the phone can see it
+alwaysApply: true
+---
+
+# Auto-upload to GitHub
+
+After you finish a set of file changes the user asked for, commit and push to `origin` on `main`. Do not wait for them to say "push". This is an explicit project preference.
+
+- One commit per finished request, not per keystroke or half-written file
+- Do not commit secrets (`.env`, passwords, API keys)
+- If `git` is missing from PATH, use `C:\Program Files\Git\cmd\git.exe`
+- Remote: `https://github.com/theharislt-netizen/garage-gains.git`
+
+Phone / driving work is different: those edits should go through a Cursor cloud agent on this GitHub repo, which already writes to GitHub. Do not tell the user they must download a ZIP after every change; opening the repo in the GitHub app is enough to view it.
