@@ -1,0 +1,56 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Verify live-update zip
+        run: |
+          npm run prepare:www
+          python3 - <<'PY'
+          import json, zipfile, sys
+          z = zipfile.ZipFile("live-update/www.zip")
+          names = z.namelist()
+          assert "index.html" in names, names[:20]
+          assert "native-bridge.js" in names
+          man = json.load(open("live-update/manifest.json"))
+          print("live-update ok", man["version"], "files", len(names))
+          PY
+
+      - name: Build signed release APK
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+        run: |
+          chmod +x scripts/build-apk.sh
+          mkdir -p android
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+          ./scripts/build-apk.sh
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RIGCORE
+          path: dist/RIGCORE.apk
