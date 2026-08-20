@@ -1,0 +1,29 @@
+{
+  "appId": "com.rigcore.app",
+  "appName": "RIGCORE",
+  "webDir": "www",
+  "backgroundColor": "#09080f",
+  "android": {
+    "backgroundColor": "#09080f",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#09080f",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#09080f"
+    }
+  }
+}
