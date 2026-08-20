@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Garage Gains</title>
-<meta name="application-name" content="Garage Gains">
-<meta name="apple-mobile-web-app-title" content="Garage Gains">
+<title>RIGCORE</title>
+<meta name="application-name" content="RIGCORE">
+<meta name="apple-mobile-web-app-title" content="RIGCORE">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#09080f">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2309080f'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='22' fill='%23ffb648'%3EGG%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2309080f'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='18' fill='%23ffb648'%3ERC%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1348,16 +1348,17 @@
     <div class="theme-grid" id="themeGrid"></div>
     <div class="section-title">Shortcut</div>
     <div class="card">
-      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch Garage Gains like an app</div></div></div>
+      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch RIGCORE like an app</div></div></div>
       <button class="btn" id="addHomeBtn">Add to Home Screen</button>
     </div>
     <div class="section-title">Data</div>
     <div class="card">
-      <div class="settings-row"><div>Keep your progress<div class="l2">Code updates are saved on GitHub. Your points, items, and name stay only in this browser. Opening a newly downloaded copy starts empty. Keep using this same file, and share a backup now so you can restore if you ever have to switch files.</div></div></div>
+      <div class="settings-row"><div>Keep your progress<div class="l2">Saves live in this browser under garageGains_v1. Keep opening this same file path. Share or copy a backup before switching files, then import it after.</div></div></div>
       <button class="btn" id="shareBackupBtn">Share / Copy Backup</button>
       <button class="btn" id="exportBtn" style="margin-top:8px;">Download Backup File</button>
-      <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file, or paste a backup you copied earlier</div></div></div>
-      <button class="btn" id="importBtn">Import Backup File</button>
+      <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file, paste JSON, or reload the recovered HARIS save</div></div></div>
+      <button class="btn" id="restoreBuiltinBtn">Restore HARIS save</button>
+      <button class="btn" id="importBtn" style="margin-top:8px;">Import Backup File</button>
       <button class="btn" id="pasteBackupBtn" style="margin-top:8px;">Paste Backup</button>
       <input type="file" id="importFile" accept="application/json">
       <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
@@ -1367,8 +1368,8 @@
     <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
     <div class="section-title">About</div>
     <div class="card">
-      <div class="settings-row"><div>App</div><div class="l2">Garage Gains</div></div>
-      <div class="settings-row"><div>Version</div><div class="l2 mono">3.3</div></div>
+      <div class="settings-row"><div>App</div><div class="l2">RIGCORE</div></div>
+      <div class="settings-row"><div>Version</div><div class="l2 mono">3.4</div></div>
       <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
     </div>
   </section>
@@ -1402,11 +1403,10 @@
 
 <script>
 /* =========================================================
-   GARAGE GAINS v2 — guided, gamified workout coach
-   Display name and storage key must stay Garage Gains /
-   garageGains_v1 so phone installs keep their progress.
+   RIGCORE (garage-gains.html) — guided, gamified workout coach
+   Progress is localStorage key garageGains_v1. Never rename it.
    ========================================================= */
-const APP_NAME = 'Garage Gains';
+const APP_NAME = 'RIGCORE';
 const STORE_KEY = 'garageGains_v1'; // unchanged key/shape so old backups still import
 (function installWebAppIdentity() {
   const manifest = {
@@ -5176,6 +5176,256 @@ function loadRegistry() {
   return { profiles: [ { id:'p1', name:'Profile 1', onboarded: hasLegacyData } ], currentId: 'p1' };
 }
 function saveRegistry() { localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry)); }
+
+function cloneBuiltinSave() {
+  return JSON.parse(JSON.stringify(BUILTIN_SAVE));
+}
+function hydrateBuiltinSaveIfNeeded() {
+  try {
+    if (localStorage.getItem(STORE_KEY)) return;
+    localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign(defaultState(), cloneBuiltinSave())));
+    const name = (BUILTIN_SAVE.profile && BUILTIN_SAVE.profile.displayName) || 'HARIS';
+    if (!localStorage.getItem(REGISTRY_KEY)) {
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify({
+        profiles: [{ id: 'p1', name, onboarded: true }],
+        currentId: 'p1'
+      }));
+    }
+  } catch (e) { console.error('builtin hydrate failed', e); }
+}
+function applyProfileState(parsed) {
+  state = Object.assign(defaultState(), parsed);
+  save();
+  const meta = getCurrentProfileMeta();
+  if (meta) {
+    meta.onboarded = true;
+    if (state.profile && state.profile.displayName) meta.name = state.profile.displayName;
+    saveRegistry();
+  }
+}
+
+const BUILTIN_SAVE = {
+  "version": 4,
+  "theme": "rig",
+  "weightLog": [
+    {
+      "date": "2026-08-19",
+      "kg": 61.5,
+      "note": "Starting point"
+    }
+  ],
+  "workoutLog": {
+    "2026-08-19": {
+      "day": "core",
+      "sets": {
+        "weightedCrunch": [12, 10, 10]
+      },
+      "points": 0,
+      "completed": false
+    },
+    "2026-08-20": {
+      "day": "push",
+      "sets": {},
+      "points": 0,
+      "completed": false
+    }
+  },
+  "bests": {},
+  "baselines": {},
+  "totalPoints": 64,
+  "streak": {
+    "current": 0,
+    "longest": 0,
+    "lastCompletedDate": null
+  },
+  "unlockedBadges": [],
+  "equipment": [],
+  "dumbbellRange": null,
+  "onboarding": null,
+  "customDaySchedule": {
+    "0": null,
+    "1": "push",
+    "2": "pull",
+    "3": "core",
+    "4": "push",
+    "5": "pull",
+    "6": null
+  },
+  "customExercises": {
+    "push": ["chairDips", "handsElevatedPushup", "standardPushup", "pikePushup", "ohPress"],
+    "pull": ["dbRow", "tableRow", "dbCurl", "hammerCurl", "zottman", "rearDelt"],
+    "core": ["weightedCrunch", "declineSitup", "legRaise", "plank", "hollowHold"]
+  },
+  "skills": {},
+  "gold": 45,
+  "gems": 1,
+  "inventory": {
+    "permanent": [
+      {
+        "instanceId": "i1787222238762701",
+        "itemId": "grindersChair",
+        "star": 3
+      }
+    ],
+    "tempCharges": {
+      "featherweightWraps": 1,
+      "secondWind": 2,
+      "doubleDown": 1
+    },
+    "shards": {
+      "boost": 8,
+      "relic": 30
+    },
+    "stones": {
+      "boost": 0,
+      "relic": 0
+    }
+  },
+  "equipped": {
+    "boost": [null, null, null],
+    "relic": [
+      {
+        "kind": "permanent",
+        "instanceId": "i1787222238762701"
+      },
+      null,
+      null
+    ]
+  },
+  "streakFreezes": 0,
+  "unlockedTitles": [],
+  "selectedTitle": null,
+  "milestonesHit": [],
+  "measurementLogs": {
+    "chest": [],
+    "arms": [],
+    "waist": [],
+    "thighs": []
+  },
+  "activeTrackerMetric": "weight",
+  "activeInvFilter": "all",
+  "bosses": [],
+  "restDayQuests": null,
+  "warmupQuests": {
+    "date": "2026-08-20",
+    "cleared": false,
+    "options": [
+      {
+        "id": "warmupQuick",
+        "difficulty": "Quick",
+        "label": "Quick Warm-Up",
+        "desc": "2 minutes: ankle circles, wrist circles, 20 jumping jacks. Fast blood flow before you start.",
+        "rewardPoints": 5,
+        "rewardGold": 5,
+        "status": "available",
+        "progress": {}
+      },
+      {
+        "id": "warmupStandard",
+        "difficulty": "Standard",
+        "label": "Standard Warm-Up",
+        "desc": "5 minutes: leg swings, arm circles, hip openers, bodyweight squats. A full dynamic flow before loading up.",
+        "rewardPoints": 12,
+        "rewardGold": 10,
+        "status": "active",
+        "progress": {}
+      },
+      {
+        "id": "warmupExtended",
+        "difficulty": "Extended",
+        "label": "Extended Activation",
+        "desc": "8-10 minutes: full dynamic flow plus a couple of light activation sets on today's first exercise. Best prep for a big session.",
+        "rewardPoints": 20,
+        "rewardGold": 18,
+        "status": "available",
+        "progress": {}
+      }
+    ]
+  },
+  "season": {
+    "number": 1,
+    "startDate": "2026-08-20",
+    "endDate": "2026-10-15",
+    "points": 0
+  },
+  "dailyLogin": {
+    "lastClaimedDate": "2026-08-20",
+    "lastWeeklyBoxDate": null
+  },
+  "skippedDates": [],
+  "soundEnabled": true,
+  "hapticsEnabled": true,
+  "profile": {
+    "displayName": "HARIS",
+    "equippedBanner": "rig",
+    "displayedAchievementIds": []
+  },
+  "problemProfile": {},
+  "mobilityQuests": {
+    "date": "2026-08-20",
+    "lastTemplateByIssue": {
+      "general": "mobGeneral3"
+    },
+    "slots": [
+      {
+        "slotIndex": 0,
+        "isMorning": false,
+        "templateId": "mobGeneral1",
+        "label": "Full Body Reset",
+        "moves": [
+          { "id": "mgArmCircle", "name": "Arm Circles", "muscle": "Full Body", "isTime": true, "target": 20 },
+          { "id": "mgCatCow", "name": "Cat-Cow Stretch", "muscle": "Full Body", "isTime": true, "target": 30 }
+        ],
+        "progress": {},
+        "status": "available"
+      },
+      {
+        "slotIndex": 1,
+        "isMorning": false,
+        "templateId": "mobGeneral2",
+        "label": "Posture Reset Flow",
+        "moves": [
+          { "id": "mgWallAngel", "name": "Wall Angels", "muscle": "Posture", "isTime": false, "target": 10 },
+          { "id": "mgChestExpansion", "name": "Standing Chest Expansion", "muscle": "Posture", "isTime": true, "target": 30 }
+        ],
+        "progress": {},
+        "status": "available"
+      },
+      {
+        "slotIndex": 2,
+        "isMorning": false,
+        "templateId": "mobGeneral1",
+        "label": "Full Body Reset",
+        "moves": [
+          { "id": "mgArmCircle", "name": "Arm Circles", "muscle": "Full Body", "isTime": true, "target": 20 },
+          { "id": "mgCatCow", "name": "Cat-Cow Stretch", "muscle": "Full Body", "isTime": true, "target": 30 }
+        ],
+        "progress": {},
+        "status": "available"
+      }
+    ]
+  },
+  "morningStretch": {
+    "date": "2026-08-20",
+    "templateId": "mobGeneral3",
+    "label": "Morning Stretch",
+    "moves": [
+      { "id": "mgHipCircle", "name": "Standing Hip Circles", "muscle": "Full Body", "isTime": true, "target": 30 },
+      { "id": "mgLegSwing", "name": "Forward Leg Swings (each side)", "muscle": "Full Body", "isTime": true, "target": 20 }
+    ],
+    "progress": {},
+    "status": "expired"
+  },
+  "dailyChallenge": {
+    "date": "2026-08-20",
+    "exId": "chairDips",
+    "target": null,
+    "completed": false
+  },
+  "__testGoldSeededV26": true
+};
+
+hydrateBuiltinSaveIfNeeded();
 let registry = loadRegistry();
 function getCurrentProfileMeta() { return registry.profiles.find(p => p.id === registry.currentId) || registry.profiles[0]; }
 
@@ -5183,7 +5433,7 @@ let state = load();
 function load() {
   try {
     const raw = localStorage.getItem(profileStorageKey(registry.currentId));
-    if (!raw) return defaultState();
+    if (!raw) return Object.assign(defaultState(), cloneBuiltinSave());
     const merged = Object.assign(defaultState(), JSON.parse(raw));
     // Older versions stored fixed-length arrays with null gaps for unfinished sets;
     // strip those so every session's set list is just the sets actually logged.
@@ -5224,10 +5474,15 @@ function applyBackupPayload(parsed) {
       if (blob) localStorage.setItem(profileStorageKey(id), JSON.stringify(blob));
     });
     state = load();
+    const meta = getCurrentProfileMeta();
+    if (meta) { meta.onboarded = true; saveRegistry(); }
     return;
   }
-  state = Object.assign(defaultState(), parsed);
-  save();
+  applyProfileState(parsed);
+}
+function restoreBuiltinHarisSave() {
+  applyBackupPayload(cloneBuiltinSave());
+  reloadAfterRestore();
 }
 function reloadAfterRestore() {
   document.body.setAttribute('data-theme', state.theme || 'rig');
@@ -7049,6 +7304,7 @@ document.getElementById('streakTierModal').addEventListener('click', (e) => {
 });
 document.getElementById('exportBtn').addEventListener('click', () => downloadBackupFile());
 document.getElementById('shareBackupBtn').addEventListener('click', () => { shareOrCopyBackup(); });
+document.getElementById('restoreBuiltinBtn').addEventListener('click', () => restoreBuiltinHarisSave());
 document.getElementById('pasteBackupBtn').addEventListener('click', () => { pasteBackupFromClipboard(); });
 document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
 document.getElementById('importFile').addEventListener('change', (e) => {
@@ -7103,16 +7359,18 @@ function renderOnboarding() {
     progress.style.visibility = 'hidden';
     progress.innerHTML = '';
     content.innerHTML = `<div class="ob-title">This copy is empty</div>
-      <div class="ob-sub">GitHub only stores the app. Your Harris profile, points, and items stay in the original file on this phone. A new download cannot see that save.</div>
+      <div class="ob-sub">RIGCORE keeps progress in this browser under garageGains_v1. A recovered HARIS save is built into this file (64 pts, items, routine).</div>
       <div class="ob-option-card" style="text-align:left; margin-bottom:10px;">
         <div class="nm">Get your profile back</div>
-        <div class="ds" style="margin-top:6px; line-height:1.45;">Open the older Garage Gains file (Files → Downloads, or the home-screen icon you already had). In that copy go to Settings and tap Share / Copy Backup. Then come back here and import it.</div>
+        <div class="ds" style="margin-top:6px; line-height:1.45;">Tap Restore HARIS save, or import/paste a backup JSON. To keep progress later, keep opening this same file path.</div>
       </div>`;
     nav.classList.add('stack');
     nav.innerHTML = `
-      <button class="ob-btn-next" id="obImportBackup">Import backup</button>
+      <button class="ob-btn-next" id="obRestoreHaris">Restore HARIS save</button>
+      <button class="ob-btn-skip" id="obImportBackup">Import backup file</button>
       <button class="ob-btn-skip" id="obPasteBackup">Paste backup</button>
       <button class="ob-btn-back" id="obStartNew">Start a new profile</button>`;
+    document.getElementById('obRestoreHaris').addEventListener('click', () => restoreBuiltinHarisSave());
     document.getElementById('obImportBackup').addEventListener('click', () => document.getElementById('importFile').click());
     document.getElementById('obPasteBackup').addEventListener('click', () => pasteBackupFromClipboard());
     document.getElementById('obStartNew').addEventListener('click', () => { ob.step = OB_STEPS.indexOf('name'); renderOnboarding(); });

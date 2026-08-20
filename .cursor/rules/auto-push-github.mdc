@@ -14,4 +14,4 @@ After you finish a set of file changes the user asked for, commit and push to `o
 
 Pushing to GitHub **is** editing the files in the repo. Do not tell the user to re-download `garage-gains.html` after an update. A new download is a new blank local profile. Workout points, items, and the Harris/Haris save live in the phone browser, not in GitHub. Opening the repo in the GitHub app is enough to view the updated code.
 
-The product name is **Garage Gains**. Do not rename the app, the HTML file (`garage-gains.html`), or the localStorage key (`garageGains_v1`). Changing those makes the phone copy look like a different app and hides existing progress.
+The app title is **RIGCORE**. The file name is `garage-gains.html`. All progress is localStorage key `garageGains_v1` as one JSON object. Never rename that key, never break the original save shape, and keep Settings Export/Import Backup working. Browser storage is scoped to the file path, not the app version.
