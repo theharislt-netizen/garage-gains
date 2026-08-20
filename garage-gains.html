@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>RIGCORE</title>
+<title>Garage Gains</title>
+<meta name="application-name" content="Garage Gains">
+<meta name="apple-mobile-web-app-title" content="Garage Gains">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#09080f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2309080f'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='22' fill='%23ffb648'%3EGG%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1341,12 +1347,12 @@
     <div class="theme-grid" id="themeGrid"></div>
     <div class="section-title">Shortcut</div>
     <div class="card">
-      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch RIGCORE like an app</div></div></div>
+      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch Garage Gains like an app</div></div></div>
       <button class="btn" id="addHomeBtn">Add to Home Screen</button>
     </div>
     <div class="section-title">Data</div>
     <div class="card">
-      <div class="settings-row"><div>Keep your progress<div class="l2">Saves live in this browser. Downloading a new copy of the app starts empty unless you restore a backup first. Share or copy one now, then import it after reinstalling.</div></div></div>
+      <div class="settings-row"><div>Keep your progress<div class="l2">This is Garage Gains — same app, same save key as before. Workouts stay in this browser. A new download is a blank copy unless you restore a backup first. Share or copy one now, then import it after reinstalling.</div></div></div>
       <button class="btn" id="shareBackupBtn">Share / Copy Backup</button>
       <button class="btn" id="exportBtn" style="margin-top:8px;">Download Backup File</button>
       <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file, or paste a backup you copied earlier</div></div></div>
@@ -1360,6 +1366,7 @@
     <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
     <div class="section-title">About</div>
     <div class="card">
+      <div class="settings-row"><div>App</div><div class="l2">Garage Gains</div></div>
       <div class="settings-row"><div>Version</div><div class="l2 mono">3.2</div></div>
       <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
     </div>
@@ -1395,8 +1402,25 @@
 <script>
 /* =========================================================
    GARAGE GAINS v2 — guided, gamified workout coach
+   Display name and storage key must stay Garage Gains /
+   garageGains_v1 so phone installs keep their progress.
    ========================================================= */
+const APP_NAME = 'Garage Gains';
 const STORE_KEY = 'garageGains_v1'; // unchanged key/shape so old backups still import
+(function installWebAppIdentity() {
+  const manifest = {
+    name: APP_NAME,
+    short_name: APP_NAME,
+    display: 'standalone',
+    start_url: '.',
+    background_color: '#09080f',
+    theme_color: '#09080f'
+  };
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' }));
+  document.head.appendChild(link);
+})();
 
 const EXERCISES = [
   { id:'chairDips', day:'push', name:'Forward-Lean Chair Dips', muscle:'Lower Chest / Triceps', suggestedSets:3, equip:['chair'], focus:['chest','arms'], muscleTags:{chest:1.0, arms:0.5, shoulders:0.2},
@@ -5223,7 +5247,7 @@ async function shareOrCopyBackup() {
   try {
     const file = new File([json], `garage-gains-backup-${todayStr()}.json`, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'RIGCORE backup' });
+      await navigator.share({ files: [file], title: APP_NAME + ' backup' });
       showToast('Backup shared');
       return;
     }
@@ -5232,7 +5256,7 @@ async function shareOrCopyBackup() {
   }
   try {
     if (navigator.share) {
-      await navigator.share({ title: 'RIGCORE backup', text: json });
+      await navigator.share({ title: APP_NAME + ' backup', text: json });
       showToast('Backup shared');
       return;
     }

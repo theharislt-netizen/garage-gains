@@ -13,3 +13,5 @@ After you finish a set of file changes the user asked for, commit and push to `o
 - Remote: `https://github.com/theharislt-netizen/garage-gains.git`
 
 Phone / driving work is different: those edits should go through a Cursor cloud agent on this GitHub repo, which already writes to GitHub. Do not tell the user they must download a ZIP after every change; opening the repo in the GitHub app is enough to view it.
+
+The product name is **Garage Gains**. Do not rename the app, the HTML file (`garage-gains.html`), or the localStorage key (`garageGains_v1`). Changing those makes the phone copy look like a different app and hides existing progress.
