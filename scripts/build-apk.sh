@@ -38,7 +38,6 @@ fi
 
 mkdir -p dist
 cp -f "$OUT" dist/RIGCORE.apk
-cp -f "$OUT" dist/RIGCORE-v3.2.apk
 
 echo
 echo "APK ready:"
