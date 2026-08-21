@@ -1073,30 +1073,36 @@
   .box-reveal-card .rn { font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 700; }
   .box-reveal-card .rd { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
   .box-reveal-hint { color: var(--text-dim); font-size: 12px; margin-top: 14px; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Barlow Condensed'; }
-  /* Opening uses the chest art (not the loot icon). The item fade-in must
-     stay visible — ruBurst ends at opacity 0 and was wiping the prize. */
+  /* Opening uses the chest art (not the loot icon). Chests must NOT use
+     visibility:hidden — Android WebView drops CSS and WAAPI transform
+     animations on visibility-hidden nodes, which froze the box then
+     hard-cut to the prize. Opacity keeps the layer compositable. */
   .box-reveal-buildup {
     position: absolute; left: 50%; top: 50%; width: 96px; height: 96px;
     margin-left: -48px; margin-top: -48px;
     font-size: 64px; line-height: 96px; text-align: center;
-    visibility: hidden; opacity: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    will-change: transform;
+    transition: opacity 0.18s ease-out;
   }
   .box-reveal-buildup svg { width: 96px; height: 96px; display: block; }
-  #boxRevealOverlay.box-reveal-on .box-reveal-buildup {
-    animation: boxShake 0.22s ease-in-out infinite;
-  }
   #boxRevealOverlay.box-reveal-on.box-cat-boost:not(.box-prize-on) .box-art-boost,
   #boxRevealOverlay.box-reveal-on.box-cat-relic:not(.box-prize-on) .box-art-relic,
   #boxRevealOverlay.box-reveal-on.box-cat-starter:not(.box-prize-on) .box-art-starter {
-    visibility: visible; opacity: 1;
+    opacity: 1;
+  }
+  .box-reveal-buildup.is-shaking {
+    animation: boxShake 0.2s ease-in-out infinite;
   }
   #boxRevealPrize {
-    visibility: hidden; opacity: 0; pointer-events: none;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.24s ease-out;
   }
   #boxRevealOverlay.box-prize-on #boxRevealPrize {
-    visibility: visible; opacity: 1; pointer-events: auto;
+    opacity: 1; pointer-events: auto;
   }
-  @keyframes boxShake { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+  @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   .box-reveal-burst-flash {
     position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -2894,6 +2900,53 @@ function boxRevealBuildupHtml(category, artFn) {
   const color = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
   return `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${color};">${boxBuildupInnerHtml(category, artFn)}</div>`;
 }
+function boxRevealChestEl(overlay, category) {
+  if (!overlay || typeof overlay.querySelector !== 'function') return null;
+  const key = (category === 'boost' || category === 'relic' || category === 'starter') ? category : 'starter';
+  return overlay.querySelector('.box-art-' + key) || overlay.querySelector('#boxBuildupIcon');
+}
+function stopChestShake() {
+  const w = typeof window !== 'undefined' ? window : null;
+  if (!w) return;
+  if (w.__boxShakeAnim && typeof w.__boxShakeAnim.cancel === 'function') {
+    try { w.__boxShakeAnim.cancel(); } catch (err) {}
+  }
+  w.__boxShakeAnim = null;
+  if (w.__boxShakeEl && w.__boxShakeEl.classList) {
+    try { w.__boxShakeEl.classList.remove('is-shaking'); } catch (err) {}
+  }
+  w.__boxShakeEl = null;
+}
+function startChestShake(overlay, category) {
+  stopChestShake();
+  const el = boxRevealChestEl(overlay, category);
+  if (!el) return false;
+  const w = typeof window !== 'undefined' ? window : {};
+  w.__boxShakeEl = el;
+  try { void el.offsetWidth; } catch (err) {}
+  const kick = function() {
+    if (w.__boxShakeAnim) return;
+    if (typeof el.animate !== 'function') {
+      if (el.classList) el.classList.add('is-shaking');
+      return;
+    }
+    try {
+      w.__boxShakeAnim = el.animate(
+        [
+          { transform: 'rotate(-6deg)' },
+          { transform: 'rotate(6deg)' },
+          { transform: 'rotate(-6deg)' }
+        ],
+        { duration: 200, iterations: Infinity, easing: 'ease-in-out' }
+      );
+    } catch (err) {
+      if (el.classList) el.classList.add('is-shaking');
+    }
+  };
+  kick();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(kick);
+  return true;
+}
 function coverBoxRevealOverlay(overlay, category) {
   if (!overlay) return false;
   overlay.classList.remove('unique-reveal', 'box-prize-on', 'box-cat-boost', 'box-cat-relic', 'box-cat-starter');
@@ -2902,6 +2955,7 @@ function coverBoxRevealOverlay(overlay, category) {
     overlay.classList.add('box-cat-' + category);
   }
   overlay.onclick = null;
+  startChestShake(overlay, category);
   return true;
 }
 function paintBoxRevealOverlay(overlay, content, category, artFn) {
@@ -2912,6 +2966,7 @@ function paintBoxRevealOverlay(overlay, content, category, artFn) {
   return true;
 }
 function hideBoxRevealOverlay(overlay) {
+  stopChestShake();
   if (!overlay) return;
   overlay.onclick = null;
   overlay.classList.remove('box-reveal-on', 'unique-reveal', 'box-prize-on');
@@ -7274,8 +7329,10 @@ function dismissBoxReveal() {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
-  coverShopForBoxReveal(false);
-  window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
+  afterPaint(() => {
+    coverShopForBoxReveal(false);
+    scheduleIdleWork(() => { try { save(); } catch (err) {} }, 80);
+  });
 }
 // v3.0 §6: box opening excitement pass — resolves a rarity tier for the
 // outcome (common shards -> legendary full item), then sequences a shaking
@@ -7313,7 +7370,6 @@ function boxRevealPrizeCopy(category, outcome, tier) {
   return { tmpl, bodyLine, lootFallback };
 }
 function fillBoxRevealPrize(category, outcome) {
-  const overlay = document.getElementById('boxRevealOverlay');
   const card = document.getElementById('boxPrizeCard');
   const tierEl = document.getElementById('boxPrizeTier');
   const photo = document.getElementById('boxPrizePhoto');
@@ -7325,6 +7381,7 @@ function fillBoxRevealPrize(category, outcome) {
   const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
   const copy = boxRevealPrizeCopy(category, outcome, tier);
   const tmpl = copy.tmpl;
+  if (typeof window !== 'undefined') window.__boxPrizeTier = tier;
   if (card) card.className = 'box-reveal-card tier-' + tier;
   if (tierEl) {
     tierEl.textContent = meta.label || '';
@@ -7359,10 +7416,14 @@ function fillBoxRevealPrize(category, outcome) {
   }
   if (nameEl) nameEl.textContent = tmpl.name || 'Loot';
   if (bodyEl) bodyEl.textContent = copy.bodyLine;
-  if (overlay) {
-    overlay.classList.toggle('unique-reveal', tier === 'unique');
-    overlay.classList.add('box-prize-on');
-  }
+  return tier;
+}
+function revealFilledBoxPrize(overlay) {
+  stopChestShake();
+  if (!overlay) return;
+  const tier = (typeof window !== 'undefined' && window.__boxPrizeTier) || '';
+  overlay.classList.toggle('unique-reveal', tier === 'unique');
+  overlay.classList.add('box-prize-on');
 }
 function showBoxReveal(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
@@ -7372,11 +7433,14 @@ function showBoxReveal(category, outcome) {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
+  try {
+    fillBoxRevealPrize(category, outcome);
+  } catch (err) {}
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
     try {
-      fillBoxRevealPrize(category, outcome);
+      revealFilledBoxPrize(overlay);
     } catch (err) {
       if (overlay) overlay.classList.add('box-prize-on');
     }

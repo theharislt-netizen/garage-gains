@@ -71,7 +71,10 @@ assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('save()'),
 assert(!dismissFn.includes('renderInventoryTab()'), 'inventory is not rebuilt on dismiss');
 assert(!dismissFn.includes('renderShopModal()'), 'shop is not rebuilt on dismiss');
 assert(dismissFn.includes('save()'), 'dismiss still persists, just later');
-assert(dismissFn.includes('setTimeout'), 'persist is delayed off the hide frame');
+assert(
+  /afterPaint|scheduleIdleWork|setTimeout/.test(dismissFn),
+  'persist is delayed off the hide frame'
+);
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
 assert(showFn.includes('feedbackBoxOpen(tier)'), 'SFX still plays after cover');
