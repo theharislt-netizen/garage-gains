@@ -7,6 +7,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  probe-repo-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check repository Action secrets and variables
+        env:
+          IOS_TEAM_ID_SECRET: ${{ secrets.IOS_TEAM_ID }}
+          IOS_TEAM_ID_VAR: ${{ vars.IOS_TEAM_ID }}
+          ASC_KEY_ID_SECRET: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_KEY_ID_VAR: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_SECRET: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_ISSUER_VAR: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_API_KEY_SECRET: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          ASC_API_KEY_VAR: ${{ vars.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          echo "repo_secret_ios_team_id=$([[ -n "$IOS_TEAM_ID_SECRET" ]] && echo set || echo missing)"
+          echo "repo_var_ios_team_id=$([[ -n "$IOS_TEAM_ID_VAR" ]] && echo set || echo missing)"
+          echo "repo_secret_asc_key_id=$([[ -n "$ASC_KEY_ID_SECRET" ]] && echo set || echo missing)"
+          echo "repo_var_asc_key_id=$([[ -n "$ASC_KEY_ID_VAR" ]] && echo set || echo missing)"
+          echo "repo_secret_asc_issuer=$([[ -n "$ASC_ISSUER_SECRET" ]] && echo set || echo missing)"
+          echo "repo_var_asc_issuer=$([[ -n "$ASC_ISSUER_VAR" ]] && echo set || echo missing)"
+          echo "repo_secret_asc_api_key=$([[ -n "$ASC_API_KEY_SECRET" ]] && echo set || echo missing)"
+          echo "repo_var_asc_api_key=$([[ -n "$ASC_API_KEY_VAR" ]] && echo set || echo missing)"
+
   probe-pages-env-secrets:
     if: github.ref == 'refs/heads/cursor/android-apk-eee8'
     runs-on: ubuntu-latest
