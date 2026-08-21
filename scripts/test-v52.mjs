@@ -56,29 +56,26 @@ assert(afterPaintSrc.includes('requestIdleCallback') || afterPaintSrc.includes('
   'idle work can yield past the hide/open paint');
 
 const openFn = html.slice(html.indexOf('function handleOpenBox'), html.indexOf('function dismissBoxReveal'));
-assert(openFn.indexOf('coverBoxRevealOverlay') < openFn.indexOf('afterPaint'),
-  'cover still happens on the tap');
-assert(openFn.indexOf('afterPaint') < openFn.indexOf('openBoxFree'),
+assert(openFn.includes('coverBoxRevealOverlay'), 'cover still happens on the tap');
+assert(openFn.indexOf('coverBoxRevealOverlay') < openFn.indexOf('openBoxFree'),
   'loot still waits until after the cover');
+assert(!openFn.includes('paintBoxRevealOverlay'), 'open tap must not write chest innerHTML');
 assert(!openFn.includes('save()'), 'open tap must not persist');
 assert(!openFn.includes('renderInventoryTab()'), 'open tap must not rebuild inventory');
 assert(!openFn.includes('renderShopModal()'), 'open tap must not rebuild the shop');
 assert(!openFn.includes('feedbackBoxOpen'), 'haptics are not on the open tap');
 
 const dismissFn = html.slice(html.indexOf('function dismissBoxReveal'), html.indexOf('function getBoxRevealTier'));
-assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('scheduleIdleWork'),
-  'overlay hides before idle persist/render');
-const hidePaint = dismissFn.slice(dismissFn.indexOf('afterPaint'), dismissFn.indexOf('scheduleIdleWork'));
-assert(!hidePaint.includes('save()'), 'save is not on the hide-paint callback');
-assert(!hidePaint.includes('renderInventoryTab()'), 'inventory rebuild is not on the hide-paint callback');
-assert(!hidePaint.includes('renderShopModal()'), 'shop rebuild is not on the hide-paint callback');
-assert(dismissFn.includes('scheduleIdleWork'), 'persist/render run idle after hide paints');
+assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('save()'),
+  'overlay hides before persist');
+assert(!dismissFn.includes('renderInventoryTab()'), 'inventory is not rebuilt on dismiss');
+assert(!dismissFn.includes('renderShopModal()'), 'shop is not rebuilt on dismiss');
 assert(dismissFn.includes('save()'), 'dismiss still persists, just later');
-assert(dismissFn.includes('renderInventoryTab()'), 'inventory still refreshes when that tab is showing');
-assert(dismissFn.includes('else if (invOpen)'), 'shop dismiss skips a hidden inventory rebuild');
+assert(dismissFn.includes('setTimeout'), 'persist is delayed off the hide frame');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
-assert(showFn.includes('afterPaint(() => feedbackBoxOpen(tier))'), 'SFX still waits for a committed frame');
+assert(showFn.includes('feedbackBoxOpen(tier)'), 'SFX still plays after cover');
+assert(!showFn.includes('paintBoxRevealOverlay'), 'reveal does not rewrite premounted chests');
 
 const overlay = { classList: { _s: new Set(), add(c) { this._s.add(c); }, remove(...cs) { cs.forEach(c => this._s.delete(c)); }, contains(c) { return this._s.has(c); } }, onclick: 'keep' };
 coverBoxRevealOverlay(overlay);
@@ -156,7 +153,9 @@ const counts = equippedSetCountsFromTemplates([
 ]);
 assert(counts.ashenGrinder === 3, 'set counter tallies equipped templates');
 
-assert(html.includes('id="invLoadout"'), 'inventory shows the loadout panel');
+assert(html.includes('id="invLoadoutEntry"') && html.includes('id="loadoutModal"'),
+  'loadout is a button that opens a gear window');
+assert(!html.includes('id="invLoadout"'), 'inventory no longer keeps the loadout panel open');
 assert(html.includes('Set bonuses') && html.includes('gear-set-bonus'), 'set tracker is in the UI');
 assert(html.includes('Unlocks at Level'), 'locked slots explain the unlock');
 assert(html.includes("equippedSetBonusFor('points')"), 'session points include set bonuses');
@@ -192,6 +191,6 @@ assert(icons.lorequill.includes('M7 5.2 12 3.4 17 5.2') && icons.gildthread.incl
   'cloaks are cloak silhouettes');
 assert(icons.wornCharm !== icons.grindersChair, 'set pieces still look distinct');
 
-assert(html.includes('3.4.10'), 'About version bumped for v5.2');
+assert(html.includes('3.4.11'), 'About version bumped for v5.2');
 
 console.log('v5.2 tests ok — committed-paint box lag fix, equipment sets, gear icons, materials unchanged');

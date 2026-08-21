@@ -356,16 +356,16 @@
      scroll-events loop was what caused the old flicker. The name row always stays put;
      the sub row underneath slides/fades away on scroll down and back on scroll up,
      purely via transform+opacity so layout is never touched mid-scroll. --- */
-  .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: var(--app-sat); }
-  .name-badge-row { display: flex; justify-content: center; padding: 14px 14px 10px; max-width: 100%; overflow: hidden; transition: background 0.4s ease; }
+  .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: var(--app-sat); overflow: visible; }
+  .name-badge-row { display: flex; justify-content: center; padding: 14px 16px 10px; max-width: 100%; overflow: visible; transition: background 0.4s ease; }
   .sticky-sub {
     overflow: hidden; max-height: min(72dvh, 560px); opacity: 1;
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .sticky-sub.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
-  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; }
+  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; padding-left: 20px; }
   .ml-icon {
-    position: absolute; left: -17px; top: 50%; transform: translateY(-50%);
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
     width: 34px; height: 34px; border-radius: 50%; z-index: 3; flex-shrink: 0;
     background: var(--panel); border: 2px solid var(--rank-color, rgba(var(--a1-rgb),0.7));
     display: flex; align-items: center; justify-content: center;
@@ -374,15 +374,15 @@
   }
   .ml-icon svg { width: 16px; height: 16px; }
   .name-badge {
-    display: flex; align-items: center; gap: 6px; padding: 8px 18px 8px 30px;
-    max-width: min(72vw, 320px); min-width: 0; flex-shrink: 1;
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px 8px 28px;
+    max-width: min(148px, 38vw); min-width: 0; flex-shrink: 1; overflow: hidden;
     border-radius: 8px 18px 8px 18px;
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
     border: 1.5px solid var(--rank-color, rgba(var(--a1-rgb),0.5)); color: var(--text);
     filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.3)));
     transition: all 0.4s ease; white-space: nowrap; cursor: pointer;
   }
-  .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 0; }
+  .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 1; min-width: 0; max-width: 7em; overflow: hidden; text-overflow: ellipsis; }
   .name-badge .rank-tag { font-family: 'JetBrains Mono'; font-size: 8.5px; letter-spacing: 0.03em; color: var(--text-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .nb-streak {
     display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; flex-shrink: 0;
@@ -808,8 +808,12 @@
   }
   .gear-slot-cell.locked { opacity: 0.42; }
   .gear-slot-cell.empty .gear-slot-name, .gear-slot-cell.empty .gear-slot-desc { color: var(--text-dim); }
-  .gear-slot-ic { width: 28px; height: 28px; flex-shrink: 0; color: var(--a2); display: flex; align-items: center; justify-content: center; }
+  .gear-slot-ic { width: 36px; height: 36px; flex-shrink: 0; color: var(--a2); display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,0.04); }
   .gear-slot-ic svg { width: 26px; height: 26px; display: block; }
+  .item-photo { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+  .inv-slot-icon .item-photo, .gear-slot-ic .item-photo, .item-detail-icon .item-photo, .enchant-drop-ic .item-photo, .rarity-burst .item-photo {
+    width: 100%; height: 100%; object-fit: cover;
+  }
   .gear-slot-label { font-family: 'Barlow Condensed'; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   .gear-slot-name { font-family: 'Barlow Condensed'; font-size: 14px; font-weight: 600; line-height: 1.15; }
   .gear-slot-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
@@ -848,9 +852,12 @@
     border-color: rgba(var(--a1-rgb), 0.75);
   }
   .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
-  .inv-slot-icon { font-size: 26px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+  .inv-slot-icon { font-size: 26px; line-height: 1; width: 68%; height: 68%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; }
   .inv-slot-icon svg { width: 28px; height: 28px; display: block; }
+  .item-detail-icon { width: 88px; height: 88px; margin: 0 auto 8px; overflow: hidden; border-radius: 12px; }
   .item-detail-icon svg, .enchant-drop-ic svg, .craft-stone-icon svg, .rarity-burst svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
+  .rarity-burst .item-photo { width: 72px; height: 72px; border-radius: 12px; }
+  .enchant-drop-ic { width: 36px; height: 36px; overflow: hidden; border-radius: 8px; }
   .craft-stone-icon svg { width: 28px; height: 28px; }
   .craft-stone-result svg { width: 14px; height: 14px; display: inline-block; vertical-align: -3px; margin-right: 2px; }
   .enchant-drop-ic svg { width: 26px; height: 26px; }
@@ -880,7 +887,6 @@
     font-family: 'JetBrains Mono'; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em;
     padding: 2px 4px; border-radius: 4px; box-shadow: 0 0 0 2px var(--bg);
   }
-  .item-detail-icon { font-size: 44px; text-align: center; margin-bottom: 6px; }
   /* --- v2.9: item detail popup — RPG-tooltip style, anchored at the tapped
      slot's own position rather than a full window/screen. No dimmed backdrop
      (the point is "in place and lightweight"), just a transparent click-catcher
@@ -939,6 +945,10 @@
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
   }
   .inv-btn-salvage:disabled { opacity: 0.38; }
+  .confirm-copy { font-size: 14px; line-height: 1.5; color: var(--text); margin: 6px 0 16px; text-align: center; }
+  .confirm-payout { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--gain); text-align: center; margin-bottom: 16px; }
+  .confirm-actions { display: flex; gap: 8px; }
+  .confirm-actions .inv-btn { flex: 1; text-align: center; }
   .craft-stone-grid { display: flex; flex-direction: column; gap: 12px; }
   .craft-stone-card {
     display: grid; grid-template-columns: 52px 1fr auto; gap: 12px;
@@ -969,6 +979,14 @@
     animation: boxShake 0.22s ease-in-out infinite;
   }
   .box-reveal-buildup svg { width: 96px; height: 96px; display: block; }
+  #boxRevealOverlay .box-art-boost,
+  #boxRevealOverlay .box-art-relic,
+  #boxRevealOverlay .box-art-starter { display: none; }
+  #boxRevealOverlay.box-cat-boost:not(.box-prize-on) .box-art-boost { display: block; }
+  #boxRevealOverlay.box-cat-relic:not(.box-prize-on) .box-art-relic { display: block; }
+  #boxRevealOverlay.box-cat-starter:not(.box-prize-on) .box-art-starter { display: block; }
+  #boxRevealPrize { display: none; }
+  #boxRevealOverlay.box-prize-on #boxRevealPrize { display: block; }
   @keyframes boxShake { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   .box-reveal-burst-flash {
@@ -1431,8 +1449,8 @@
 
   /* --- v2.1.3: Inventory tab — Shop/Enchant promoted to primary entry points
      at the top, filling the space freed by hiding the sticky sub-header there --- */
-  .inv-primary-actions { display: flex; gap: 10px; margin-bottom: 14px; }
-  .inv-primary-btn { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; }
+  .inv-primary-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .inv-primary-btn { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 8px; text-align: center; cursor: pointer; }
   .inv-primary-btn:active { border-color: var(--a1); }
   .inv-primary-ic { width: 26px; height: 26px; display: inline-flex; color: var(--a1); margin-bottom: 6px; }
   .inv-primary-ic svg { width: 100%; height: 100%; }
@@ -1697,8 +1715,43 @@
     </div>
   </div>
 
+  <div id="loadoutModal" class="modal-overlay" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-head"><span>Loadout</span><button class="modal-close" id="loadoutModalClose">✕</button></div>
+      <div id="loadoutModalBody"></div>
+    </div>
+  </div>
+
+  <div id="salvageConfirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-head"><span>Salvage</span><button class="modal-close" id="salvageConfirmClose">✕</button></div>
+      <div id="salvageConfirmBody"></div>
+    </div>
+  </div>
+
   <div id="boxRevealOverlay" class="ob-overlay" style="align-items:center; justify-content:center;">
-    <div id="boxRevealContent" style="text-align:center;"></div>
+    <div id="boxRevealContent" style="text-align:center;">
+      <div class="box-reveal-buildup box-art-boost" id="boxArtBoost" style="color:var(--a2);">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="10" y="26" width="44" height="28" rx="4" fill="rgba(62,198,240,0.16)" stroke="currentColor" stroke-width="2"/>
+          <rect x="8" y="18" width="48" height="12" rx="3" fill="rgba(62,198,240,0.28)" stroke="currentColor" stroke-width="2"/>
+          <path d="M32 26v28" stroke="currentColor" stroke-width="2"/>
+          <path d="M29 6l4 8h-5l6 12-4-8h5L29 6Z" fill="currentColor"/>
+          <path d="M18 40h8M38 40h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="box-reveal-buildup box-art-relic" id="boxArtRelic" style="color:var(--a1);">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="8" y="24" width="48" height="30" rx="6" fill="rgba(180,85,245,0.18)" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 24h44c0-7-8-12-22-12S10 17 10 24Z" fill="rgba(255,182,72,0.16)" stroke="currentColor" stroke-width="2"/>
+          <rect x="28" y="20" width="8" height="12" rx="2" fill="currentColor"/>
+          <path d="M32 34l8 5v7c0 5-8 8-8 8s-8-3-8-8v-7l8-5Z" fill="rgba(255,182,72,0.35)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <circle cx="32" cy="42" r="2.4" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="box-reveal-buildup box-art-starter" id="boxArtStarter" style="color:var(--gain);">📦</div>
+      <div id="boxRevealPrize"></div>
+    </div>
   </div>
 
   <section id="view-rank" class="view">
@@ -1715,13 +1768,17 @@
         <div class="inv-primary-label">Store</div>
         <div class="inv-primary-sub" id="invGoldGems"></div>
       </div>
+      <div class="inv-primary-btn" id="invLoadoutEntry">
+        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6 12 4l4 2v6c0 3.2-1.6 5.4-4 6.8C9.6 17.4 8 15.2 8 12V6Z"/><path d="M9.5 11h5M12 8.5V14"/></svg></span>
+        <div class="inv-primary-label">Loadout</div>
+        <div class="inv-primary-sub">Gear</div>
+      </div>
       <div class="inv-primary-btn" id="invEnchantEntry">
         <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/><circle cx="12" cy="12" r="2.5"/></svg></span>
         <div class="inv-primary-label">Enchant</div>
         <div class="inv-primary-sub" id="invGemsCount"></div>
       </div>
     </div>
-    <div class="card" id="invLoadout"></div>
     <div class="inv-filter-row" id="invFilterRow"></div>
     <div class="card" id="invItemList"></div>
   </section>
@@ -1859,7 +1916,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.10</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.11</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2692,16 +2749,19 @@ function boxRevealBuildupHtml(category, artFn) {
   const color = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
   return `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${color};">${boxBuildupInnerHtml(category, artFn)}</div>`;
 }
-function coverBoxRevealOverlay(overlay) {
+function coverBoxRevealOverlay(overlay, category) {
   if (!overlay) return false;
+  overlay.classList.remove('unique-reveal', 'box-prize-on', 'box-cat-boost', 'box-cat-relic', 'box-cat-starter');
   overlay.classList.add('box-reveal-on');
-  overlay.classList.remove('unique-reveal');
+  if (category === 'boost' || category === 'relic' || category === 'starter') {
+    overlay.classList.add('box-cat-' + category);
+  }
   overlay.onclick = null;
   return true;
 }
 function paintBoxRevealOverlay(overlay, content, category, artFn) {
-  if (!coverBoxRevealOverlay(overlay) || !content) return false;
-  if (!content.querySelector('#boxBuildupIcon')) {
+  if (!coverBoxRevealOverlay(overlay, category) || !content) return false;
+  if (!content.querySelector('#boxBuildupIcon') && !content.querySelector('.box-art-boost')) {
     content.innerHTML = boxRevealBuildupHtml(category, artFn);
   }
   return true;
@@ -2709,7 +2769,7 @@ function paintBoxRevealOverlay(overlay, content, category, artFn) {
 function hideBoxRevealOverlay(overlay) {
   if (!overlay) return;
   overlay.onclick = null;
-  overlay.classList.remove('box-reveal-on', 'unique-reveal');
+  overlay.classList.remove('box-reveal-on', 'unique-reveal', 'box-prize-on');
 }
 // Android WebView often paints only after JS goes idle. One rAF+timeout
 // still runs before the cover/hide frame, so loot/SVG/save hitch the tap.
@@ -2771,8 +2831,9 @@ function matIconSvg(kind, cat) {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.3"><path d="M12 2l8 6v8l-8 6-8-6V8l8-6z" opacity="0.9"/><path d="M12 6.5l4.5 3.2v4.6L12 17.5 7.5 14.3V8.7L12 6.5z" fill="none"/></svg>`;
 }
 function itemIconHtml(tmpl) {
-  if (!tmpl) return '❔';
-  return itemIconSvg(tmpl.id) || tmpl.icon || '❔';
+  const id = typeof tmpl === 'string' ? tmpl : (tmpl && tmpl.id);
+  if (!id) return '❔';
+  return '<img class="item-photo" src="gear/' + id + '.jpg" alt="" width="64" height="64" decoding="async">';
 }
 function matIconHtml(kind, cat) { return matIconSvg(kind, cat); }
 function isUniqueItem(tmpl) { return !!(tmpl && tmpl.unique); }
@@ -3354,8 +3415,7 @@ function grantGuaranteedPermanentItem(rankId) {
   const owned = state.inventory.permanent.find(x => x.itemId === tmpl.id);
   if (owned) {
     if (!tmpl.unique && star > owned.star) { owned.star = Math.min(star, itemMaxStar(tmpl)); return { kind:'upgraded', tmpl, star: owned.star }; }
-    state.gems += 3;
-    return { kind:'dupe-gems', tmpl, gems: 3 };
+    return convertOwnedDuplicate(tmpl, star);
   }
   const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId: tmpl.id, star };
   state.inventory.permanent.push(inst);
@@ -3851,9 +3911,8 @@ function grantItem(itemId) {
   }
   const owned = state.inventory.permanent.find(x => x.itemId === itemId);
   if (owned) {
-    // Duplicate permanent pull converts to bonus gems rather than a useless dupe.
-    state.gems += 3;
-    return { kind:'dupe-gems', tmpl, gems: 3 };
+    const star = grantStarForTemplate(tmpl);
+    return convertOwnedDuplicate(tmpl, star);
   }
   const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: grantStarForTemplate(tmpl) };
   state.inventory.permanent.push(inst);
@@ -4054,6 +4113,17 @@ function craftEnchantStone(category) {
 // fresh 0-star one) — flagged as adjustable, not a final balance number.
 const SALVAGE_BASE_SHARDS = 8;
 const SALVAGE_PER_STAR_SHARDS = 4;
+function salvagePayoutForStar(star) {
+  return SALVAGE_BASE_SHARDS + (Number(star) || 0) * SALVAGE_PER_STAR_SHARDS;
+}
+function convertOwnedDuplicate(tmpl, star) {
+  ensureInventoryShape();
+  const amount = salvagePayoutForStar(star);
+  const category = tmpl.category;
+  state.inventory.shards[category] = (state.inventory.shards[category] || 0) + amount;
+  noteItemTypeGranted(state, itemTypeKey('shards', category));
+  return { kind: 'dupe-salvage', tmpl, amount, category };
+}
 function destroyTempCharge(itemId) {
   ensureInventoryShape();
   const have = state.inventory.tempCharges[itemId] || 0;
@@ -4071,7 +4141,7 @@ function salvageItem(instanceId) {
   const inst = state.inventory.permanent[idx];
   const tmpl = itemTemplate(inst.itemId);
   if (findEquippedSlot(tmpl.category, { kind:'permanent', instanceId })) { showToast('Unequip it first'); return null; }
-  const amount = SALVAGE_BASE_SHARDS + inst.star * SALVAGE_PER_STAR_SHARDS;
+  const amount = salvagePayoutForStar(inst.star);
   state.inventory.permanent.splice(idx, 1);
   state.inventory.shards[tmpl.category] = (state.inventory.shards[tmpl.category] || 0) + amount;
   noteItemTypeGranted(state, itemTypeKey('shards', tmpl.category));
@@ -6254,7 +6324,7 @@ function attachMorningStretchActiveListeners(s) {
 // SHOP / INVENTORY UI (v2.1)
 // =========================================================
 function renderEquippedSummary() {
-  const card = document.getElementById('invLoadout') || document.getElementById('equippedSummaryCard');
+  const card = document.getElementById('loadoutModalBody');
   const goldGems = document.getElementById('goldGemsSummary');
   if (goldGems) goldGems.textContent = `${state.gold}g · ${state.gems} gems`;
   if (!card) return;
@@ -6320,7 +6390,6 @@ function renderEquippedSummary() {
 const INV_GRID_COLUMNS = 4;
 function renderInventoryTab() {
   ensureInventoryShape();
-  renderEquippedSummary();
   const adminBanner = document.getElementById('adminInvBanner');
   if (adminBanner) adminBanner.style.display = isOwnerAdminSandbox() ? 'block' : 'none';
   const filterRow = document.getElementById('invFilterRow');
@@ -6334,6 +6403,7 @@ function renderInventoryTab() {
   document.getElementById('invGoldGems').textContent = '';
   document.getElementById('invGemsCount').textContent = '';
   document.getElementById('invShopEntry').onclick = openShopModal;
+  document.getElementById('invLoadoutEntry').onclick = openLoadoutModal;
   const enchantEntry = document.getElementById('invEnchantEntry');
   enchantEntry.onclick = openEnchantModal;
   enchantEntry.classList.toggle('unlock-pulse', !!(state.progression && state.progression.nudgeEnchant && state.progression.starterBoxOpened));
@@ -6459,26 +6529,24 @@ function renderItemDetailModal() {
     document.getElementById('itemDetailOpenBoxBtn').addEventListener('click', () => {
       closeItemDetailModal();
       const overlay = document.getElementById('boxRevealOverlay');
-      const content = document.getElementById('boxRevealContent');
       window.__boxRevealOpen = true;
-      coverBoxRevealOverlay(overlay);
-        afterPaint(() => {
+      coverBoxRevealOverlay(overlay, 'starter');
+      window.setTimeout(() => {
         const loot = openStarterVictoryBox(state);
         if (!loot) {
           hideBoxRevealOverlay(overlay);
           window.__boxRevealOpen = false;
-          scheduleIdleWork(() => { save(); renderInventoryTab(); });
+          window.setTimeout(() => { try { save(); renderInventoryTab(); } catch (err) {} }, 400);
           return;
         }
-        paintBoxRevealOverlay(overlay, content, 'starter', null);
         const relicTmpl = itemTemplate(STARTER_RELIC_ID) || { name: 'Relic', icon: '🪨' };
         showBoxReveal('starter', {
           kind: 'item',
           result: { kind: 'new', tmpl: relicTmpl },
           extraLine: '+1 Relic Enchantment Stone'
         });
-        scheduleIdleWork(() => save());
-      });
+        window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
+      }, 110);
     });
     return;
   }
@@ -6515,9 +6583,7 @@ function renderItemDetailModal() {
     });
     const salvageBtn = document.getElementById('itemDetailSalvageBtn');
     if (salvageBtn) salvageBtn.addEventListener('click', () => {
-      if (!confirm(`Salvage ${tmpl.name}? This permanently deletes it.`)) return;
-      const outcome = salvageItem(inst.instanceId);
-      if (outcome) { showToast(`Salvaged for +${outcome.amount} ${outcome.category} shards`); closeItemDetailModal(); renderInventoryTab(); }
+      openSalvageConfirm(inst.instanceId);
     });
   } else if (target.kind === 'mat') {
     const [mat, cat] = String(target.id).split(':');
@@ -6578,6 +6644,49 @@ function openShopModal() {
   renderShopModal();
 }
 function closeShopModal() { document.getElementById('shopModal').style.display = 'none'; }
+function openLoadoutModal() {
+  document.getElementById('loadoutModal').style.display = 'flex';
+  renderEquippedSummary();
+}
+function closeLoadoutModal() { document.getElementById('loadoutModal').style.display = 'none'; }
+function openSalvageConfirm(instanceId) {
+  ensureInventoryShape();
+  const inst = state.inventory.permanent.find(x => x.instanceId === instanceId);
+  if (!inst) return;
+  const tmpl = itemTemplate(inst.itemId);
+  if (!tmpl) return;
+  const amount = salvagePayoutForStar(inst.star);
+  const catLabel = tmpl.category === 'relic' ? 'Relic' : 'Boost';
+  const body = document.getElementById('salvageConfirmBody');
+  body.innerHTML = `
+    <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
+    <div class="inv-item-name" style="text-align:center;">${tmpl.name}</div>
+    <div class="confirm-copy">Salvage this item? It is permanently destroyed.</div>
+    <div class="confirm-payout">You'll receive +${amount} ${catLabel} shards</div>
+    <div class="confirm-actions">
+      <button class="inv-btn" id="salvageConfirmCancel">Cancel</button>
+      <button class="inv-btn inv-btn-salvage" id="salvageConfirmDo">Salvage</button>
+    </div>`;
+  document.getElementById('salvageConfirmModal').style.display = 'flex';
+  document.getElementById('salvageConfirmCancel').onclick = closeSalvageConfirm;
+  document.getElementById('salvageConfirmDo').onclick = () => {
+    const outcome = salvageItem(instanceId);
+    closeSalvageConfirm();
+    if (outcome) {
+      showToast(`Salvaged for +${outcome.amount} ${outcome.category} shards`);
+      closeItemDetailModal();
+      renderInventoryTab();
+    }
+  };
+}
+function closeSalvageConfirm() {
+  const modal = document.getElementById('salvageConfirmModal');
+  if (modal) modal.style.display = 'none';
+}
+function patchShopGoldChip() {
+  const el = document.getElementById('shopGoldVal');
+  if (el) el.textContent = state.gold;
+}
 
 // =========================================================
 // ENCHANTING TABLE — RPG altar with two inventory slots (item + stone).
@@ -6877,7 +6986,7 @@ function renderShopModal() {
 
   body.innerHTML = `
     <div class="shop-balance-row">
-      <div class="bal"><div class="n mono" style="color:var(--gain);">${state.gold}</div><div class="l">Gold</div></div>
+      <div class="bal"><div class="n mono" id="shopGoldVal" style="color:var(--gain);">${state.gold}</div><div class="l">Gold</div></div>
       <div class="bal"><div class="n mono" style="color:var(--a2);">${state.gems}</div><div class="l">Gems</div></div>
       <div class="bal"><div class="n mono" style="color:var(--a1);">${state.streakFreezes || 0}</div><div class="l">Freezes</div></div>
     </div>
@@ -6896,16 +7005,16 @@ function handleOpenBox(category) {
   const cost = BOX_COST[category];
   if (!isAdminSandbox(state) && state.gold < cost) { showToast('Not enough gold'); return; }
   const overlay = document.getElementById('boxRevealOverlay');
-  const content = document.getElementById('boxRevealContent');
   window.__boxRevealOpen = true;
-  coverBoxRevealOverlay(overlay);
-  afterPaint(() => {
+  coverBoxRevealOverlay(overlay, category);
+  window.setTimeout(() => {
     if (!window.__boxRevealOpen) return;
     if (!isAdminSandbox(state)) state.gold -= cost;
     const outcome = openBoxFree(category);
-    paintBoxRevealOverlay(overlay, content, category, typeof shopBoxArtSvg === 'function' ? shopBoxArtSvg : null);
+    refreshHeaderCurrency();
+    patchShopGoldChip();
     showBoxReveal(category, outcome);
-  });
+  }, 110);
 }
 function dismissBoxReveal() {
   if (!window.__boxRevealOpen) return;
@@ -6914,18 +7023,7 @@ function dismissBoxReveal() {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
-  const shopOpen = !!(document.getElementById('shopModal') && document.getElementById('shopModal').style.display !== 'none');
-  const invView = document.getElementById('view-inventory');
-  const invOpen = !!(invView && invView.classList.contains('active'));
-  afterPaint(() => {
-    refreshHeaderCurrency();
-  });
-  scheduleIdleWork(() => {
-    save();
-    if (shopOpen) renderShopModal();
-    else if (invOpen) renderInventoryTab();
-    renderEquippedSummary();
-  });
+  window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
 }
 // v3.0 §6: box opening excitement pass — resolves a rarity tier for the
 // outcome (common shards -> legendary full item), then sequences a shaking
@@ -6949,17 +7047,16 @@ const BOX_TIER_META = {
 };
 function showBoxReveal(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
-  const content = document.getElementById('boxRevealContent');
+  const prize = document.getElementById('boxRevealPrize');
   const tier = getBoxRevealTier(outcome);
   const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
   const lootFallback = category === 'boost' ? '⚡' : (category === 'relic' ? '🛡️' : '📦');
-  const artFn = typeof shopBoxArtSvg === 'function' ? shopBoxArtSvg : null;
 
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
-  paintBoxRevealOverlay(overlay, content, category, artFn);
-  afterPaint(() => feedbackBoxOpen(tier));
+  coverBoxRevealOverlay(overlay, category);
+  window.setTimeout(() => { try { feedbackBoxOpen(tier); } catch (err) {} }, 0);
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
@@ -6969,7 +7066,8 @@ function showBoxReveal(category, outcome) {
       let bodyLine;
       if (outcome.kind === 'shards') bodyLine = `+${outcome.amount} ${catLabel}shards`;
       else if (outcome.kind === 'stone') bodyLine = `+1 ${catLabel}enchantment stone`;
-      else if (tmpl.permanent && outcome.result.kind === 'dupe-gems') bodyLine = `Already owned — converted to +${outcome.result.gems} gems`;
+      else if (outcome.result && outcome.result.kind === 'dupe-salvage') bodyLine = `Already owned — converted to +${outcome.result.amount} ${outcome.result.category} shards`;
+      else if (tmpl.permanent && outcome.result && outcome.result.kind === 'dupe-gems') bodyLine = `Already owned — converted to +${outcome.result.gems} gems`;
       else if (tier === 'unique') bodyLine = 'A unique has awakened';
       else bodyLine = tmpl.permanent ? 'New item acquired!' : `+1 charge`;
       if (outcome.extraLine) bodyLine += ` · ${outcome.extraLine}`;
@@ -6978,7 +7076,8 @@ function showBoxReveal(category, outcome) {
         : outcome.kind === 'stone' ? matIconHtml('stone', category)
         : (typeof itemIconHtml === 'function' ? itemIconHtml(tmpl) : (tmpl.icon || lootFallback));
       overlay.classList.toggle('unique-reveal', tier === 'unique');
-      content.innerHTML = `
+      overlay.classList.add('box-prize-on');
+      const prizeHtml = `
         ${tier === 'unique' ? '<div class="box-reveal-unique-flash"></div>' : '<div class="box-reveal-burst-flash"></div>'}
         <div class="box-reveal-card tier-${tier}">
           ${meta.label ? `<div class="box-reveal-tier-label" style="color:${meta.color};">${meta.label}</div>` : ''}
@@ -6987,8 +7086,10 @@ function showBoxReveal(category, outcome) {
           <div class="rd">${bodyLine}</div>
           <div class="box-reveal-hint">Tap to close</div>
         </div>`;
+      if (prize) prize.innerHTML = prizeHtml;
     } catch (err) {
-      content.innerHTML = `<div class="box-reveal-card"><div class="rn">Loot received</div><div class="rd">Tap to close</div></div>`;
+      overlay.classList.add('box-prize-on');
+      if (prize) prize.innerHTML = `<div class="box-reveal-card"><div class="rn">Loot received</div><div class="rd">Tap to close</div></div>`;
     }
     overlay.onclick = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -6998,6 +7099,10 @@ function showBoxReveal(category, outcome) {
 }
 document.getElementById('shopModalClose').addEventListener('click', closeShopModal);
 document.getElementById('shopModal').addEventListener('click', (e) => { if (e.target.id === 'shopModal') closeShopModal(); });
+document.getElementById('loadoutModalClose').addEventListener('click', closeLoadoutModal);
+document.getElementById('loadoutModal').addEventListener('click', (e) => { if (e.target.id === 'loadoutModal') closeLoadoutModal(); });
+document.getElementById('salvageConfirmClose').addEventListener('click', closeSalvageConfirm);
+document.getElementById('salvageConfirmModal').addEventListener('click', (e) => { if (e.target.id === 'salvageConfirmModal') closeSalvageConfirm(); });
 document.getElementById('enchantWindowLeaveBtn').addEventListener('click', closeEnchantModal);
 
 // Deep-links straight into the YouTube Android app for a given search query, falling

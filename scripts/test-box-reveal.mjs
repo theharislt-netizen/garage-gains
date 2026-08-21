@@ -56,8 +56,9 @@ assert(handleOpen.includes('hideBoxRevealOverlay'), 'dismiss hides via the idle 
 assert(handleOpen.indexOf('showBoxReveal') < handleOpen.indexOf('save()'), 'save waits until the overlay is gone');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
-assert(showFn.includes('paintBoxRevealOverlay'), 'build-up renders the chest, not the prize');
-assert(showFn.includes('afterPaint(() => feedbackBoxOpen(tier))'), 'open SFX waits until after the overlay paints');
+assert(html.includes('box-art-boost') && html.includes('box-art-relic'), 'chest art is pre-mounted');
+assert(!showFn.includes('paintBoxRevealOverlay'), 'reveal must not rewrite the chest on open');
+assert(showFn.includes('feedbackBoxOpen(tier)'), 'open SFX still plays after cover');
 assert(showFn.includes('dismissBoxReveal()'), 'tap routes through the guarded dismiss');
 assert(showFn.includes('Tap to close'), 'reveal tells you how to dismiss');
 assert(showFn.includes('e.stopPropagation()'), 'overlay tap must not fall through to Buy');
@@ -71,6 +72,6 @@ assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('@keyframes boxItemIn
   'item-in must not scale');
 
 assert(html.includes("showBoxReveal('starter'"), 'starter box uses the starter build-up, not a shop chest');
-assert(html.includes('3.4.10'), 'About version bumped for the box-open fix');
+assert(html.includes('3.4.11'), 'About version bumped for the box-open fix');
 
 console.log('box-reveal tests ok — chest art on open, prize stays visible, Buy guarded after dismiss');

@@ -6,7 +6,7 @@
  * live-update/ for the installed Android and native iPhone apps.
  */
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile, writeFile, copyFile, access, rm } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, copyFile, access, rm, cp } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
@@ -146,6 +146,11 @@ await writeFile(
 const iconSrc = join(root, 'resources/icon.png');
 if (await exists(iconSrc)) {
   await copyFile(iconSrc, join(www, 'icon.png'));
+}
+
+const gearSrc = join(root, 'gear');
+if (await exists(gearSrc)) {
+  await cp(gearSrc, join(www, 'gear'), { recursive: true });
 }
 
 await makeLiveBundle();
