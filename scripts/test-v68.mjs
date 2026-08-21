@@ -36,13 +36,19 @@ vm.runInContext(sliceLib('v49-helpers-lib'), ctx);
 vm.runInContext(sliceLib('box-reveal-lib'), ctx);
 vm.runInContext(sliceLib('equipment-sets-lib'), ctx);
 
-assert(ctx.SHOP_BOX_PRICE === 80, 'single box still costs 80g');
-assert(ctx.SHOP_BOX_BULK_PRICE === 700, 'Buy 10 is 700g, not 800');
-assert(ctx.shopBoxGoldCost(1) === 80, 'Buy 1 is the unit price');
-assert(ctx.shopBoxGoldCost(10) === 700, 'Buy 10 uses the bulk discount');
-assert(ctx.shopBoxGoldCost(10) < ctx.SHOP_BOX_PRICE * 10, 'bulk is cheaper than 10x');
+const SHOP_BOX_PRICE = vm.runInContext('SHOP_BOX_PRICE', ctx);
+const SHOP_BOX_BULK_PRICE = vm.runInContext('SHOP_BOX_BULK_PRICE', ctx);
+const shopBoxGoldCost = vm.runInContext('shopBoxGoldCost', ctx);
+const consolidateBoxOutcomes = vm.runInContext('consolidateBoxOutcomes', ctx);
+const migrateEquippedToSlots = vm.runInContext('migrateEquippedToSlots', ctx);
 
-const stacked = ctx.consolidateBoxOutcomes([
+assert(SHOP_BOX_PRICE === 80, 'single box still costs 80g');
+assert(SHOP_BOX_BULK_PRICE === 700, 'Buy 10 is 700g, not 800');
+assert(shopBoxGoldCost(1) === 80, 'Buy 1 is the unit price');
+assert(shopBoxGoldCost(10) === 700, 'Buy 10 uses the bulk discount');
+assert(shopBoxGoldCost(10) < SHOP_BOX_PRICE * 10, 'bulk is cheaper than 10x');
+
+const stacked = consolidateBoxOutcomes([
   { kind: 'shards', category: 'boost', amount: 4 },
   { kind: 'shards', category: 'boost', amount: 3 },
   { kind: 'shards', category: 'relic', amount: 5 },
@@ -59,7 +65,7 @@ assert(dd && dd.result.tmpl.name.indexOf('×2') >= 0, 'temp boosts stack into on
 assert(stacked.filter(o => o.kind === 'item' && o.result && o.result.kind === 'new').length === 1,
   'unique permanents stay separate');
 
-const migrate = ctx.migrateEquippedToSlots;
+const migrate = migrateEquippedToSlots;
 const kept = migrate(
   { slots: { cloak: { kind: 'permanent', instanceId: 'anvil' }, amulet: { kind: 'permanent', instanceId: 'charm' } } },
   () => 'ring'
