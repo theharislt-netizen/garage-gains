@@ -7055,18 +7055,22 @@ function applyImportedBackupText(text) {
   }
   save();
 
-  const overlay = document.getElementById('onboardingOverlay');
-  if (overlay) overlay.style.display = 'none';
-  document.body.setAttribute('data-theme', state.theme || 'rig');
-  window.__expandedEx = null;
-  window.__expandedUpcoming = null;
-  uiActiveSetIdx = {};
+  try {
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.setAttribute('data-theme', state.theme || 'rig');
+    window.__expandedEx = null;
+    window.__expandedUpcoming = null;
+    uiActiveSetIdx = {};
 
-  renderThemeGrid();
-  renderToday();
-  renderProfilesList();
-  renderStats();
-  switchView('today');
+    renderThemeGrid();
+    renderToday();
+    renderProfilesList();
+    renderStats();
+    switchView('today');
+  } catch (err) {
+    console.error('backup restore render failed', err);
+  }
 
   const n = countBackupWorkouts(state);
   const pts = state.totalPoints || 0;

@@ -101,6 +101,9 @@ function applyLikeApp(text) {
 const appliedWrapped = applyLikeApp(JSON.stringify(wrappedNative));
 assert(appliedWrapped.ok && appliedWrapped.state.totalPoints === 140, 'wrapped native export should apply');
 assert(appliedWrapped.state.workoutLog['2026-08-01'].completed, 'applied state must keep workout history');
+assert(!appliedWrapped.state.state, 'applied state must not keep a nested state wrapper');
+const persisted = JSON.parse(JSON.stringify(appliedWrapped.state));
+assert(persisted.workoutLog['2026-08-01'].points === 80, 'saved JSON must keep session points at the top level');
 
 const appliedRaw = applyLikeApp(JSON.stringify(rawProgress));
 assert(appliedRaw.ok && appliedRaw.state.customExercises.push[0] === 'chairDips', 'raw browser export should apply');
