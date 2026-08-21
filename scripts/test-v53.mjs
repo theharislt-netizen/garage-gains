@@ -39,10 +39,10 @@ assert(html.includes('function openLoadoutModal()'), 'Loadout button has an open
 assert(html.includes("getElementById('invLoadoutEntry').onclick = openLoadoutModal"),
   'Inventory wires the Loadout button');
 
-assert(html.includes('position: absolute; left: 0;'),
+assert(html.includes('position: absolute; left: 4px;'),
   'rank icon sits inside the badge frame instead of hanging off the left');
 assert(!html.includes('left: -17px'), 'rank icon no longer uses a negative offset');
-assert(html.includes('.ml-badge-frame') && html.includes('padding-left: 20px'),
+assert(html.includes('.ml-badge-frame') && html.includes('padding-left: 22px'),
   'badge frame leaves room for the icon');
 assert(html.includes('.name-badge-row') && html.includes('overflow: visibl'),
   'hero banner row does not clip the rank icon');

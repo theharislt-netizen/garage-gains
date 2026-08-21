@@ -357,15 +357,15 @@
      the sub row underneath slides/fades away on scroll down and back on scroll up,
      purely via transform+opacity so layout is never touched mid-scroll. --- */
   .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: var(--app-sat); overflow: visible; }
-  .name-badge-row { display: flex; justify-content: center; padding: 14px 16px 10px; max-width: 100%; overflow: visible; transition: background 0.4s ease; }
+  .name-badge-row { display: flex; justify-content: center; padding: 14px 18px 10px; max-width: 100%; overflow: visible; transition: background 0.4s ease; }
   .sticky-sub {
     overflow: hidden; max-height: min(72dvh, 560px); opacity: 1;
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .sticky-sub.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
-  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; padding-left: 20px; }
+  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; padding-left: 22px; overflow: visible; }
   .ml-icon {
-    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    position: absolute; left: 4px; top: 50%; transform: translateY(-50%);
     width: 34px; height: 34px; border-radius: 50%; z-index: 3; flex-shrink: 0;
     background: var(--panel); border: 2px solid var(--rank-color, rgba(var(--a1-rgb),0.7));
     display: flex; align-items: center; justify-content: center;
