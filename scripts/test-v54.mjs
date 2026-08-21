@@ -136,7 +136,7 @@ const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html
 assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yielded open');
 assert(starterOpen.includes('coverBoxRevealOverlay'), 'starter cover starts the shake via the shared helper');
 
-assert(html.includes('3.4.17'), 'About version bumped for v5.4');
+assert(html.includes('3.4.18'), 'About version bumped for v5.4');
 
 const matIconHtml = vm.runInContext('matIconHtml', ctx);
 const shardSvg = matIconHtml('shards', 'boost');
