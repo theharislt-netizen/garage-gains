@@ -30,4 +30,13 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deploy
+        continue-on-error: true
         uses: actions/deploy-pages@v4
+
+      - name: Pages status
+        run: |
+          if [ "${{ steps.deploy.outcome }}" = "success" ]; then
+            echo "Published https://theharislt-netizen.github.io/garage-gains/"
+          else
+            echo "::warning::GitHub Pages is not enabled yet, so the iPhone link 404s. Enable it at https://github.com/theharislt-netizen/garage-gains/settings/pages then re-run this workflow."
+          fi

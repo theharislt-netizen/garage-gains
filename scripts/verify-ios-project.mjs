@@ -83,7 +83,7 @@ mustInclude('scripts/native-bridge.mjs', [
 ]);
 mustInclude('package.json', ['"@capacitor/ios"', '"build:ios"']);
 mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO']);
-mustInclude('.github/workflows/pages.yml', ['actions/deploy-pages@v4', 'path: www']);
+mustInclude('.github/workflows/pages.yml', ['actions/deploy-pages@v4', 'path: docs']);
 mustInclude('scripts/build-ios.sh', ['IOS_TEAM_ID', 'Darwin']);
 
 if (errors.length) {
