@@ -12,6 +12,7 @@
     "test:quicklog": "node scripts/test-quicklog.mjs",
     "test:dash": "node scripts/test-dash-collapse.mjs",
     "test:settings": "node scripts/test-settings-rework.mjs",
+    "test:v42": "node scripts/test-v42.mjs",
     "test:ios": "node scripts/verify-ios-project.mjs",
     "test:layout": "node scripts/test-safe-area.mjs",
     "verify:update": "node scripts/verify-live-update.mjs",

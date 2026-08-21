@@ -46,6 +46,7 @@ const {
   markEnchantTutorialDone,
   markRankWalkthroughDone,
   itemBonusPercent,
+  defaultProgression,
 } = ctx;
 
 const STARTER_RELIC_ID = 'wornCharm';
@@ -62,6 +63,11 @@ assert(ensureProgressionUnlock(veteran) === true, 'existing save should grandfat
 assert(isInventoryTabUnlocked(veteran) && isRankTabUnlocked(veteran), 'people with workouts must keep Inventory and Rank');
 assert(shouldHideDashboardExtras(veteran) === false, 'veterans keep the full dashboard');
 assert(ensureProgressionUnlock(veteran) === false, 'second pass must not rewrite progression');
+assert(veteran.progression.mobilityIntroSeen === false, 'grandfathered profiles still see Mobility intro once');
+assert(veteran.progression.bossIntroSeen === false, 'grandfathered profiles still see Boss intro once');
+assert(veteran.progression.quickLogIntroSeen === false, 'grandfathered profiles still see Quick-Log intro once');
+assert(defaultProgression(true).warmupIntroSeen === true, 'veteran warmup intro stays skipped');
+assert(defaultProgression(true).mobilityIntroSeen === false, 'Mobility intro is not auto-true for veterans');
 
 const admin = { __adminSandbox: true, workoutLog: {} };
 assert(ensureProgressionUnlock(admin) === true);

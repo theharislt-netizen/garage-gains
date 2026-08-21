@@ -593,6 +593,50 @@
   .cr-xp-track { height: 10px; border-radius: 100px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
   .cr-xp-fill { height: 100%; width: 0%; border-radius: 100px; background: linear-gradient(90deg, var(--a1), var(--a2)); box-shadow: 0 0 10px rgba(var(--a1-rgb),0.5); }
   .cr-xp-text { text-align: center; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); margin-top: 5px; }
+  .progress-claim-dock {
+    position: fixed; top: calc(var(--app-sat) + 6px); right: 10px; z-index: 48;
+    display: none; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .progress-claim-dock.is-on { display: flex; }
+  .progress-claim-dock[hidden] { display: none !important; }
+  .progress-claim-btn {
+    pointer-events: auto; width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid var(--gain); background: var(--panel); color: var(--gain);
+    font-family: 'Barlow Condensed'; font-weight: 800; font-size: 10px; letter-spacing: 0.04em;
+    text-transform: uppercase; cursor: pointer; line-height: 1.05;
+    box-shadow: 0 0 14px rgba(255,182,72,0.5);
+    animation: progress-claim-pulse 1.15s ease-in-out infinite;
+  }
+  .progress-claim-btn.rank {
+    border-color: var(--a1); color: var(--a1);
+    box-shadow: 0 0 14px rgba(var(--a1-rgb),0.5);
+  }
+  @keyframes progress-claim-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  .pc-overlay {
+    position: fixed; inset: 0; z-index: 205; display: none; align-items: center; justify-content: center;
+    background: rgba(4,3,8,0.82); padding: calc(20px + var(--app-sat)) 20px calc(20px + var(--app-sab));
+  }
+  .pc-overlay.show { display: flex; }
+  .pc-card {
+    position: relative; max-width: 340px; width: 100%; background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 20px 20px; text-align: center;
+  }
+  .pc-title {
+    font-family: 'Barlow Condensed'; font-weight: 800; font-size: 26px; letter-spacing: 0.05em;
+    text-transform: uppercase; margin-bottom: 4px; color: var(--gain);
+  }
+  .pc-overlay.rank .pc-title { color: var(--a1); }
+  .pc-subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 16px; }
+  .pc-lines { text-align: left; margin-bottom: 18px; }
+  .pc-continue {
+    display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px; text-transform: uppercase;
+    letter-spacing: 0.05em; cursor: pointer;
+  }
   .cr-claim-btn {
     display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
     background: linear-gradient(90deg, var(--cr-color, var(--a1)), var(--a2)); color: #08070d;
@@ -1345,6 +1389,15 @@
     <button class="cr-claim-btn" id="claimRewardsBtn">Claim Rewards</button>
   </div>
 </div>
+<div id="progressClaimDock" class="progress-claim-dock" hidden></div>
+<div id="progressClaimOverlay" class="pc-overlay">
+  <div class="pc-card">
+    <div class="pc-title" id="pcTitle">Level Up</div>
+    <div class="pc-subtitle" id="pcSubtitle"></div>
+    <div class="pc-lines cr-lines" id="pcLines"></div>
+    <button type="button" class="pc-continue" id="progressClaimContinue">Continue</button>
+  </div>
+</div>
 <div id="streakTierModal" class="modal-overlay" style="display:none;">
   <div class="modal-panel">
     <div class="modal-head"><span>Day Streak Ranks</span><button class="modal-close" id="streakModalClose">✕</button></div>
@@ -1532,6 +1585,7 @@
   </div>
 
   <div id="warmupIntroOverlay" class="warmup-intro-overlay"></div>
+  <div id="featureIntroOverlay" class="warmup-intro-overlay"></div>
 
   <div id="profileModal" class="modal-overlay" style="display:none;">
     <div class="modal-panel">
@@ -2177,13 +2231,14 @@ function creditPoints(amount) {
   state.totalPoints += amount;
   checkLevelUp(prevPoints, state.totalPoints);
   if (isRankUnlocked()) creditSeasonPoints(amount);
+  if (window.__quickLogOpen) {
+    window.__quickLogSessionPoints = (window.__quickLogSessionPoints || 0) + amount;
+  }
 }
-// Fires on every level gained (a light toast + small gold), and ADDITIONALLY
-// fires the full celebration (theme reskin, boxes, gems, guaranteed items —
-// the same big-moment reward the permanent Rank ladder used to grant) only
-// when a visual TIER boundary is crossed, exactly the same cadence the old
-// Rank system used. This mirrors how Streak has both a raw day-count that
-// updates constantly and rarer named-tier bonuses.
+// Fires on every level gained (a light toast + small gold, plus a RuneScape-
+// style tap-to-claim icon). Tier boundaries still grant the extra theme/boxes
+// /gems, but those show on the same lightweight claim — never the full
+// instance-exit reward overlay, which is reserved for exercise completions.
 function checkLevelUp(prevPoints, newPoints) {
   const prevLevel = getLevel(prevPoints);
   const newLevel = getLevel(newPoints);
@@ -2193,31 +2248,42 @@ function checkLevelUp(prevPoints, newPoints) {
 
   const prevTier = getLevelTier(prevLevel);
   const newTier = getLevelTier(newLevel);
-  if (newTier.id === prevTier.id) return;
-
-  feedbackLevelUp(); // matches the weight of the old Rank-up celebration, per spec
-  state.theme = newTier.theme;
-  document.body.setAttribute('data-theme', newTier.theme);
-  renderThemeGrid();
-  ensureInventoryShape();
-
-  const tierGoldAmt = awardGold(getLevelTierIndex(newTier.id) * 20, 'level tier up');
-  state.gems = (state.gems || 0) + 1;
-  const boostOutcome = openBoxFree('boost');
-  const relicOutcome = openBoxFree('relic');
-  let guaranteed = null;
-  if (RANK_GUARANTEE_TIERS.includes(newTier.id)) guaranteed = grantGuaranteedPermanentItem(newTier.id);
-  save();
-
   const lines = [
-    { icon:'🏆', label:'New Tier', value: newTier.name },
-    { icon:'🪙', label:'Gold', value: '+' + tierGoldAmt },
-    { icon:'💎', label:'Gems', value: '+1' },
-    { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
-    { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name },
+    { icon:'⭐', label:'New Level', value: String(newLevel) },
+    { icon:'🪙', label:'Gold', value: '+' + goldAmt },
   ];
-  if (guaranteed) lines.push({ icon:'✨', label:'Guaranteed Item', value: `${guaranteed.tmpl.name} (${guaranteed.star}★)` });
-  queueReward({ title:`Level ${newLevel}!`, subtitle: newTier.name, lines, accentColor: newTier.color });
+  if (newTier.id !== prevTier.id) {
+    feedbackLevelUp();
+    state.theme = newTier.theme;
+    document.body.setAttribute('data-theme', newTier.theme);
+    renderThemeGrid();
+    ensureInventoryShape();
+
+    const tierGoldAmt = awardGold(getLevelTierIndex(newTier.id) * 20, 'level tier up');
+    state.gems = (state.gems || 0) + 1;
+    const boostOutcome = openBoxFree('boost');
+    const relicOutcome = openBoxFree('relic');
+    let guaranteed = null;
+    if (RANK_GUARANTEE_TIERS.includes(newTier.id)) guaranteed = grantGuaranteedPermanentItem(newTier.id);
+    lines.push(
+      { icon:'🏆', label:'New Tier', value: newTier.name },
+      { icon:'🪙', label:'Tier Gold', value: '+' + tierGoldAmt },
+      { icon:'💎', label:'Gems', value: '+1' },
+      { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
+      { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name }
+    );
+    if (guaranteed) lines.push({ icon:'✨', label:'Guaranteed Item', value: `${guaranteed.tmpl.name} (${guaranteed.star}★)` });
+  }
+
+  enqueueProgressClaim(state, {
+    id: 'level-' + newLevel + '-' + Date.now(),
+    kind: 'level',
+    title: 'Level ' + newLevel + '!',
+    subtitle: newTier.name,
+    lines
+  });
+  save();
+  renderProgressClaimDock();
 }
 
 // Streak tiers — a second progression track. Each tier unlocks a modest point
@@ -2354,7 +2420,7 @@ function renderClaimRewardsOverlay(reward) {
     text.textContent = `${prevTotal} pts`;
     void fill.offsetWidth;
     requestAnimationFrame(() => {
-      fill.style.transition = 'width 0.8s cubic-bezier(0.22, 1, 0.36, 1)';
+      fill.style.transition = 'width ' + (getCrXpFillMs() / 1000) + 's cubic-bezier(0.22, 1, 0.36, 1)';
       const newLevel = getLevel(newTotal);
       if (newLevel > prevLevel) {
         // crossed a level boundary — fill to full for this bar; the level-up's
@@ -2373,6 +2439,51 @@ function renderClaimRewardsOverlay(reward) {
 
   overlay.classList.add('show');
   if (typeof renderHeader === 'function') renderHeader();
+}
+
+function renderProgressClaimDock() {
+  const dock = document.getElementById('progressClaimDock');
+  if (!dock) return;
+  ensurePendingProgressClaims(state);
+  const claims = state.pendingProgressClaims || [];
+  if (!claims.length) {
+    dock.innerHTML = '';
+    dock.hidden = true;
+    dock.classList.remove('is-on');
+    return;
+  }
+  dock.hidden = false;
+  dock.classList.add('is-on');
+  dock.innerHTML = claims.map(c => {
+    const isRank = c.kind === 'rank';
+    const label = isRank ? 'Rank' : 'Lvl';
+    return `<button type="button" class="progress-claim-btn${isRank ? ' rank' : ''}" data-progress-claim="${c.id}" aria-label="${isRank ? 'Claim rank up' : 'Claim level up'}">${label}<br>Up</button>`;
+  }).join('');
+  dock.querySelectorAll('[data-progress-claim]').forEach(btn => {
+    btn.addEventListener('click', () => openProgressClaim(btn.dataset.progressClaim));
+  });
+}
+function openProgressClaim(id) {
+  ensurePendingProgressClaims(state);
+  const claim = (state.pendingProgressClaims || []).find(c => c.id === id);
+  const overlay = document.getElementById('progressClaimOverlay');
+  if (!claim || !overlay) return;
+  window.__openProgressClaimId = id;
+  overlay.classList.toggle('rank', claim.kind === 'rank');
+  document.getElementById('pcTitle').textContent = claim.title || (claim.kind === 'rank' ? 'Rank Up' : 'Level Up');
+  document.getElementById('pcSubtitle').textContent = claim.subtitle || '';
+  document.getElementById('pcLines').innerHTML = (claim.lines || []).map(l =>
+    `<div class="cr-line"><span class="cr-icon">${l.icon || ''}</span><span class="cr-label">${l.label}</span><span class="cr-value">${l.value}</span></div>`).join('');
+  overlay.classList.add('show');
+}
+function closeProgressClaim() {
+  const overlay = document.getElementById('progressClaimOverlay');
+  const id = window.__openProgressClaimId;
+  window.__openProgressClaimId = null;
+  if (id) dismissProgressClaim(state, id);
+  save();
+  if (overlay) overlay.classList.remove('show');
+  renderProgressClaimDock();
 }
 
 // Fires when a point change crosses into a new rank: reskins the whole app to that
@@ -2476,7 +2587,14 @@ function creditSeasonPoints(amount) {
     }
   }
   save();
-  queueReward({ title:'Rank Up', subtitle: newRank.name, lines, accentColor: newRank.color });
+  enqueueProgressClaim(state, {
+    id: 'rank-' + newRank.id + '-' + Date.now(),
+    kind: 'rank',
+    title: 'Rank Up',
+    subtitle: newRank.name,
+    lines
+  });
+  renderProgressClaimDock();
 }
 // Provisional first-draft end-of-season payout, scaled to the rank reached —
 // flagged for later review/tuning per the spec.
@@ -2679,6 +2797,8 @@ function renderSkillsGrid() {
 }
 document.getElementById('skillModalClose').addEventListener('click', closeSkillModal);
 document.getElementById('claimRewardsBtn').addEventListener('click', () => showNextReward());
+const progressClaimContinue = document.getElementById('progressClaimContinue');
+if (progressClaimContinue) progressClaimContinue.addEventListener('click', closeProgressClaim);
 document.getElementById('skillTierModal').addEventListener('click', (e) => { if (e.target.id === 'skillTierModal') closeSkillModal(); });
 
 // Badges — separate from rank, these check both point totals and consistency (streaks).
@@ -3300,6 +3420,7 @@ function applyBossDamage(exId, val) {
   const boss = state.bosses.find(b => b.status === 'active' && b.exIds.includes(exId));
   if (!boss) return;
   boss.progress[exId] = Math.min(boss.targets[exId], boss.progress[exId] + val);
+  boss.earnedPoints = (boss.earnedPoints || 0) + unitPoints(exId, val);
   if (bossTotalProgress(boss) >= bossTotalTarget(boss)) defeatBoss(boss.id);
 }
 function defeatBoss(bossId) {
@@ -3318,13 +3439,15 @@ function defeatBoss(bossId) {
   if (Math.random() < 0.4) { state.streakFreezes = (state.streakFreezes || 0) + 1; gotFreeze = true; }
   save();
 
+  const ptsAmt = boss.earnedPoints || 0;
   const lines = [
+    { icon:'⭐', label:'Points', value: '+' + ptsAmt },
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
     { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
     { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name },
   ];
   if (gotFreeze) lines.push({ icon:'🧊', label:'Streak Freeze', value: '+1' });
-  queueReward({ title:'Boss Defeated!', subtitle: boss.name + ' cleared', lines, accentColor:'var(--gain)' });
+  queueReward({ kind:'boss', title:'Boss Defeated!', subtitle: boss.name + ' cleared', lines, accentColor:'var(--gain)' });
 }
 function bossLootPreviewLines() {
   return [
@@ -3722,7 +3845,7 @@ function completeWarmupQuest(optionId) {
   const goldAmt = awardGold(reward.gold, 'warm-up quest');
   const ptsAmt = awardPoints(reward.points, 'warm-up quest');
   save();
-  queueReward({ title:'Warm-Up Complete', subtitle: opt.label, lines: [
+  queueReward({ kind:'warmup', title:'Warm-Up Complete', subtitle: opt.label, lines: [
     { icon:'⭐', label:'Points', value: '+' + ptsAmt },
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
     ...(bonusEarned ? [{ icon:'🔥', label:'Bonus', value: '+10% on today\'s Workout' }] : []),
@@ -4070,7 +4193,7 @@ function completeMobilityQuest(slotIndex) {
   const goldAmt = awardGold(reward.gold, 'mobility quest');
   const ptsAmt = awardPoints(reward.points, 'mobility quest');
   save();
-  queueReward({ title:'Mobility Quest Complete', subtitle: slot.label, lines: [
+  queueReward({ kind:'mobility', title:'Mobility Quest Complete', subtitle: slot.label, lines: [
     { icon:'⭐', label:'Points', value: '+' + ptsAmt },
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
   ] });
@@ -4247,7 +4370,7 @@ function completeMorningStretch() {
   const goldAmt = awardGold(reward.gold, 'morning stretch');
   const ptsAmt = awardPoints(reward.points, 'morning stretch');
   save();
-  queueReward({ title:'Morning Stretch Complete!', subtitle: s.label, lines: [
+  queueReward({ kind:'morningStretch', title:'Morning Stretch Complete!', subtitle: s.label, lines: [
     { icon:'⭐', label:'Points', value: '+' + ptsAmt },
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
   ] });
@@ -4520,6 +4643,31 @@ function showWarmupIntro() {
   });
 }
 
+function showFeatureIntro(feature, onGotIt) {
+  const overlay = document.getElementById('featureIntroOverlay');
+  const copy = getFeatureIntroCopy(feature);
+  if (!overlay || !copy) { if (onGotIt) onGotIt(); return; }
+  overlay.innerHTML = `<div class="warmup-intro-card">
+    <h3>${copy.title}</h3>
+    <div style="font-size:14.5px; line-height:1.55; margin-bottom:16px;">${copy.body}</div>
+    <button class="btn admin-mode" id="featureIntroGotIt" style="margin-top:0;">${copy.action || 'Got it'}</button>
+  </div>`;
+  overlay.classList.add('show');
+  const btn = document.getElementById('featureIntroGotIt');
+  if (btn) btn.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    if (onGotIt) onGotIt();
+  });
+}
+function withFeatureIntro(feature, proceed) {
+  if (!shouldShowFeatureIntro(state.progression, feature)) { proceed(); return; }
+  showFeatureIntro(feature, () => {
+    markFeatureIntroSeen(state.progression, feature);
+    save();
+    proceed();
+  });
+}
+
 function dashQuestTitleHtml(sectionId, iconHtml, iconClass, label) {
   const collapsed = isDashSectionCollapsed(state, sectionId);
   return `<button type="button" class="section-title dash-sec-toggle${collapsed ? ' is-collapsed' : ''}" data-dash-collapse="${sectionId}" aria-expanded="${collapsed ? 'false' : 'true'}">
@@ -4597,13 +4745,15 @@ function renderBossesSection() {
     renderBossesSection();
   }));
   slot.querySelectorAll('[data-boss-resume]').forEach(el => el.addEventListener('click', () => {
-    enterInstance({ type: 'boss', bossId: el.dataset.bossResume }, true);
+    withFeatureIntro('boss', () => enterInstance({ type: 'boss', bossId: el.dataset.bossResume }, true));
   }));
   slot.querySelectorAll('[data-boss-start]').forEach(btn => btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const bossId = btn.dataset.bossStart;
-    startBoss(bossId);
-    enterInstance({ type: 'boss', bossId }); // v2.5: straight into the full-screen instance
+    withFeatureIntro('boss', () => {
+      startBoss(bossId);
+      enterInstance({ type: 'boss', bossId });
+    });
   }));
   attachDashTipDemoAndWiki(slot);
 }
@@ -4778,13 +4928,15 @@ function renderMobilitySection() {
   }));
   slot.querySelectorAll('[data-mobility-resume]').forEach(btn => btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    enterInstance({ type: 'mobility', slotIndex: parseInt(btn.dataset.mobilityResume) }, true);
+    withFeatureIntro('mobility', () => enterInstance({ type: 'mobility', slotIndex: parseInt(btn.dataset.mobilityResume) }, true));
   }));
   slot.querySelectorAll('[data-mobility-start]').forEach(btn => btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const slotIndex = parseInt(btn.dataset.mobilityStart);
-    startMobilityQuest(slotIndex);
-    enterInstance({ type: 'mobility', slotIndex });
+    withFeatureIntro('mobility', () => {
+      startMobilityQuest(slotIndex);
+      enterInstance({ type: 'mobility', slotIndex });
+    });
   }));
   attachDashTipDemoAndWiki(slot);
 }
@@ -5917,7 +6069,10 @@ function defaultState() {
     morningStretchLastTemplateId: null,
 
     // --- v4.1: per-section Dashboard quest collapse. Missing/false = expanded.
-    dashCollapsed: {}
+    dashCollapsed: {},
+
+    // --- v4.2: unclaimed Level/Rank tap-to-claim icons (not the full reward overlay).
+    pendingProgressClaims: []
   };
 }
 function todayStr(d) {
@@ -6054,6 +6209,9 @@ function defaultProgression(unlocked) {
     enchantTutorialDone: !!unlocked,
     rankWalkthroughDone: !!unlocked,
     warmupIntroSeen: !!unlocked,
+    mobilityIntroSeen: false,
+    bossIntroSeen: false,
+    quickLogIntroSeen: false,
     nudgeInventory: false,
     nudgeEnchant: false,
     nudgeRank: false,
@@ -6164,6 +6322,118 @@ function toggleDashSectionCollapsed(s, id) {
 function getDashQuestSectionIds() { return DASH_QUEST_SECTION_IDS; }
 /* === dash-collapse-lib end === */
 
+/* === feature-intro-lib begin === */
+const FEATURE_INTRO_KEYS = { mobility: 'mobilityIntroSeen', boss: 'bossIntroSeen', quickLog: 'quickLogIntroSeen' };
+const FEATURE_INTRO_COPY = {
+  mobility: {
+    title: 'Mobility',
+    body: 'Mobility quests are optional recovery work you can run any time. Three slots open through the day. Finish a slot for points and gold — skipping never hurts your streak.',
+    action: 'Got it'
+  },
+  boss: {
+    title: 'Boss Fights',
+    body: 'A boss is a fight against a set of exercises. Start it, then log those moves to deal damage. Beat the target to claim gold, boxes, and a chance at a streak freeze.',
+    action: 'Got it'
+  },
+  quickLog: {
+    title: 'Quick Log',
+    body: 'Log any exercise right now — even on a rest day or outside a scheduled workout. Sets earn the same points as a real session and count fully toward Stats, this week, and your streak.',
+    action: 'Got it'
+  }
+};
+function getFeatureIntroKeys() { return FEATURE_INTRO_KEYS; }
+function getFeatureIntroCopy(feature) { return FEATURE_INTRO_COPY[feature] || null; }
+function ensureFeatureIntroFlags(s) {
+  const p = s && s.progression ? s.progression : s;
+  if (!p || typeof p !== 'object') return false;
+  let changed = false;
+  ['mobilityIntroSeen', 'bossIntroSeen', 'quickLogIntroSeen'].forEach(k => {
+    if (p[k] !== true && p[k] !== false) { p[k] = false; changed = true; }
+  });
+  return changed;
+}
+function shouldShowFeatureIntro(progression, feature) {
+  const key = FEATURE_INTRO_KEYS[feature];
+  if (!key) return false;
+  return !(progression && progression[key] === true);
+}
+function markFeatureIntroSeen(progression, feature) {
+  const key = FEATURE_INTRO_KEYS[feature];
+  if (!key || !progression) return;
+  progression[key] = true;
+}
+/* === feature-intro-lib end === */
+
+/* === trained-day-lib begin === */
+function sessionHasLoggedSets(session) {
+  if (!session || !session.sets) return false;
+  return Object.keys(session.sets).some(id => Array.isArray(session.sets[id]) && session.sets[id].length > 0);
+}
+function computeSessionPointsFromSets(session, unitPointsFn) {
+  let sum = 0;
+  Object.keys((session && session.sets) || {}).forEach(id => {
+    (session.sets[id] || []).forEach(v => { sum += unitPointsFn(id, v); });
+  });
+  return sum;
+}
+function shouldCountAsTrainedDay(opts) {
+  const session = opts && opts.session;
+  const dayType = opts && opts.dayType;
+  const skipped = !!(opts && opts.skipped);
+  const scheduledIds = (opts && opts.scheduledIds) || [];
+  const suggestedSets = (opts && opts.suggestedSets) || {};
+  if (!sessionHasLoggedSets(session)) return false;
+  if (!dayType || skipped) return true;
+  const allScheduledDone = scheduledIds.length > 0 && scheduledIds.every(id =>
+    ((session.sets[id] || []).length >= (suggestedSets[id] == null ? 1 : suggestedSets[id]))
+  );
+  if (allScheduledDone) return true;
+  const scheduled = {};
+  scheduledIds.forEach(id => { scheduled[id] = true; });
+  return Object.keys(session.sets).some(id => !scheduled[id] && (session.sets[id] || []).length);
+}
+function isUntrainedRestOrSkipped(dayType, skipped, trained) {
+  return (!dayType || skipped) && !trained;
+}
+function previousStreakAnchor(dateKey, addDaysFn, inspectDay) {
+  let cursor = addDaysFn(dateKey, -1);
+  let guard = 0;
+  while (guard++ < 400) {
+    const info = inspectDay(cursor) || {};
+    if (isUntrainedRestOrSkipped(info.dayType, info.skipped, info.trained)) {
+      cursor = addDaysFn(cursor, -1);
+      continue;
+    }
+    break;
+  }
+  return cursor;
+}
+/* === trained-day-lib end === */
+
+/* === progress-claim-lib begin === */
+function getCrXpFillMs() { return 1400; }
+function isExerciseCompletionKind(kind) {
+  return kind === 'workout' || kind === 'warmup' || kind === 'mobility' || kind === 'boss' || kind === 'quickLog' || kind === 'morningStretch';
+}
+function ensurePendingProgressClaims(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (!Array.isArray(s.pendingProgressClaims)) {
+    s.pendingProgressClaims = [];
+    return true;
+  }
+  return false;
+}
+function enqueueProgressClaim(s, claim) {
+  ensurePendingProgressClaims(s);
+  if (!claim || !claim.id) return;
+  s.pendingProgressClaims.push(claim);
+}
+function dismissProgressClaim(s, id) {
+  ensurePendingProgressClaims(s);
+  s.pendingProgressClaims = s.pendingProgressClaims.filter(c => c.id !== id);
+}
+/* === progress-claim-lib end === */
+
 /* === quick-log-lib begin === */
 const AD_HOC_BODYWEIGHT_IDS = [
   'standardPushup',
@@ -6210,6 +6480,8 @@ function load() {
       const fresh = defaultState();
       clearTestingEconomyOnce(fresh);
       ensureProgressionUnlock(fresh);
+      ensureFeatureIntroFlags(fresh);
+      ensurePendingProgressClaims(fresh);
       ensureDashCollapsed(fresh);
       return fresh;
     }
@@ -6232,6 +6504,10 @@ function load() {
     if (ensureProgressionUnlock(merged)) {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('progression save failed', e); }
+    }
+    if (ensureFeatureIntroFlags(merged) || ensurePendingProgressClaims(merged)) {
+      try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
+      catch (e) { console.error('v42 flag save failed', e); }
     }
     ensureDashCollapsed(merged);
     return merged;
@@ -6935,6 +7211,7 @@ function renderHeader() {
   }
 
   renderRankBar();
+  renderProgressClaimDock();
   syncTabLocks();
   syncHeaderHeight();
 }
@@ -7380,10 +7657,11 @@ function renderToday() {
       if (reps.length < ex.suggestedSets) allDone = false;
     });
     updateLed(currentPoints, goalPoints, { hide: !anyBaselineYet });
-    if (allDone && exList.length) finalizeSessionIfNeeded(dateKey, currentPoints);
+    finalizeSessionIfNeeded(dateKey, currentPoints);
     syncTabLocks();
   } else {
     updateLed(0, 0, { hide: true });
+    finalizeSessionIfNeeded(dateKey, 0);
   }
 
   // An active instance takes over the whole tab — render it and stop, never
@@ -7523,23 +7801,28 @@ function renderToday() {
 
 function finalizeSessionIfNeeded(dateKey, currentPoints) {
   const session = getSessionData(dateKey);
-  const dayType = getTodayDayType();
-  const exList = getDayExercises(dayType);
+  const dayType = getDaySchedule()[dateFromStr(dateKey).getDay()];
+  const skipped = isDateSkipped(dateKey);
+  const exList = dayType ? getDayExercises(dayType) : [];
+  const scheduledIds = exList.map(ex => ex.id);
+  const suggestedSets = {};
+  exList.forEach(ex => { suggestedSets[ex.id] = ex.suggestedSets; });
+
+  const lockIds = {};
+  exList.forEach(ex => { lockIds[ex.id] = true; });
+  Object.keys(session.sets || {}).forEach(id => { lockIds[id] = true; });
+  const lockList = Object.keys(lockIds).map(id => getAllExercises().find(e => e.id === id)).filter(Boolean);
 
   // First time an exercise is fully logged, lock in its personal baseline, then
   // reconcile: points were already credited live at the provisional pre-baseline
   // rate, so top up (or trim) the total so it matches what the real baseline rate
   // would have earned, without double-counting.
-  exList.forEach(ex => {
+  lockList.forEach(ex => {
     if (!getBaseline(ex.id)) {
       const reps = getExReps(session, ex.id);
       const setCount = reps.length;
       if (setCount > 0) {
         const totalReps = reps.reduce((a,b)=>a+b,0);
-        // Points were already credited live at the pre-baseline provisional rate
-        // (provisionalPointsPerUnit) as each set finished. Lock the baseline, then
-        // adjust the total so it matches what the real baseline rate would have
-        // earned for those same sets.
         const provisionalRate = provisionalPointsPerUnit(ex.id);
         const provisionalEarned = reps.reduce((a,b)=>a+Math.round(b*provisionalRate), 0);
         state.baselines[ex.id] = { totalReps, perSetAvg: totalReps / setCount, setCount, date: dateKey };
@@ -7552,40 +7835,42 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
     }
   });
 
-  // Recompute the day's true point total now that any newly-locked baselines
-  // are reflected, rather than reusing the pre-reconciliation snapshot.
-  const finalDayPoints = exList.reduce((sum, ex) => {
-    const reps = getExReps(session, ex.id);
-    return sum + reps.reduce((a,b)=>a+unitPoints(ex.id, b), 0);
-  }, 0);
+  const finalDayPoints = computeSessionPointsFromSets(session, unitPoints);
+  const trained = shouldCountAsTrainedDay({
+    session, dayType, skipped, scheduledIds, suggestedSets
+  });
+  const allScheduledDone = !!(dayType && exList.length && exList.every(ex => getExReps(session, ex.id).length >= ex.suggestedSets));
 
-  if (!session.completed) {
+  if (!session.completed && !trained) return;
+
+  session.points = finalDayPoints;
+
+  if (!session.completed && trained) {
     session.completed = true;
     session.completedAt = Date.now();
-    session.points = finalDayPoints;
 
-    // v2.1.4: finishing the workout clears any still-uncleared Warm-Up Quest
-    // for today, with no reward — the other clearing path (completing one)
-    // already went through clearWarmupQuests() itself, so this is a no-op
-    // if that already happened.
-    clearWarmupQuests();
+    // Only clear leftover Warm-Up options when the scheduled workout itself is
+    // done — an ad-hoc Quick-Log on a workout day must not wipe Warm-Up.
+    if (allScheduledDone) clearWarmupQuests();
 
     ensureInventoryShape();
     const prevTier = getStreakTier(state.streak.current);
 
-    // Walk back to the most recent *scheduled, non-skipped* workout day before
-    // today — skipping rest days (a weekend in between shouldn't break or
-    // count toward a streak) AND, per v2.3.1, any date explicitly marked as a
-    // one-off skip. An un-marked, simply-missed day is NOT skipped over here —
-    // it still breaks the streak exactly as before; only explicit skips are exempt.
-    let cursor = addDays(dateKey, -1);
-    while (getDaySchedule()[dateFromStr(cursor).getDay()] === null || isDateSkipped(cursor)) cursor = addDays(cursor, -1);
-    const prevWorkoutDateKey = cursor;
+    // Walk back past untrained rest days and explicit skips. A rest day with
+    // logged Quick-Log work is a trained day and must count toward the streak.
+    const prevWorkoutDateKey = previousStreakAnchor(dateKey, addDays, (cursor) => {
+      const cursorType = getDaySchedule()[dateFromStr(cursor).getDay()];
+      const cursorSkipped = isDateSkipped(cursor);
+      const cursorSess = (state.workoutLog || {})[cursor];
+      return {
+        dayType: cursorType,
+        skipped: cursorSkipped,
+        trained: !!(cursorSess && (cursorSess.completed || sessionHasLoggedSets(cursorSess)))
+      };
+    });
     if (state.streak.lastCompletedDate === prevWorkoutDateKey) {
       state.streak.current += 1;
     } else if (state.streak.lastCompletedDate !== dateKey) {
-      // A gap occurred — a scheduled workout day was missed. Spend a streak-freeze
-      // token if one's available to protect the streak instead of resetting it.
       if (state.streakFreezes > 0 && state.streak.lastCompletedDate) {
         state.streakFreezes -= 1;
         state.streak.current += 1;
@@ -7607,23 +7892,29 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
       ] });
     }
 
-    // Session gold payout — the primary income stream, scaled to this session's points.
     const sessionGold = awardGold(Math.round(finalDayPoints * GOLD_SESSION_RATE), 'session');
     tickTemporaryEquips();
-    const firstWorkout = countCompletedWorkouts(state) === 1;
-    const rewardLines = [
-      { icon:'⭐', label:'Points', value: '+' + finalDayPoints },
-      { icon:'🪙', label:'Gold', value: '+' + sessionGold },
-      { icon:'🔥', label:'Day Streak', value: state.streak.current },
-    ];
-    if (firstWorkout && grantStarterVictoryBox(state)) {
-      rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+    if (allScheduledDone && !session.scheduledWorkoutClaimed) {
+      session.scheduledWorkoutClaimed = true;
+      const firstWorkout = countCompletedWorkouts(state) === 1;
+      const rewardLines = [
+        { icon:'⭐', label:'Points', value: '+' + finalDayPoints },
+        { icon:'🪙', label:'Gold', value: '+' + sessionGold },
+        { icon:'🔥', label:'Day Streak', value: state.streak.current },
+      ];
+      if (firstWorkout && grantStarterVictoryBox(state)) {
+        rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+      }
+      queueReward({ kind:'workout', title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: rewardLines });
     }
-    queueReward({ title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: rewardLines });
-  } else {
-    session.points = finalDayPoints;
+  } else if (allScheduledDone && !session.scheduledWorkoutClaimed) {
+    session.scheduledWorkoutClaimed = true;
+    queueReward({ kind:'workout', title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: [
+      { icon:'⭐', label:'Points', value: '+' + finalDayPoints },
+      { icon:'🔥', label:'Day Streak', value: state.streak.current },
+    ] });
   }
-  recomputeBests(exList);
+  recomputeBests(lockList.length ? lockList : exList);
   awardBadges();
   save();
 }
@@ -7821,7 +8112,9 @@ function renderRestTimer(justFinished) {
 
 function refreshAfterSetChange() {
   if (window.__quickLogOpen) {
+    finalizeSessionIfNeeded(todayStr(), 0);
     renderQuickLogOverlay();
+    renderProgressClaimDock();
     return;
   }
   renderToday();
@@ -7833,6 +8126,8 @@ function syncQuickLogFab() {
   fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen);
 }
 function closeQuickLog(silent) {
+  const earned = window.__quickLogSessionPoints || 0;
+  window.__quickLogSessionPoints = 0;
   window.__quickLogOpen = false;
   window.__quickLogSelectedId = null;
   window.__quickLogQuery = '';
@@ -7840,16 +8135,29 @@ function closeQuickLog(silent) {
   if (overlay) overlay.hidden = true;
   syncQuickLogFab();
   if (!silent) renderToday();
+  if (silent || earned <= 0) return;
+  const dateKey = todayStr();
+  const dayType = getTodayDayType();
+  const exList = dayType ? getDayExercises(dayType) : [];
+  const session = getSessionData(dateKey);
+  const allScheduledDone = !!(dayType && exList.length && exList.every(ex => getExReps(session, ex.id).length >= ex.suggestedSets));
+  if (allScheduledDone) return;
+  queueReward({ kind:'quickLog', title:'Quick Log Complete', subtitle: 'Counted in full — Stats, this week, and streak', lines: [
+    { icon:'⭐', label:'Points', value: '+' + earned },
+  ] });
 }
 function openQuickLog() {
   if (window.__activeInstance) return;
-  window.__quickLogOpen = true;
-  window.__quickLogSelectedId = null;
-  window.__quickLogQuery = window.__quickLogQuery || '';
-  const overlay = document.getElementById('quickLogOverlay');
-  if (overlay) overlay.hidden = false;
-  syncQuickLogFab();
-  renderQuickLogOverlay();
+  withFeatureIntro('quickLog', () => {
+    window.__quickLogOpen = true;
+    window.__quickLogSessionPoints = 0;
+    window.__quickLogSelectedId = null;
+    window.__quickLogQuery = window.__quickLogQuery || '';
+    const overlay = document.getElementById('quickLogOverlay');
+    if (overlay) overlay.hidden = false;
+    syncQuickLogFab();
+    renderQuickLogOverlay();
+  });
 }
 function renderQuickLogOverlay() {
   const body = document.getElementById('quickLogBody');
