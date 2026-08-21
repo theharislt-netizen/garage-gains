@@ -92,7 +92,8 @@ assert(batchFn.includes('consolidateBoxOutcomes'), 'bulk reveal stacks duplicate
 assert(batchFn.includes('__boxUniqueCount'), 'bulk reveal counts every unique/5-star pull');
 const chipFn = sliceFn('boxBatchChipHtml', 'fillBoxRevealBatch');
 assert(chipFn.includes('itemStarsHtml'), 'batch chips show stars');
-assert(chipFn.includes('box-batch-count'), 'stacked materials show an xN badge');
+assert(chipFn.includes('box-batch-name'), 'stacked materials use the name label for quantity');
+assert(!chipFn.includes('box-batch-count'), 'reward chips do not draw a clipped corner count badge');
 
 assert(html.includes('#boxRevealOverlay.box-prize-on.box-batch-on #boxPrizeCard'),
   'bulk opens hide the single card, not the unique flash layer');
@@ -106,6 +107,6 @@ const shopFn = sliceFn('renderShopModal', 'coverShopForBoxReveal');
 assert(shopFn.includes('shopBoxGoldCost(10)'), 'shop Buy 10 uses the discounted total');
 assert(shopFn.includes('700g') || shopFn.includes('${bulk}g'), 'Buy 10 shows the discounted gold');
 
-assert(html.includes('3.4.25'), 'About version bumped for v6.8');
+assert(html.includes('3.4.26'), 'About version bumped for v6.8');
 
 console.log('v6.8 tests ok — relic equip keep, stacked rewards, stars, unique 10x flash, Buy 10 = 700g');

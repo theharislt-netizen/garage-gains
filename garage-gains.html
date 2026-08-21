@@ -1222,16 +1222,11 @@
     box-shadow: 0 0 18px 6px rgba(255,255,255,0.22);
     animation: boxItemIn 0.4s ease-out, star-glow-5-pulse 1.6s ease-in-out infinite;
   }
-  .box-batch-count {
-    position: absolute; right: -4px; top: -4px; z-index: 4;
-    min-width: 18px; padding: 1px 5px; border-radius: 8px;
-    background: rgba(0,0,0,0.82); color: #fff;
-    font-family: 'JetBrains Mono'; font-size: 10px;
-  }
   .box-batch-name {
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px;
     margin-top: 8px; line-height: 1.15;
   }
+  .box-batch-chip.box-batch-sat .box-batch-name { font-size: 12px; margin-top: 4px; }
   .box-batch-hint { position: absolute; left: 0; right: 0; bottom: 18px; }
   @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -2203,7 +2198,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.25</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.26</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -3217,17 +3212,17 @@ function hideBoxRevealOverlay(overlay) {
 function layoutBatchPrizes(count) {
   const n = Math.max(0, Math.round(Number(count) || 0));
   if (n <= 0) return [];
-  const spots = [{ role: 'center', left: 50, top: 46 }];
+  const spots = [{ role: 'center', left: 50, top: 44 }];
   if (n === 1) return spots;
   const sat = n - 1;
-  const rx = sat >= 9 ? 38 : (sat >= 6 ? 34 : 30);
-  const ry = sat >= 9 ? 36 : (sat >= 6 ? 32 : 28);
+  const rx = sat >= 9 ? 34 : (sat >= 6 ? 30 : 26);
+  const ry = sat >= 9 ? 14 : (sat >= 6 ? 12 : 10);
   for (let i = 0; i < sat; i++) {
-    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / sat;
+    const angle = (Math.PI * 2 * i) / sat;
     spots.push({
       role: 'sat',
       left: Math.round((50 + rx * Math.cos(angle)) * 10) / 10,
-      top: Math.round((46 + ry * Math.sin(angle)) * 10) / 10
+      top: Math.round((44 + ry * Math.sin(angle)) * 10) / 10
     });
   }
   return spots;
@@ -3237,7 +3232,6 @@ function consolidateBoxOutcomes(outcomes) {
   if (list.length <= 1) return list.slice();
   const shardAmt = { boost: 0, relic: 0 };
   const stoneAmt = { boost: 0, relic: 0 };
-  const stoneMeta = { boost: null, relic: null };
   const temps = {};
   const rest = [];
   list.forEach(o => {
@@ -3249,7 +3243,6 @@ function consolidateBoxOutcomes(outcomes) {
     if (o.kind === 'stone') {
       const cat = o.category === 'relic' ? 'relic' : 'boost';
       stoneAmt[cat] += Number(o.amount) || 1;
-      stoneMeta[cat] = o;
       return;
     }
     const result = o.result || {};
@@ -3273,20 +3266,16 @@ function consolidateBoxOutcomes(outcomes) {
       });
     }
     if (stoneAmt[cat] > 0) {
-      const src = stoneMeta[cat] || {};
       const n = stoneAmt[cat];
       const label = n === 1 ? catName + ' Enchantment Stone' : catName + ' Enchantment Stones ×' + n;
-      const prevTmpl = src.result && src.result.tmpl;
       out.push({
         kind: 'stone',
         category: cat,
         amount: n,
-        rarity: src.rarity,
         result: {
           kind: 'stone',
           tmpl: {
             name: label,
-            maxStar: prevTmpl && prevTmpl.maxStar,
             permanent: true
           }
         }
@@ -4612,12 +4601,27 @@ function tickTemporaryEquips() {
 }
 
 // --- Inventory: acquiring, equipping, regrading ------------------------------
+function flattenMatStack(value) {
+  if (typeof value === 'number' && isFinite(value)) return Math.max(0, Math.round(value));
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.keys(value).reduce((sum, key) => sum + flattenMatStack(value[key]), 0);
+  }
+  return 0;
+}
 function ensureInventoryShape() {
   state.gold = state.gold || 0;
   state.gems = state.gems || 0;
   state.inventory = state.inventory || { permanent: [], tempCharges: {} };
-  state.inventory.shards = state.inventory.shards || { boost: 0, relic: 0 };
-  state.inventory.stones = state.inventory.stones || { boost: 0, relic: 0 };
+  const shards = state.inventory.shards || {};
+  const stones = state.inventory.stones || {};
+  state.inventory.shards = {
+    boost: flattenMatStack(shards.boost),
+    relic: flattenMatStack(shards.relic)
+  };
+  state.inventory.stones = {
+    boost: flattenMatStack(stones.boost),
+    relic: flattenMatStack(stones.relic)
+  };
   state.inventory.boxes = Array.isArray(state.inventory.boxes) ? state.inventory.boxes : [];
   ensureSeenItemTypes(state);
   (state.inventory.permanent || []).forEach(inst => {
@@ -4733,12 +4737,6 @@ function boxOutcomeGrantsItemAndStone(outcome) {
   return false;
 }
 /* === box-loot-lib end === */
-const STONE_RARITY_DEFS = [
-  { rarity: 'common',    maxStar: 2, label: 'Common' },
-  { rarity: 'uncommon',  maxStar: 3, label: 'Uncommon' },
-  { rarity: 'rare',      maxStar: 4, label: 'Rare' },
-  { rarity: 'legendary', maxStar: 5, label: 'Legendary' },
-];
 function maxStarToRevealTier(m) {
   if (!m || m <= 2) return 'common';
   if (m === 3) return 'uncommon';
@@ -4754,13 +4752,7 @@ function pickWeightedFrom(pool) {
 function pickWeightedRareOutcome(category) {
   // XOR: item or stone, never both. Kind is chosen first so catalog size
   // cannot accidentally pair a relic with a stone on the same opening.
-  if (rollBoxRareKind() === 'stone') {
-    const stones = STONE_RARITY_DEFS.map(def => ({
-      kind: 'stone', rarity: def.rarity, maxStar: def.maxStar, label: def.label,
-      weight: itemRarityWeight({ permanent: true, maxStar: def.maxStar })
-    }));
-    return pickWeightedFrom(stones);
-  }
+  if (rollBoxRareKind() === 'stone') return { kind: 'stone' };
   const items = eligibleItemPool(category);
   const tmpl = pickBoxItemTemplate(items);
   return { kind: 'item', tmpl };
@@ -4779,7 +4771,7 @@ function openBoxFree(category) {
     if (picked.kind === 'stone') {
       state.inventory.stones[category] = (state.inventory.stones[category] || 0) + 1;
       noteItemTypeGranted(state, itemTypeKey('stone', category));
-      outcome = { kind:'stone', category, amount: 1, rarity: picked.rarity, result: { kind:'stone', tmpl: { name: `${picked.label} ${catName} Enchantment Stone`, icon: matIconHtml('stone', category), maxStar: picked.maxStar, permanent: true } } };
+      outcome = { kind:'stone', category, amount: 1, result: { kind:'stone', tmpl: { name: `${catName} Enchantment Stone`, icon: matIconHtml('stone', category), permanent: true } } };
     } else {
       const result = grantItem(picked.tmpl.id);
       outcome = { kind:'item', result };
@@ -5934,7 +5926,6 @@ function buildMobilitySlot(slotIndex) {
 }
 function ensureMobilityQuests() {
   const today = todayStr();
-  if (getTodayDayType() === null) { state.mobilityQuests = null; return; } // workout-day-only, same gate as Warm-Up Quests
   if (state.mobilityQuests && state.mobilityQuests.date === today && Array.isArray(state.mobilityQuests.slots)) return;
   state.mobilityQuests = {
     date: today,
@@ -6700,7 +6691,7 @@ function renderMobilitySection() {
   const slot = document.getElementById('mobilitySection');
   if (!slot) return;
   const mq = state.mobilityQuests;
-  if (!mq || mq.date !== todayStr() || getTodayDayType() === null) { slot.innerHTML = ''; return; }
+  if (!mq || mq.date !== todayStr()) { slot.innerHTML = ''; return; }
 
   const rows = mq.slots.map((s, i) => {
     const unlocked = isMobilitySlotUnlocked(s);
@@ -8058,7 +8049,7 @@ function dismissBoxReveal() {
 function getBoxRevealTier(outcome) {
   if (!outcome) return 'common';
   if (outcome.kind === 'shards') return 'common';
-  if (outcome.kind === 'stone') return outcome.rarity || maxStarToRevealTier(outcome.result && outcome.result.tmpl && outcome.result.tmpl.maxStar);
+  if (outcome.kind === 'stone') return 'common';
   const tmpl = outcome.result && outcome.result.tmpl;
   if (!tmpl) return 'common';
   const inst = outcome.result.inst;
@@ -8210,11 +8201,9 @@ function boxBatchChipHtml(category, outcome, spot) {
   const role = spot && spot.role === 'center' ? 'center' : 'sat';
   const left = spot && spot.left != null ? spot.left : 50;
   const top = spot && spot.top != null ? spot.top : 46;
-  const name = role === 'center' ? `<div class="box-batch-name">${tmpl.name || 'Loot'}</div>` : '';
-  const qty = (outcome && (Number(outcome.amount) || Number(outcome.stackCount) || 0)) || 0;
-  const qtyBadge = qty > 1 ? `<div class="box-batch-count">x${qty}</div>` : '';
+  const name = `<div class="box-batch-name">${tmpl.name || 'Loot'}</div>`;
   return `<div class="box-batch-chip box-batch-${role} tier-${tier}" style="left:${left}%;top:${top}%;margin-left:0;margin-top:0;transform:translate(-50%,-50%);">
-    <div class="rarity-burst">${art}${stars}${qtyBadge}</div>
+    <div class="rarity-burst">${art}${stars}</div>
     ${name}
   </div>`;
 }

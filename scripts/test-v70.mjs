@@ -31,5 +31,5 @@ assert(pct(1) === 50, '2nd is 50');
 assert(pct(2) === 35, '3rd is 35');
 assert(pct(3) === 23, '4th is 23');
 assert(pct(4) === 15, '5th is 15');
-assert(html.includes('3.4.25'), 'About version bumped for v7.0');
+assert(html.includes('3.4.26'), 'About version bumped for v7.0');
 console.log('v7.0 tests ok — enchant rates 65/50/35/23/15');

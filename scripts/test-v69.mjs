@@ -80,6 +80,6 @@ const renderFn = sliceFn('renderEnchantModal', 'renderShopModal');
 assert(renderFn.includes('enchantAttemptChancePct(inst, tmpl)'), 'table still prints this-attempt %');
 assert(renderFn.includes('tutorial-guidance-glow'), 'enchant tutorial glow is unchanged');
 
-assert(html.includes('3.4.25'), 'About version bumped for v6.9');
+assert(html.includes('3.4.26'), 'About version bumped for v6.9');
 
 console.log('v6.9 tests ok — 65/50/35/23/15 enchant curve, miss keeps stars, slots persist');
