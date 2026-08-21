@@ -252,6 +252,17 @@
   .rank-next { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; font-family: 'JetBrains Mono'; }
   .rank-bar-track { height: 6px; border-radius: 100px; background: var(--bg); border: 1px solid var(--line); margin-top: 10px; overflow: hidden; }
   .rank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--a1), var(--a2)); border-radius: 100px; }
+  .rank-perk-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .rank-perk-row:last-child { border-bottom: none; }
+  .rank-perk-label { font-size: 13px; }
+  .rank-perk-value { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); text-align: right; flex-shrink: 0; }
+  .rank-ladder-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .rank-ladder-row:last-child { border-bottom: none; }
+  .rank-ladder-row.current { background: rgba(255,182,72,0.08); margin: 0 -10px; padding: 10px; border-radius: 10px; border-bottom: none; }
+  .rank-ladder-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rank-ladder-name { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+  .rank-ladder-pts { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-dim); }
+  .rank-ladder-perks { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
 
   .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .badge-tile { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 6px; text-align: center; opacity: 0.35; }
@@ -1714,6 +1725,72 @@ function getNextRank(points) {
 }
 function getRankIndex(rankId) { return RANKS.findIndex(r => r.id === rankId) + 1; }
 
+/* === rank-rewards-lib begin === */
+const RANK_REWARDS = {
+  warrior:          { dailyGold: 30,  sessionGoldPct: 8,  weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 120,  seasonGems: 2,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 0,   rankUpItem: false },
+  elite:            { dailyGold: 55,  sessionGoldPct: 12, weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 200,  seasonGems: 3,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 80,  rankUpItem: false },
+  master:           { dailyGold: 85,  sessionGoldPct: 18, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 320,  seasonGems: 5,  seasonBoostBoxes: 1, seasonRelicBoxes: 1, rankUpGold: 140, rankUpItem: false },
+  grandmaster:      { dailyGold: 120, sessionGoldPct: 24, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 460,  seasonGems: 7,  seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 220, rankUpItem: false },
+  epic:             { dailyGold: 165, sessionGoldPct: 32, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 640,  seasonGems: 10, seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 320, rankUpItem: true },
+  legend:           { dailyGold: 220, sessionGoldPct: 40, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 860,  seasonGems: 13, seasonBoostBoxes: 2, seasonRelicBoxes: 2, rankUpGold: 450, rankUpItem: true },
+  mythic:           { dailyGold: 290, sessionGoldPct: 50, weeklyBoostBoxes: 2, weeklyRelicBoxes: 1, seasonGold: 1150, seasonGems: 17, seasonBoostBoxes: 3, seasonRelicBoxes: 2, rankUpGold: 620, rankUpItem: true },
+  mythicalhonor:    { dailyGold: 370, sessionGoldPct: 62, weeklyBoostBoxes: 2, weeklyRelicBoxes: 2, seasonGold: 1500, seasonGems: 22, seasonBoostBoxes: 3, seasonRelicBoxes: 3, rankUpGold: 820, rankUpItem: true },
+  mythicalglory:    { dailyGold: 470, sessionGoldPct: 78, weeklyBoostBoxes: 3, weeklyRelicBoxes: 2, seasonGold: 1950, seasonGems: 28, seasonBoostBoxes: 4, seasonRelicBoxes: 3, rankUpGold: 1100, rankUpItem: true },
+  mythicalimmortal: { dailyGold: 600, sessionGoldPct: 100, weeklyBoostBoxes: 3, weeklyRelicBoxes: 3, seasonGold: 2600, seasonGems: 36, seasonBoostBoxes: 5, seasonRelicBoxes: 4, rankUpGold: 1500, rankUpItem: true },
+};
+function getRankRewards(rankId) {
+  return RANK_REWARDS[rankId] || RANK_REWARDS.warrior;
+}
+function formatWeeklyBoxLabel(rew) {
+  const parts = [];
+  if (rew.weeklyBoostBoxes) parts.push(rew.weeklyBoostBoxes + ' Boost');
+  if (rew.weeklyRelicBoxes) parts.push(rew.weeklyRelicBoxes + ' Relic');
+  return parts.length ? parts.join(' + ') + ' / week' : 'None';
+}
+function formatSeasonBoxLabel(rew) {
+  const parts = [];
+  if (rew.seasonBoostBoxes) parts.push(rew.seasonBoostBoxes + ' Boost');
+  if (rew.seasonRelicBoxes) parts.push(rew.seasonRelicBoxes + ' Relic');
+  return parts.length ? parts.join(' + ') : 'None';
+}
+function formatRankRewardSummary(rew) {
+  const parts = [rew.dailyGold + 'g/day', '+' + rew.sessionGoldPct + '% session gold'];
+  if (rew.weeklyBoostBoxes || rew.weeklyRelicBoxes) parts.push(formatWeeklyBoxLabel(rew));
+  if (rew.rankUpItem) parts.push('rank-up item');
+  return parts.join(' · ');
+}
+function rankRewardDetailRows(rew) {
+  return [
+    { label: 'Daily login', value: '+' + rew.dailyGold + 'g' },
+    { label: 'Workout gold', value: '+' + rew.sessionGoldPct + '%' },
+    { label: 'Weekly boxes', value: formatWeeklyBoxLabel(rew) },
+    { label: 'Season finish', value: rew.seasonGold + 'g · ' + rew.seasonGems + ' gems · ' + formatSeasonBoxLabel(rew) },
+    { label: 'Hitting this rank', value: rew.rankUpGold ? ('+' + rew.rankUpGold + 'g' + (rew.rankUpItem ? ' · guaranteed item' : '')) : (rew.rankUpItem ? 'Guaranteed item' : '—') },
+  ];
+}
+function rankGoldPerkMultiplierFromPct(pct) {
+  return 1 + (Number(pct) || 0) / 100;
+}
+function rankRewardsAreProgressive(table) {
+  const ids = ['warrior','elite','master','grandmaster','epic','legend','mythic','mythicalhonor','mythicalglory','mythicalimmortal'];
+  for (let i = 1; i < ids.length; i++) {
+    const a = table[ids[i - 1]];
+    const b = table[ids[i]];
+    if (!a || !b) return false;
+    if (b.dailyGold <= a.dailyGold) return false;
+    if (b.sessionGoldPct <= a.sessionGoldPct) return false;
+    if (b.seasonGold <= a.seasonGold) return false;
+  }
+  return true;
+}
+/* === rank-rewards-lib end === */
+function rankGoldPerkMultiplier() {
+  if (typeof isRankUnlocked === 'function' && !isRankUnlocked()) return 1;
+  if (typeof ensureSeason === 'function') ensureSeason();
+  const rank = typeof getRank === 'function' && state && state.season ? getRank(state.season.points) : null;
+  return rankGoldPerkMultiplierFromPct(getRankRewards(rank && rank.id).sessionGoldPct);
+}
+
 // =========================================================
 // LEVEL (v2.2) — the new primary, indefinite, always-visible progression
 // track, replacing Rank on the main sticky banner. Driven by the exact same
@@ -1863,7 +1940,17 @@ function renderRankTierListHTML() {
   return RANKS.map(r => {
     const reached = unlocked && state.season.points >= r.min;
     const isCur = unlocked && r.id === curRank.id;
-    return `<div class="streak-tier-row"><span class="stn${reached ? ' reached' : ''}"><span class="rt-icon" style="color:${r.color};border-color:${r.color};">${RANK_ICON_SVG[r.id]}</span>${r.name}${isCur ? ' (current)' : ''}</span><span class="stb">${r.min} pts</span></div>`;
+    const rew = getRankRewards(r.id);
+    return `<div class="rank-ladder-row${isCur ? ' current' : ''}">
+      <div class="rank-ladder-head">
+        <span class="rank-ladder-name" style="color:${reached || isCur ? r.color : 'var(--text-dim)'};">
+          <span class="rt-icon" style="color:${r.color};border-color:${r.color};">${RANK_ICON_SVG[r.id]}</span>
+          ${r.name}${isCur ? ' (current)' : ''}
+        </span>
+        <span class="rank-ladder-pts">${r.min} pts</span>
+      </div>
+      <div class="rank-ladder-perks">${formatRankRewardSummary(rew)}</div>
+    </div>`;
   }).join('') + (unlocked ? '' : `<div class="l2" style="padding:10px 2px 2px;">Rank unlocks at Level ${RANK_UNLOCK_LEVEL}.</div>`);
 }
 function openRankModal() {
@@ -2034,23 +2121,45 @@ function creditSeasonPoints(amount) {
   state.season.points += amount;
   const prevRank = getRank(prevPoints);
   const newRank = getRank(state.season.points);
-  if (newRank.id !== prevRank.id) showToast(`Season Rank Up: ${newRank.name}`);
+  if (newRank.id === prevRank.id) return;
+  showToast(`Season Rank Up: ${newRank.name}`);
+  const rew = getRankRewards(newRank.id);
+  const lines = [{ icon:'🏆', label:'New Rank', value: newRank.name }];
+  if (rew.rankUpGold) {
+    const goldAmt = awardGold(rew.rankUpGold, 'season rank up');
+    lines.push({ icon:'🪙', label:'Gold', value: '+' + goldAmt });
+  }
+  if (rew.rankUpItem) {
+    ensureInventoryShape();
+    const guaranteed = grantGuaranteedPermanentItem(newRank.id);
+    if (guaranteed && guaranteed.tmpl) {
+      const star = guaranteed.star != null ? ` (${guaranteed.star}★)` : '';
+      lines.push({ icon:'✨', label:'Rank gift', value: guaranteed.tmpl.name + star });
+    }
+  }
+  save();
+  queueReward({ title:'Rank Up', subtitle: newRank.name, lines, accentColor: newRank.color });
 }
 // Provisional first-draft end-of-season payout, scaled to the rank reached —
 // flagged for later review/tuning per the spec.
 function grantSeasonEndReward(finishRank) {
-  const idx = getRankIndex(finishRank.id);
-  const goldAmt = awardGold(idx * 40, 'season end');
-  state.gems = (state.gems || 0) + idx;
-  const boostOutcome = openBoxFree('boost');
-  const relicOutcome = openBoxFree('relic');
-  save();
-  queueReward({ title:'Season Ended', subtitle: `Finished ${finishRank.name}`, lines: [
+  const rew = getRankRewards(finishRank.id);
+  const goldAmt = awardGold(rew.seasonGold, 'season end');
+  state.gems = (state.gems || 0) + rew.seasonGems;
+  const lines = [
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
-    { icon:'💎', label:'Gems', value: '+' + idx },
-    { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
-    { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name },
-  ], accentColor: finishRank.color });
+    { icon:'💎', label:'Gems', value: '+' + rew.seasonGems },
+  ];
+  for (let i = 0; i < (rew.seasonBoostBoxes || 0); i++) {
+    const boostOutcome = openBoxFree('boost');
+    lines.push({ icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name });
+  }
+  for (let i = 0; i < (rew.seasonRelicBoxes || 0); i++) {
+    const relicOutcome = openBoxFree('relic');
+    lines.push({ icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name });
+  }
+  save();
+  queueReward({ title:'Season Ended', subtitle: `Finished ${finishRank.name}`, lines, accentColor: finishRank.color });
 }
 
 // =========================================================
@@ -2069,12 +2178,13 @@ function hasUnclaimedDailyLogin() {
 // scaling is a first pass for later review.
 function getDailyLoginReward() {
   const rank = getRank(state.season.points);
-  const idx1 = getRankIndex(rank.id); // 1-based: Warrior=1, Elite=2, Master=3, ...
-  if (idx1 < 3) {
-    return { gold: 5 + (idx1 - 1) * 3, weeklyBoxes: false }; // Warrior: 5g, Elite: 8g
-  }
-  const gold = 10 + (idx1 - 3) * 8; // Master:10g ... Mythical Immortal:66g
-  return { gold, weeklyBoxes: true };
+  const rew = getRankRewards(rank.id);
+  return {
+    gold: rew.dailyGold,
+    weeklyBoostBoxes: rew.weeklyBoostBoxes || 0,
+    weeklyRelicBoxes: rew.weeklyRelicBoxes || 0,
+    weeklyBoxes: ((rew.weeklyBoostBoxes || 0) + (rew.weeklyRelicBoxes || 0)) > 0
+  };
 }
 function claimDailyLogin() {
   if (!isRankUnlocked()) return null;
@@ -2090,10 +2200,14 @@ function claimDailyLogin() {
   if (reward.weeklyBoxes) {
     const weekReady = !state.dailyLogin.lastWeeklyBoxDate || daysBetweenDates(state.dailyLogin.lastWeeklyBoxDate, today) >= 7;
     if (weekReady) {
-      const boostOutcome = openBoxFree('boost');
-      const relicOutcome = openBoxFree('relic');
-      lines.push({ icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name });
-      lines.push({ icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name });
+      for (let i = 0; i < (reward.weeklyBoostBoxes || 0); i++) {
+        const boostOutcome = openBoxFree('boost');
+        lines.push({ icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name });
+      }
+      for (let i = 0; i < (reward.weeklyRelicBoxes || 0); i++) {
+        const relicOutcome = openBoxFree('relic');
+        lines.push({ icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name });
+      }
       state.dailyLogin.lastWeeklyBoxDate = today;
     }
   }
@@ -2266,8 +2380,12 @@ function awardBadges() {
 const GOLD_SESSION_RATE = 0.5; // gold earned per session point, before item bonuses
 function awardGold(baseAmount, reason) {
   if (!baseAmount) return 0;
+  let amount = baseAmount;
+  if (reason !== 'daily login' && reason !== 'season end' && reason !== 'season rank up') {
+    amount = Math.round(amount * rankGoldPerkMultiplier());
+  }
   const mult = goldItemMultiplier();
-  const amount = Math.round(baseAmount * mult);
+  amount = Math.round(amount * mult);
   state.gold = (state.gold || 0) + amount;
   if (typeof renderHeader === 'function') renderHeader();
   return amount;
@@ -3909,21 +4027,31 @@ function renderRankTab() {
   ensureSeason();
   const slot = document.getElementById('rankTabContent');
   if (!slot) return;
-  if (!isRankUnlocked()) {
-    const level = getLevel(state.totalPoints);
-    slot.innerHTML = `<div class="card" style="text-align:center; padding:28px 16px; color:var(--text-dim);">
-      <div style="font-family:'Barlow Condensed'; font-size:18px; color:var(--text); margin-bottom:6px;">Rank Locked</div>
-      Reach Level ${RANK_UNLOCK_LEVEL} to unlock seasonal Rank — you're currently Level ${level}.
-    </div>`;
-    updateRankTabBadge();
-    return;
-  }
-  const rank = getRank(state.season.points);
-  const nextRank = getNextRank(state.season.points);
+  const unlocked = isRankUnlocked();
+  const rank = unlocked ? getRank(state.season.points) : RANKS[0];
+  const nextRank = unlocked ? getNextRank(state.season.points) : RANKS[1];
+  const rew = getRankRewards(rank.id);
+  const perkRows = rankRewardDetailRows(rew).map(row =>
+    `<div class="rank-perk-row"><span class="rank-perk-label">${row.label}</span><span class="rank-perk-value">${row.value}</span></div>`
+  ).join('');
+  const ladderHtml = renderRankTierListHTML();
   const claimed = state.dailyLogin.lastClaimedDate === todayStr();
   const reward = getDailyLoginReward();
   const subCls = rank.sub2 ? ' rank-sub2' : '';
   const topCls = rank.top ? ' rank-top' : '';
+  const weeklyNote = reward.weeklyBoxes ? ' · ' + formatWeeklyBoxLabel(rew) : '';
+
+  if (!unlocked) {
+    const level = getLevel(state.totalPoints);
+    slot.innerHTML = `<div class="card" style="text-align:center; padding:28px 16px; color:var(--text-dim);">
+      <div style="font-family:'Barlow Condensed'; font-size:18px; color:var(--text); margin-bottom:6px;">Rank Locked</div>
+      Reach Level ${RANK_UNLOCK_LEVEL} to unlock seasonal Rank — you're currently Level ${level}.
+    </div>
+    <div class="section-title">All Rank Rewards</div>
+    <div class="card">${ladderHtml}</div>`;
+    updateRankTabBadge();
+    return;
+  }
 
   slot.innerHTML = `
     <div class="card" style="text-align:center; padding:20px 16px;">
@@ -3934,18 +4062,22 @@ function renderRankTab() {
         ? `<div class="rank-bar-track" style="margin-top:12px;"><div class="rank-bar-fill" style="width:${Math.min(100, ((state.season.points - rank.min) / (nextRank.min - rank.min)) * 100)}%"></div></div><div class="mono" style="font-size:10.5px; color:var(--text-dim); margin-top:4px;">${nextRank.min - state.season.points} pts to ${nextRank.name}</div>`
         : `<div class="mono" style="font-size:10.5px; color:var(--gain); margin-top:8px;">Top rank reached</div>`}
     </div>
+    <div class="section-title">Your Rank Rewards</div>
+    <div class="card">${perkRows}</div>
+    <div class="card">
+      <div class="section-title" style="margin:0 0 8px;">Daily Login</div>
+      <div class="wk-row">
+        <div><div class="wk-title">${claimed ? 'Claimed Today' : 'Reward Ready'}</div><div class="wk-sub">+${reward.gold}g${weeklyNote}</div></div>
+        <button class="go-btn" id="dailyLoginClaimBtn" ${claimed ? 'disabled' : ''}>${claimed ? '✓ Claimed' : 'Claim'}</button>
+      </div>
+    </div>
     <div class="card" style="text-align:center; padding:16px;">
       <div class="section-title" style="margin:0 0 6px; justify-content:center;">Season Ends</div>
       <div class="mono" style="font-size:22px; font-weight:700;" id="rankCountdownClock">--</div>
       <div class="mono" style="font-size:11px; color:var(--text-dim); margin-top:4px;">${state.season.endDate}</div>
     </div>
-    <div class="card">
-      <div class="section-title" style="margin:0 0 8px;">Daily Login</div>
-      <div class="wk-row">
-        <div><div class="wk-title">${claimed ? 'Claimed Today' : 'Reward Ready'}</div><div class="wk-sub">+${reward.gold}g${reward.weeklyBoxes ? ' · weekly boxes at Rank 3+' : ''}</div></div>
-        <button class="go-btn" id="dailyLoginClaimBtn" ${claimed ? 'disabled' : ''}>${claimed ? '✓ Claimed' : 'Claim'}</button>
-      </div>
-    </div>`;
+    <div class="section-title">All Rank Rewards</div>
+    <div class="card">${ladderHtml}</div>`;
   const iconEl = document.getElementById('rankTabIcon');
   iconEl.innerHTML = RANK_ICON_SVG[rank.id];
   iconEl.style.color = rank.color;
