@@ -1,89 +1,100 @@
 # RIGCORE (Garage Gains)
 
-A garage-gym tracker that now ships as a **real Android app** (`com.rigcore.app`), plus the original single-file web app in `garage-gains.html`.
+A garage-gym tracker that ships as a **native Android app**, a **native iPhone app**, and a shareable home-screen web app. Source of truth: `garage-gains.html`.
 
-## Install the APK
+Package id: `com.rigcore.app` · Version **3.3.2**.
 
-1. Download [`dist/RIGCORE.apk`](dist/RIGCORE.apk) from this repo (or the pull request).
-2. On your phone: **Settings → Security** (or **Apps**) → allow **Install unknown apps** for Chrome/Files/whatever you used to download it.
-3. Open the APK and tap **Install**.
-4. Launch **RIGCORE** from the app drawer.
+## Android (APK)
 
-Minimum Android version: **8.0 (API 24)**. Target: Android 16 (API 36).
+1. Download [`dist/RIGCORE.apk`](dist/RIGCORE.apk).
+2. On the phone: allow **Install unknown apps**, open the APK, tap **Install**.
+3. Launch **RIGCORE**.
 
-Your workout data stays on the device (`localStorage` inside the app). Use **Settings → Export Backup** to share/save a JSON backup through Android's share sheet.
+Minimum Android **8.0**. Workout data stays on the device. Use **Settings → Export Backup** to save a JSON backup.
+
+## iPhone
+
+Apple does not let you sideload an `.ipa` the way Android sideloads an APK. This Linux builder also cannot sign an iPhone app (that needs a Mac + Xcode + an Apple Developer team). Friends can still run RIGCORE in two ways:
+
+### Home-screen app (share this with iPhone friends today)
+
+After GitHub Pages is on, send this link:
+
+**https://theharislt-netizen.github.io/garage-gains/**
+
+On the iPhone: open it in **Safari** → tap **Share** → **Add to Home Screen**. That puts a RIGCORE icon on the home screen. Every time they open it, Safari loads the latest copy from GitHub. No App Store, no token.
+
+Enable Pages once if the link 404s: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+### Native iPhone app (same shell as Android)
+
+The Xcode project in `ios/` is the same Capacitor wrap as Android: same `com.rigcore.app` id, same backup import/share, same GitHub live-update (`live-update/www.zip`) on launch and when the app comes back to the foreground.
+
+On a Mac with Xcode and an Apple Developer Team ID:
+
+```bash
+npm install
+npm run prepare:www
+npx cap sync ios
+export IOS_TEAM_ID=YOUR_TEAM_ID
+bash scripts/build-ios.sh
+```
+
+That writes `dist/RIGCORE.ipa`. Upload it to App Store Connect and invite friends on **TestFlight**. Opening the native iPhone app checks GitHub and applies the new web bundle the same way Android does.
+
+`npx cap open ios` runs it on a plugged-in iPhone during development.
 
 ## Auto-updates
 
-Install **3.3.0** once (this APK). After that, opening RIGCORE checks GitHub for a newer web bundle and swaps it in automatically. Workout logs stay on the phone.
+Install the Android APK or the native iOS app **once**. Opening RIGCORE (and coming back to it) downloads a newer web bundle from this **public** GitHub repo and swaps it in. Workout logs stay on the phone.
 
-That covers HTML/CSS/JS changes (the workout app itself). A new APK is only needed if native Android code changes (permissions, plugins, signing).
+The iPhone **home-screen** shortcut updates by loading the GitHub Pages site on each open.
 
-The published bundle lives in `live-update/` (`manifest.json` + `www.zip`) and is refreshed by `npm run prepare:www`.
+That covers HTML/CSS/JS changes. A new APK/IPA is only needed if native code changes (permissions, plugins, signing).
 
-This GitHub repo is **private**, so phones cannot download those files anonymously. Pick one:
+The published bundle is `live-update/manifest.json` + `live-update/www.zip`, refreshed by `npm run prepare:www`.
 
-1. **Make the repo public** (GitHub → Settings → Change repository visibility). After that, opening RIGCORE is enough.
-2. Keep it private and paste a GitHub token with **Contents: Read** in **Settings → About**.
+## What the native wrap does
 
-## What this wrap does
-
-The HTML app is packaged with [Capacitor 8](https://capacitorjs.com/) into a native WebView:
+The HTML app is packaged with [Capacitor 8](https://capacitorjs.com/):
 
 | Feature | Native behavior |
 | --- | --- |
 | Launcher icon + splash | Dark RIGCORE plate / "R" mark |
-| YouTube form demos | Opens in Chrome/YouTube via the Browser plugin |
-| Export backup | Writes a JSON file and opens the Android share sheet |
-| Import backup | System file picker (already in the web UI) |
-| Haptics | Vibration permission + Capacitor Haptics |
-| Back button | Closes overlays first, then exits |
-| Fonts | Bundled offline (no Google Fonts at runtime) |
-| Add to Home Screen | Hidden in the native app (you already installed it) |
+| YouTube form demos | Opens in the system browser |
+| Export backup | Share sheet (Android and iPhone) |
+| Import backup | System file picker |
+| Haptics | Capacitor Haptics |
+| Fonts | Bundled offline |
+| Auto-update | GitHub `live-update/` on launch and resume |
 
-The original `garage-gains.html` is unchanged as the source of truth. `scripts/prepare-www.mjs` copies it into `www/`, injects the native bridge, and swaps in local fonts before each Android build.
+`garage-gains.html` stays the source of truth. `scripts/prepare-www.mjs` copies it into `www/` and injects the native bridge.
 
-## Rebuild the APK
+## Rebuild
 
-Needs Node 22+, JDK 21, and the Android SDK (platforms 36 + build-tools 36).
+Needs Node 22+. Android also needs JDK 21 and the Android SDK. iOS IPAs need a Mac + Xcode.
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64   # or your JDK 21
-export ANDROID_HOME=$HOME/android-sdk
-export ANDROID_SDK_ROOT=$ANDROID_HOME
-
 npm install
-chmod +x scripts/build-apk.sh
-./scripts/build-apk.sh
+npm run prepare:www
+npx cap sync android ios
+./scripts/build-apk.sh          # Linux/macOS → dist/RIGCORE.apk
+IOS_TEAM_ID=XXXX bash scripts/build-ios.sh   # macOS → dist/RIGCORE.ipa
 ```
 
-That writes a signed release APK to `dist/RIGCORE.apk`.
+### Android signing
 
-Useful pieces:
-
-- `npm run prepare:www` — refresh `www/` from `garage-gains.html`
-- `npm run icons` — regenerate launcher / splash images
-- `npm run build:debug` — unsigned debug APK
-- `npm run build:apk` — signed release APK
-- `npx cap open android` — open in Android Studio
-
-### Signing
-
-Release builds are signed with `android/app/keystore/rigcore-release.p12` using `android/keystore.properties`. **Keep that keystore** if you want later APKs to install as updates over this one. A new keystore means Android treats it as a different app.
-
-This is a personal sideload key, not a Play Store upload key. For Play Console you'd create an upload key / Play App Signing separately.
+Release APKs are signed with `android/app/keystore/rigcore-release.p12` using `android/keystore.properties`. Keep that keystore so later APKs install as updates.
 
 ## Project layout
 
 ```
 garage-gains.html      Web app source (edit here)
-scripts/               Prepare www, icons, APK build
-www/                   Generated web assets copied into the APK
+scripts/               Prepare www, icons, APK/IPA builds
+www/                   Generated web assets
 android/               Capacitor Android project
-dist/RIGCORE.apk       Installable release APK
+ios/                   Capacitor iOS project
+live-update/           Auto-update bundle (manifest + www.zip)
+dist/RIGCORE.apk       Installable Android release
 capacitor.config.json  App id com.rigcore.app
 ```
-
-## Version
-
-App version **3.3.1** (`versionCode` 331). Live web bundles use a content-hash version such as `3.3.0-g…`.

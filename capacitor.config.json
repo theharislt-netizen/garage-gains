@@ -3,6 +3,12 @@
   "appName": "RIGCORE",
   "webDir": "www",
   "backgroundColor": "#09080f",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#09080f",
+    "preferredContentMode": "mobile",
+    "scheme": "App"
+  },
   "android": {
     "backgroundColor": "#09080f",
     "allowMixedContent": false,

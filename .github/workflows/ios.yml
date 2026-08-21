@@ -1,0 +1,35 @@
+name: iOS
+
+on:
+  push:
+    branches: [main, cursor/android-apk-eee8]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Verify iOS project files
+        run: npm run test:ios
+
+      - name: Prepare web assets and sync iOS
+        run: |
+          npm run prepare:www
+          npx cap sync ios
+
+      - name: Compile iOS app (simulator, unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build

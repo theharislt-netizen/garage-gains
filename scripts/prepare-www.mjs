@@ -113,6 +113,12 @@ function patchHtml(html) {
   if (!html.includes('native-bridge.js')) {
     html = html.replace('</body>', `${inject}</body>`);
   }
+  if (!html.includes('apple-mobile-web-app-capable')) {
+    html = html.replace(
+      '</title>',
+      '</title>\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="RIGCORE">\n<link rel="apple-touch-icon" href="./icon.png">\n<link rel="manifest" href="./manifest.webmanifest">'
+    );
+  }
   return html;
 }
 
@@ -123,6 +129,20 @@ await bundleNativeBridge();
 const src = join(root, 'garage-gains.html');
 const html = patchHtml(await readFile(src, 'utf8'));
 await writeFile(join(www, 'index.html'), html);
+await writeFile(join(www, '.nojekyll'), '');
+await writeFile(
+  join(www, 'manifest.webmanifest'),
+  JSON.stringify({
+    name: 'RIGCORE',
+    short_name: 'RIGCORE',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#09080f',
+    theme_color: '#09080f',
+    icons: [{ src: './icon.png', sizes: '1024x1024', type: 'image/png' }],
+  }, null, 2) + '\n'
+);
 
 const iconSrc = join(root, 'resources/icon.png');
 if (await exists(iconSrc)) {

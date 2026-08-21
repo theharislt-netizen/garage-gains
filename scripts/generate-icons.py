@@ -177,6 +177,16 @@ def main() -> None:
             save_png(sized, path)
         save_png(splash_hi, ANDROID_RES / "drawable" / "splash.png")
 
+    ios_icon_dir = ROOT / "ios" / "App" / "App" / "Assets.xcassets" / "AppIcon.appiconset"
+    ios_splash_dir = ROOT / "ios" / "App" / "App" / "Assets.xcassets" / "Splash.imageset"
+    if ios_icon_dir.exists():
+        save_png(rounded_app_icon(1024), ios_icon_dir / "AppIcon-512@2x.png")
+    if ios_splash_dir.exists():
+        splash_img = splash(2732)
+        save_png(splash_img, ios_splash_dir / "splash-2732x2732.png")
+        save_png(splash_img, ios_splash_dir / "splash-2732x2732-1.png")
+        save_png(splash_img, ios_splash_dir / "splash-2732x2732-2.png")
+
 
 if __name__ == "__main__":
     main()

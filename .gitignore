@@ -15,6 +15,8 @@ www/index.html
 www/native-bridge.js
 www/icon.png
 www/bundle-version.json
+www/manifest.webmanifest
+www/.nojekyll
 www/fonts/*.woff2
 !www/fonts/.gitkeep
 android/**/*.apk
@@ -22,6 +24,7 @@ android/**/*.aab
 *.aab
 *.ap_
 !dist/*.apk
+!dist/*.ipa
 *.dex
 local.properties
 .capacitor/

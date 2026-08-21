@@ -1,5 +1,5 @@
 /**
- * Native Android bridge for RIGCORE.
+ * Native bridge for RIGCORE (Android and iOS).
  * Bundled into www/native-bridge.js and injected after the web app boots.
  */
 import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
@@ -199,7 +199,7 @@ function getGithubToken() {
 }
 
 function authHeaders() {
-  const headers = { 'User-Agent': 'RIGCORE-Android', Accept: 'application/vnd.github+json' };
+  const headers = { 'User-Agent': 'RIGCORE', Accept: 'application/vnd.github+json' };
   const token = getGithubToken();
   if (token) headers.Authorization = 'Bearer ' + token;
   return headers;
@@ -232,7 +232,7 @@ function parseGithubJson(data) {
 async function httpGetJson(url) {
   const res = await CapacitorHttp.get({
     url,
-    headers: { 'User-Agent': 'RIGCORE-Android' },
+    headers: { 'User-Agent': 'RIGCORE' },
     connectTimeout: 8000,
     readTimeout: 15000,
   });
@@ -421,8 +421,27 @@ async function checkAndApplyUpdate() {
   }
 }
 
+function isIosSafari() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function wireWebInstallHint() {
+  const btn = document.getElementById('addHomeBtn');
+  if (!btn || !isIosSafari()) return;
+  const clone = btn.cloneNode(true);
+  btn.parentNode.replaceChild(clone, btn);
+  clone.addEventListener('click', () => {
+    toast('Safari: tap Share, then Add to Home Screen');
+  });
+}
+
 async function setup() {
-  if (!Capacitor.isNativePlatform()) return;
+  if (window.navigator.standalone) hideHomeScreenShortcut();
+  if (!Capacitor.isNativePlatform()) {
+    wireWebInstallHint();
+    return;
+  }
 
   document.documentElement.classList.add('native-app');
   document.body.classList.add('native-app');
@@ -430,7 +449,7 @@ async function setup() {
   try { await CapacitorUpdater.notifyAppReady(); } catch (_) { /* builtin bundle */ }
 
   try {
-    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setStyle({ style: Style.Light });
     await StatusBar.setBackgroundColor({ color: '#09080f' });
   } catch (_) { /* older WebViews */ }
 

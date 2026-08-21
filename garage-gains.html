@@ -7686,7 +7686,11 @@ document.getElementById('addHomeBtn').addEventListener('click', async () => {
     await window.__deferredInstallPrompt.userChoice;
     window.__deferredInstallPrompt = null;
   } else {
-    showToast('Open your browser menu (⋮) and tap "Add to Home screen"');
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    showToast(isiOS
+      ? 'Safari: tap Share, then Add to Home Screen'
+      : 'Open your browser menu (⋮) and tap "Add to Home screen"');
   }
 });
 document.getElementById('rankModalClose').addEventListener('click', closeRankModal);

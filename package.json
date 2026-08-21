@@ -2,17 +2,20 @@
   "name": "rigcore",
   "version": "3.3.2",
   "private": true,
-  "description": "RIGCORE — garage gym tracker wrapped as a native Android app",
+  "description": "RIGCORE — garage gym tracker for Android and iPhone",
   "scripts": {
     "test:backup": "node scripts/test-backup-restore.mjs",
+    "test:ios": "node scripts/verify-ios-project.mjs",
     "verify:update": "node scripts/verify-live-update.mjs",
     "prepare:www": "node scripts/prepare-www.mjs",
     "bundle:live": "node scripts/make-live-bundle.mjs",
     "icons": "python3 scripts/generate-icons.py",
-    "sync": "npm run prepare:www && npx cap sync android",
+    "sync": "npm run prepare:www && npx cap sync android ios",
     "build:debug": "npm run sync && cd android && ./gradlew assembleDebug",
     "build:apk": "npm run sync && cd android && ./gradlew assembleRelease",
-    "open:android": "npx cap open android"
+    "build:ios": "bash scripts/build-ios.sh",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -21,6 +24,7 @@
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.1.3",
     "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.0",
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
