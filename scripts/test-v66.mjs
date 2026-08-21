@@ -68,18 +68,21 @@ assert(!prizeFn.includes('starRowHtml(tmpl, inst && inst.star'), 'prize fill is 
 assert(html.includes('id="boxPrizeStars"'), 'prize card has a star mount');
 assert(html.indexOf('id="boxPrizeStars"') > html.indexOf('id="boxPrizeIcon"'), 'prize stars sit with the item art');
 assert(html.indexOf('id="boxPrizeStars"') < html.indexOf('id="boxPrizeName"'),
-  'prize stars sit just below the icon, not under the item name');
-assert(html.includes('#boxPrizeStars .star-row') && html.includes('font-size: 22px'),
+  'prize stars sit on the icon, not under the item name');
+assert(html.includes('#boxPrizeStars .star-row') && html.includes('font-size: 18px'),
   'prize-card stars are large enough to read');
-assert(html.includes('margin-top: -11px') || html.includes('margin-top: -14px'),
-  'stars pull up onto the item portrait');
+assert(html.includes('linear-gradient(to top, rgba(0,0,0,0.92)'),
+  'stars sit on a dark shelf over the portrait');
+const vis = itemVisualHtml(ember, { star: 2, starCap: 3 }, 'inv-slot-icon');
+assert(vis.indexOf('star-row') > vis.indexOf('inv-slot-icon') && vis.indexOf('star-row') < vis.indexOf('</div></div>'),
+  'shared item visual nests stars inside the portrait');
 
 const invFn = sliceFn('renderInventoryTab', 'positionItemDetailPopup');
 assert(invFn.includes('itemVisualHtml(tmpl, inst'), 'Inventory grid uses the shared item visual');
 const loadoutFn = sliceFn('loadoutFrameHtml', 'renderEquippedSummary');
 assert(loadoutFn.includes('itemStarsHtml'), 'Loadout frames use the shared star helper');
-assert(loadoutFn.indexOf('${stars}') < loadoutFn.indexOf('loadout-frame-label'),
-  'Loadout stars sit on the portrait, not under the slot name');
+assert(loadoutFn.includes('loadout-frame-ring">${icon}${stars}'),
+  'Loadout stars overlay the portrait ring, not the slot name');
 const detailFn = sliceFn('renderItemDetailModal', 'openInventoryBox');
 assert(detailFn.includes('itemVisualHtml(tmpl, inst'), 'item detail popup uses the shared item visual');
 const enchantRender = sliceFn('renderEnchantModal', 'renderShopModal');
