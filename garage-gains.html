@@ -813,7 +813,31 @@
     border-color: rgba(var(--a1-rgb), 0.75);
   }
   .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
-  .inv-slot-icon { font-size: 26px; line-height: 1; }
+  .inv-slot-icon { font-size: 26px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+  .inv-slot-icon svg { width: 28px; height: 28px; display: block; }
+  .item-detail-icon svg, .enchant-drop-ic svg, .craft-stone-icon svg, .rarity-burst svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
+  .craft-stone-icon svg { width: 28px; height: 28px; }
+  .craft-stone-result svg { width: 14px; height: 14px; display: inline-block; vertical-align: -3px; margin-right: 2px; }
+  .enchant-drop-ic svg { width: 26px; height: 26px; }
+  .mat-boost { color: var(--a2); }
+  .mat-relic { color: var(--a1); }
+  .inv-slot.star-glow-3 { border-color: rgba(var(--a1-rgb), 0.42); box-shadow: 0 0 10px 2px rgba(var(--a1-rgb), 0.26); }
+  .inv-slot.star-glow-4 {
+    animation: star-glow-4-pulse 1.8s ease-in-out infinite;
+    border-color: rgba(var(--a1-rgb), 0.62);
+  }
+  @keyframes star-glow-4-pulse {
+    0%, 100% { box-shadow: 0 0 8px 2px rgba(var(--a1-rgb), 0.30); }
+    50% { box-shadow: 0 0 18px 5px rgba(var(--a1-rgb), 0.52); }
+  }
+  .inv-slot.star-glow-5 {
+    animation: star-glow-5-pulse 1.6s ease-in-out infinite;
+    border-color: rgba(244,241,234,0.88);
+  }
+  @keyframes star-glow-5-pulse {
+    0%, 100% { box-shadow: 0 0 12px 3px rgba(255,255,255,0.48), 0 0 22px 6px rgba(255,255,255,0.22); }
+    50% { box-shadow: 0 0 22px 7px rgba(255,255,255,0.78), 0 0 34px 11px rgba(255,255,255,0.34); }
+  }
   .inv-slot .star-row { font-size: 8px; letter-spacing: 0.5px; }
   .inv-slot-count { position: absolute; bottom: 3px; right: 5px; font-family: 'JetBrains Mono'; font-size: 9px; color: var(--text-dim); }
   .inv-temp-badge {
@@ -921,6 +945,29 @@
   .box-reveal-tier-label { font-family: 'Barlow Condensed'; font-weight: 800; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px; }
   .box-reveal-card.tier-rare .rarity-burst { animation: boxItemIn 0.28s ease-out, tierPulse 1.4s ease-in-out infinite; }
   .box-reveal-card.tier-legendary .rarity-burst { animation: boxItemIn 0.28s ease-out, tierPulseBig 1.1s ease-in-out infinite; }
+  .box-reveal-card.tier-unique {
+    border: 1px solid rgba(244,241,234,0.72);
+    box-shadow: 0 0 32px 10px rgba(255,255,255,0.16);
+  }
+  .box-reveal-card.tier-unique .rarity-burst {
+    animation: boxItemIn 0.4s ease-out, star-glow-5-pulse 1.6s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(255,255,255,0.28), transparent 72%);
+  }
+  #boxRevealOverlay.unique-reveal {
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0.18), transparent 58%),
+      var(--bg);
+  }
+  .box-reveal-unique-flash {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.62), transparent 64%);
+    animation: boxUniqueFlash 0.7s ease-out forwards;
+  }
+  @keyframes boxUniqueFlash {
+    0% { opacity: 0; }
+    22% { opacity: 1; }
+    100% { opacity: 0; }
+  }
   @keyframes tierPulse { 0%, 100% { filter: drop-shadow(0 0 8px var(--a1)); } 50% { filter: drop-shadow(0 0 18px var(--a1)); } }
   @keyframes tierPulseBig { 0%, 100% { filter: drop-shadow(0 0 14px var(--gain)); } 50% { filter: drop-shadow(0 0 34px var(--gain)); } }
 
@@ -1776,7 +1823,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.7</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.8</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2607,6 +2654,157 @@ function boxBuildupInnerHtml(category, artFn) {
 }
 /* === box-reveal-lib end === */
 
+/* === item-catalog-lib begin === */
+const REGULAR_MAX_STAR = 4;
+const UNIQUE_STAR = 5;
+const REGULAR_STAR_WEIGHTS = [35, 28, 20, 12, 5];
+const UNIQUE_ITEM_CHANCE = 0.08;
+function _svg(d) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+}
+function itemIconSvg(id) {
+  if (id === 'doubleDown') return _svg('<path d="M13 2L4 14h7l-1 8 10-14h-7l1-6z"/>');
+  if (id === 'secondWind') return _svg('<path d="M4 8h11a3 3 0 010 6H9"/><path d="M4 14h9a3 3 0 000-6"/>');
+  if (id === 'ironFocus') return _svg('<circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/>');
+  if (id === 'emberHalo') return _svg('<circle cx="12" cy="13" r="6"/><path d="M12 4l1.4 3.2L17 8l-3 2.1.8 3.4L12 11.8 9.2 13.5l.8-3.4L7 8l3.6-.8L12 4z"/>');
+  if (id === 'gildthread') return _svg('<circle cx="12" cy="12" r="7"/><path d="M9 12h6M12 9v6"/><path d="M7 17c4 3 6 3 10 0"/>');
+  if (id === 'hexwick') return _svg('<path d="M12 21c3.5-2 5-5 5-8 0-4-5-6-5-10 0 4-5 6-5 10 0 3 1.5 6 5 8z"/><path d="M12 11v4"/>');
+  if (id === 'lorequill') return _svg('<path d="M5 19l4-1 10-10-3-3L6 15l-1 4z"/><path d="M14 7l3 3"/>');
+  if (id === 'wornCharm') return _svg('<circle cx="12" cy="14" r="5.5"/><path d="M12 4v4M9 6.5c1 .8 2 .8 3 0s2-.8 3 0"/>');
+  if (id === 'grindersChair') return _svg('<path d="M7 10h10v3H7z"/><path d="M8 13v6M16 13v6M6 19h12"/><path d="M9 7l3-3 3 3"/>');
+  if (id === 'oathboundBand') return _svg('<circle cx="12" cy="13" r="6"/><path d="M9 9.2l3-3.2 3 3.2"/><path d="M12 10v6"/>');
+  if (id === 'vaultSigil') return _svg('<rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V8a3 3 0 016 0v2"/><circle cx="12" cy="15" r="1.4"/>');
+  if (id === 'featherweightWraps') return _svg('<path d="M6 19c6-1 9-6 11-14 0 0-6 1-9 5 0 0 6-1 8 2-3 1-7 3-10 7z"/><path d="M7 12c2 .5 4 2 5 4"/>');
+  if (id === 'cinderAnvil') return _svg('<path d="M5 14h14l-2 5H7l-2-5z"/><path d="M7 14V11h10v3"/><path d="M12 7v4M9 8l3-3 3 3"/>');
+  if (id === 'spellboundChisel') return _svg('<path d="M14 3l7 7-9 9H5v-7l9-9z"/><path d="M8 16l3 3"/>');
+  if (id === 'legendaryDumbbell') return _svg('<path d="M4 10h3v4H4zM17 10h3v4h-3zM7 11h10v2H7z"/><path d="M12 4l1.2 2.4 2.6.3-2 1.9.5 2.6L12 10.2 9.7 11.2l.5-2.6-2-1.9 2.6-.3L12 4z"/>');
+  if (id === 'firstLight') return _svg('<circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/>');
+  if (id === 'crownUnbroken') return _svg('<path d="M4 16l2-8 6 4 6-4 2 8H4z"/><path d="M5 16h14v2H5z"/><path d="M8 8V6M12 7V4M16 8V6"/>');
+  if (id === 'lastEmber') return _svg('<path d="M12 20c3.2-1.8 5-4.6 5-7.4C17 8 12 6 12 3c0 3-5 5-5 9.6 0 2.8 1.8 5.6 5 7.4z"/><circle cx="12" cy="13" r="2"/>');
+  return '';
+}
+function matIconSvg(kind, cat) {
+  const cls = cat === 'relic' ? 'mat-relic' : 'mat-boost';
+  if (kind === 'shards' || kind === 'shard') {
+    return `<svg class="${cls}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.2"><path d="M12 2l6.5 9.2L12 22 5.5 11.2 12 2z" opacity="0.92"/><path d="M12 2v20" fill="none"/></svg>`;
+  }
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.3"><path d="M12 2l8 6v8l-8 6-8-6V8l8-6z" opacity="0.9"/><path d="M12 6.5l4.5 3.2v4.6L12 17.5 7.5 14.3V8.7L12 6.5z" fill="none"/></svg>`;
+}
+function itemIconHtml(tmpl) {
+  if (!tmpl) return '❔';
+  return itemIconSvg(tmpl.id) || tmpl.icon || '❔';
+}
+function matIconHtml(kind, cat) { return matIconSvg(kind, cat); }
+function isUniqueItem(tmpl) { return !!(tmpl && tmpl.unique); }
+function itemMaxStar(tmpl) {
+  if (!tmpl || !tmpl.permanent) return 0;
+  return isUniqueItem(tmpl) ? UNIQUE_STAR : REGULAR_MAX_STAR;
+}
+function rollWeightedPick(entries, rng) {
+  const total = entries.reduce((s, e) => s + e.weight, 0);
+  let r = (typeof rng === 'function' ? rng() : Math.random()) * total;
+  for (const e of entries) { r -= e.weight; if (r <= 0) return e; }
+  return entries[entries.length - 1];
+}
+function rollRegularStar(rng) {
+  const entries = REGULAR_STAR_WEIGHTS.map((weight, star) => ({ star, weight }));
+  return rollWeightedPick(entries, rng).star;
+}
+function grantStarForTemplate(tmpl, rng) {
+  if (!tmpl || !tmpl.permanent) return 0;
+  if (isUniqueItem(tmpl)) return UNIQUE_STAR;
+  return rollRegularStar(rng);
+}
+function pickBoxItemTemplate(pool, rng) {
+  rng = typeof rng === 'function' ? rng : Math.random;
+  const list = pool || [];
+  const uniques = list.filter(t => t && t.unique);
+  const rest = list.filter(t => t && !t.unique);
+  if (uniques.length && rng() < UNIQUE_ITEM_CHANCE) {
+    return uniques[Math.floor(rng() * uniques.length)];
+  }
+  if (!rest.length) return uniques[0] || null;
+  const entries = rest.map(tmpl => ({ tmpl, weight: tmpl.permanent ? 24 : 18 }));
+  return rollWeightedPick(entries, rng).tmpl;
+}
+function starGlowClass(star, unique) {
+  if (unique || star >= UNIQUE_STAR) return 'star-glow-5';
+  if (star >= 4) return 'star-glow-4';
+  if (star >= 3) return 'star-glow-3';
+  return '';
+}
+function itemRevealTier(tmpl, star) {
+  if (isUniqueItem(tmpl) || star >= UNIQUE_STAR) return 'unique';
+  if (!tmpl || !tmpl.permanent) return 'uncommon';
+  if (star >= 4) return 'rare';
+  if (star >= 3) return 'uncommon';
+  return 'common';
+}
+function starRowHtml(tmpl, star) {
+  if (!tmpl || !tmpl.permanent) return '';
+  const max = itemMaxStar(tmpl);
+  const filled = Math.max(0, Math.min(max, Number(star) || 0));
+  return `<div class="star-row">${'★'.repeat(filled)}${'☆'.repeat(max - filled)}</div>`;
+}
+const ITEMS_CATALOG = [
+  { id:'doubleDown', name:'Double Down', category:'boost', permanent:false, duration:1, icon:'⚡',
+    effectType:'points', scope:'session', baseValue:1.0,
+    desc:'Doubles points earned for your next session.' },
+  { id:'secondWind', name:'Gilded Afterburn', category:'boost', permanent:false, duration:2, icon:'💨',
+    effectType:'gold', scope:'session', baseValue:0.5,
+    desc:'+50% gold from your next 2 sessions.' },
+  { id:'ironFocus', name:'Mindforge Sigil', category:'boost', permanent:true, maxStar:4, icon:'🎯',
+    effectType:'points', scope:'exercise', target:'plank', baseValue:0.08,
+    desc:'Bonus points on Plank.' },
+  { id:'emberHalo', name:'Ember Halo', category:'boost', permanent:true, maxStar:4, icon:'🔥',
+    effectType:'points', scope:'session', baseValue:0.04,
+    desc:'A ring of leftover set-fire. Bonus points on every set.' },
+  { id:'gildthread', name:'Gildthread', category:'boost', permanent:true, maxStar:4, icon:'✨',
+    effectType:'gold', scope:'session', baseValue:0.05,
+    desc:'Spun gold in the wrap. Bonus gold from every session.' },
+  { id:'hexwick', name:'Hexwick', category:'boost', permanent:true, maxStar:4, icon:'🕯️',
+    effectType:'enchantSuccess', scope:'session', baseValue:0.05,
+    desc:'A wick that burns luck. Improves enchant success chance.' },
+  { id:'lorequill', name:'Lorequill', category:'boost', permanent:true, maxStar:4, icon:'🪶',
+    effectType:'enchantXp', scope:'session', baseValue:0.12,
+    desc:'Writes the attempt into muscle-memory. Bonus enchant XP.' },
+  { id:'firstLight', name:'First Light', category:'boost', permanent:true, unique:true, maxStar:5, icon:'☀️',
+    effectType:'points', scope:'session', baseValue:0.14,
+    desc:'The hour the gym still belongs to you. Unique. Session points surge.' },
+  { id:'lastEmber', name:'The Last Ember', category:'boost', permanent:true, unique:true, maxStar:5, icon:'🔥',
+    effectType:'enchantSuccess', scope:'session', baseValue:0.08,
+    desc:'The coal that would not go out. Unique. Enchanting rarely fails.' },
+  { id:'legendaryDumbbell', name:'The Iron Sovereign', category:'relic', permanent:true, unique:true, maxStar:5, icon:'🏋️',
+    effectType:'points', scope:'equip', target:'dumbbell', equipRequired:'dumbbell', baseValue:0.10,
+    desc:'A named bell of black iron. Unique. Bonus points on every dumbbell lift.' },
+  { id:'crownUnbroken', name:'Crown of the Unbroken', category:'relic', permanent:true, unique:true, maxStar:5, icon:'👑',
+    effectType:'points', scope:'session', baseValue:0.12,
+    desc:'Worn by anyone who refused to skip. Unique. Session-wide point surge.' },
+  { id:'grindersChair', name:'Throne of the Grind', category:'relic', permanent:true, maxStar:4, icon:'🪑',
+    effectType:'gold', scope:'session', equipRequired:'chair', baseValue:0.05,
+    desc:'Bonus gold from every completed session. Requires a chair in your gym.' },
+  { id:'wornCharm', name:'Ashen Charm', category:'relic', permanent:true, maxStar:4, icon:'🪨', starterOnly:true,
+    effectType:'points', scope:'session', baseValue:0.02,
+    desc:'A scuffed first relic. Tiny bonus to session points — you will find better.' },
+  { id:'oathboundBand', name:'Oathbound Band', category:'relic', permanent:true, maxStar:4, icon:'💍',
+    effectType:'points', scope:'session', baseValue:0.035,
+    desc:'A ring that remembers missed days. Bonus points on every set.' },
+  { id:'vaultSigil', name:'Vault Sigil', category:'relic', permanent:true, maxStar:4, icon:'🔐',
+    effectType:'gold', scope:'session', baseValue:0.06,
+    desc:'Marks the take. Bonus gold from every session.' },
+  { id:'cinderAnvil', name:'Cinder Anvil', category:'relic', permanent:true, maxStar:4, icon:'🔨',
+    effectType:'enchantXp', scope:'session', baseValue:0.14,
+    desc:'The table runs hotter. Bonus enchant XP.' },
+  { id:'spellboundChisel', name:'Spellbound Chisel', category:'relic', permanent:true, maxStar:4, icon:'🗡️',
+    effectType:'enchantSuccess', scope:'session', baseValue:0.05,
+    desc:'Cuts a cleaner rune. Improves enchant success chance.' },
+  { id:'featherweightWraps', name:'Windrider Wraps', category:'relic', permanent:false, duration:3, icon:'🧤',
+    effectType:'points', scope:'focus', target:'arms', equipRequired:'bands', baseValue:0.15,
+    desc:'+15% points on arm exercises for 3 sessions. Requires bands.' },
+];
+function itemTemplate(itemId) { return ITEMS_CATALOG.find(i => i.id === itemId); }
+/* === item-catalog-lib end === */
+
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
 // icon set keyed by these same ids) originally built for the permanent Rank
@@ -2941,17 +3139,22 @@ function grantGuaranteedPermanentItem(rankId) {
   const category = Math.random() < 0.5 ? 'boost' : 'relic';
   const pool = eligibleItemPool(category).filter(i => i.permanent);
   if (!pool.length) return null;
-  const tmpl = pool[Math.floor(Math.random() * pool.length)];
-  const star = rollGuaranteedStar(Math.min(starCap, tmpl.maxStar), idx);
+  const uniques = pool.filter(i => i.unique);
+  const regulars = pool.filter(i => !i.unique);
+  const tmpl = (starCap >= UNIQUE_STAR && uniques.length && Math.random() < UNIQUE_ITEM_CHANCE)
+    ? uniques[Math.floor(Math.random() * uniques.length)]
+    : (regulars[Math.floor(Math.random() * regulars.length)] || pool[0]);
+  const star = tmpl.unique ? UNIQUE_STAR : Math.min(REGULAR_MAX_STAR, starCap, rollRegularStar());
   const owned = state.inventory.permanent.find(x => x.itemId === tmpl.id);
   if (owned) {
-    if (star > owned.star) { owned.star = Math.min(star, tmpl.maxStar); return { kind:'upgraded', tmpl, star: owned.star }; }
+    if (!tmpl.unique && star > owned.star) { owned.star = Math.min(star, itemMaxStar(tmpl)); return { kind:'upgraded', tmpl, star: owned.star }; }
     state.gems += 3;
     return { kind:'dupe-gems', tmpl, gems: 3 };
   }
   const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId: tmpl.id, star };
   state.inventory.permanent.push(inst);
-  return { kind:'new', tmpl, star };
+  noteItemTypeGranted(state, itemTypeKey('item', tmpl.id));
+  return { kind:'new', tmpl, star, inst };
 }
 // =========================================================
 // SEASONAL RANK (v2.2) — the OLD permanent Rank ladder (RANKS array, same
@@ -3290,67 +3493,13 @@ function awardPoints(amount, reason) {
   return amount;
 }
 
-// --- Item catalog -----------------------------------------------------------
-// Two categories only (Boosts, Relics), each item rolls either a points-boost or
-// a gold-boost effect. `scope` decides what the effect applies to: 'session' (the
-// whole session/every set), 'focus' (exercises tagged with that focus area),
-// 'equip' (exercises requiring that piece of equipment), or 'exercise' (one
-// specific exercise by id — used for bodyweight-only boosts with no broader
-// equipment tag to hang off of, e.g. Plank). Permanent items carry a star
-// ceiling (`maxStar`) and a `baseValue` that scales up with star level;
-// temporary items carry a `duration` in sessions and no displayed star, balanced
-// to sit around a 2-star permanent's power (baseValue chosen accordingly).
-//
-// v2.1.1 equipment-tagging rule: Relics are themed to physical equipment, and
-// can only be obtained (via box or rank-up guarantee) if the person's profile
-// actually owns that equipment — set via `equipRequired`. Boosts are themed to
-// bodyweight movement patterns with no physical object behind them, so they
-// carry no `equipRequired` and are always obtainable. `equipRequired` is kept
-// separate from `scope`/`target` (which govern what the item's bonus applies
-// to) since a relic's theme-equipment and its bonus-target aren't always the
-// same exercise family (e.g. Grinder's Chair requires owning a chair, but its
-// gold bonus applies session-wide, not just to chair exercises).
-const ITEMS_CATALOG = [
-  { id:'doubleDown', name:'Double Down', category:'boost', permanent:false, duration:1, icon:'⚡',
-    effectType:'points', scope:'session', baseValue:1.0,
-    desc:'Doubles points earned for your next session.' },
-  { id:'secondWind', name:'Second Wind', category:'boost', permanent:false, duration:2, icon:'💨',
-    effectType:'gold', scope:'session', baseValue:0.5,
-    desc:'+50% gold from your next 2 sessions.' },
-  { id:'ironFocus', name:'Iron Focus', category:'boost', permanent:true, maxStar:2, icon:'🎯',
-    effectType:'points', scope:'exercise', target:'plank', baseValue:0.08,
-    desc:'Bonus points on Plank.' },
-  { id:'legendaryDumbbell', name:'Legendary Dumbbell', category:'relic', permanent:true, maxStar:5, icon:'🏋️',
-    effectType:'points', scope:'equip', target:'dumbbell', equipRequired:'dumbbell', baseValue:0.10,
-    desc:'Bonus points on every dumbbell exercise.' },
-  { id:'grindersChair', name:"Grinder's Chair", category:'relic', permanent:true, maxStar:3, icon:'🪑',
-    effectType:'gold', scope:'session', equipRequired:'chair', baseValue:0.05,
-    desc:'Bonus gold from every completed session.' },
-  { id:'wornCharm', name:'Worn Charm', category:'relic', permanent:true, maxStar:3, icon:'🪨', starterOnly:true,
-    effectType:'points', scope:'session', baseValue:0.02,
-    desc:'A scuffed first relic. Tiny bonus to session points — you will find better.' },
-  { id:'featherweightWraps', name:'Featherweight Wraps', category:'relic', permanent:false, duration:3, icon:'🧤',
-    effectType:'points', scope:'focus', target:'arms', equipRequired:'bands', baseValue:0.15,
-    desc:'+15% points on arm exercises for 3 sessions.' },
-];
-// Filters a category's pool down to what the person could actually obtain right
-// now: Relics need their required equipment owned, Boosts are always eligible.
-// Falls back to the unfiltered pool if filtering would empty it out entirely
-// (e.g. someone with zero equipment logged), so a box/guarantee never comes up
-// with nothing to give.
+// --- Item catalog lives in item-catalog-lib (regular 0–4 vs unique 5-star).
+// Relics with equipRequired still need that gear owned to drop.
 function eligibleItemPool(category) {
   const full = ITEMS_CATALOG.filter(i => i.category === category && !i.starterOnly);
   const owned = state.equipment || [];
   const filtered = full.filter(i => !i.equipRequired || owned.includes(i.equipRequired));
   return filtered.length ? filtered : full;
-}
-function itemTemplate(itemId) { return ITEMS_CATALOG.find(i => i.id === itemId); }
-// v2.8: shared star-row markup — only rendered for items whose rarity ceiling
-// exceeds 2 stars, per spec ("above two stars"); a 2-star-max item like Iron
-// Focus never shows a star row anywhere, permanent items above that always do.
-function starRowHtml(tmpl, star) {
-  if (!tmpl.maxStar || tmpl.maxStar <= 2) return '';
-  return `<div class="star-row">${'★'.repeat(star)}${'☆'.repeat(tmpl.maxStar - star)}</div>`;
 }
 function effectiveItemValue(template, star) {
   if (!template) return 0;
@@ -3423,6 +3572,16 @@ function goldItemMultiplier() {
   });
   return mult;
 }
+function equippedBonusFor(effectType) {
+  let bonus = 0;
+  ['boost', 'relic'].forEach(category => {
+    getAllEquippedEffects(category).forEach(eff => {
+      if (!eff.template || eff.template.effectType !== effectType) return;
+      bonus += effectiveItemValue(eff.template, eff.star);
+    });
+  });
+  return bonus;
+}
 // Ticks down any active temporary equip slots by one session, clearing them once
 // they expire. Called once per completed session, never per set.
 function tickTemporaryEquips() {
@@ -3450,6 +3609,12 @@ function ensureInventoryShape() {
   state.inventory.stones = state.inventory.stones || { boost: 0, relic: 0 };
   state.inventory.boxes = Array.isArray(state.inventory.boxes) ? state.inventory.boxes : [];
   ensureSeenItemTypes(state);
+  (state.inventory.permanent || []).forEach(inst => {
+    const t = itemTemplate(inst.itemId);
+    if (!t || !t.permanent) return;
+    if (t.unique) inst.star = UNIQUE_STAR;
+    else inst.star = Math.min(Number(inst.star) || 0, REGULAR_MAX_STAR);
+  });
   // v3.0 §5: equip slots are now arrays (up to 3 per category), capacity
   // gated by Level (see getEquipSlotCapacity). Migrates any old single-object
   // equipped state into slot 0 so nobody's current gear silently vanishes.
@@ -3474,7 +3639,7 @@ function grantItem(itemId) {
     state.gems += 3;
     return { kind:'dupe-gems', tmpl, gems: 3 };
   }
-  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: 0 };
+  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: grantStarForTemplate(tmpl) };
   state.inventory.permanent.push(inst);
   noteItemTypeGranted(state, itemTypeKey('item', itemId));
   return { kind:'new', tmpl, inst };
@@ -3556,8 +3721,9 @@ function pickWeightedRareOutcome(category) {
     }));
     return pickWeightedFrom(stones);
   }
-  const items = eligibleItemPool(category).map(tmpl => ({ kind: 'item', tmpl, weight: itemRarityWeight(tmpl) }));
-  return pickWeightedFrom(items);
+  const items = eligibleItemPool(category);
+  const tmpl = pickBoxItemTemplate(items);
+  return { kind: 'item', tmpl };
 }
 function openBoxFree(category) {
   ensureInventoryShape();
@@ -3567,16 +3733,17 @@ function openBoxFree(category) {
     const amount = 3 + Math.floor(Math.random() * 6); // 3-8 shards
     state.inventory.shards[category] = (state.inventory.shards[category] || 0) + amount;
     noteItemTypeGranted(state, itemTypeKey('shards', category));
-    outcome = { kind:'shards', category, amount, result: { kind:'shards', tmpl: { name: `${catName} Shards ×${amount}`, icon: '🔹' } } };
+    outcome = { kind:'shards', category, amount, result: { kind:'shards', tmpl: { name: `${catName} Shards ×${amount}`, icon: matIconHtml('shards', category) } } };
   } else {
     const picked = pickWeightedRareOutcome(category);
     if (picked.kind === 'stone') {
       state.inventory.stones[category] = (state.inventory.stones[category] || 0) + 1;
       noteItemTypeGranted(state, itemTypeKey('stone', category));
-      outcome = { kind:'stone', category, amount: 1, rarity: picked.rarity, result: { kind:'stone', tmpl: { name: `${picked.label} ${catName} Enchantment Stone`, icon: '💠', maxStar: picked.maxStar, permanent: true } } };
+      outcome = { kind:'stone', category, amount: 1, rarity: picked.rarity, result: { kind:'stone', tmpl: { name: `${picked.label} ${catName} Enchantment Stone`, icon: matIconHtml('stone', category), maxStar: picked.maxStar, permanent: true } } };
     } else {
       const result = grantItem(picked.tmpl.id);
       outcome = { kind:'item', result };
+      if (result && result.tmpl && isUniqueItem(result.tmpl) && result.kind === 'new') outcome.legendary = true;
     }
   }
   outcome.gemsWon = 0;
@@ -3598,11 +3765,14 @@ const ENCHANT_XP_RISKY = 150;
 function enchantFailChance() {
   const lv = Math.max(1, Math.min(SKILL_MAX_LEVEL, getSkillLevel('enchant')));
   const t = (lv - 1) / Math.max(1, SKILL_MAX_LEVEL - 1);
-  return ENCHANT_FAIL_CHANCE_AT_1 + (ENCHANT_FAIL_CHANCE_AT_99 - ENCHANT_FAIL_CHANCE_AT_1) * t;
+  let fail = ENCHANT_FAIL_CHANCE_AT_1 + (ENCHANT_FAIL_CHANCE_AT_99 - ENCHANT_FAIL_CHANCE_AT_1) * t;
+  fail *= Math.max(0.18, 1 - equippedBonusFor('enchantSuccess'));
+  return fail;
 }
 function enchantSuccessChancePct() { return Math.round((1 - enchantFailChance()) * 100); }
 function awardEnchantSkillXp(amount) {
   if (!amount) return 0;
+  amount = Math.round(amount * (1 + equippedBonusFor('enchantXp')));
   state.skills = state.skills || {};
   const before = getSkillLevel('enchant');
   state.skills.enchant = (state.skills.enchant || 0) + amount;
@@ -3615,16 +3785,20 @@ function notifyEnchantLevelUps(gained) {
   if (typeof renderSkillsGrid === 'function') renderSkillsGrid();
 }
 function performStarUpgrade(inst, tmpl) {
+  const cap = itemMaxStar(tmpl);
+  if (inst.star >= cap) {
+    return { success:true, star: inst.star, risky:false, levelsGained: 0 };
+  }
   const nextStar = inst.star + 1;
   if (nextStar <= REGRADE_SAFE_CEILING) {
-    inst.star = nextStar;
+    inst.star = Math.min(nextStar, cap);
     const levelsGained = awardEnchantSkillXp(ENCHANT_XP_SAFE);
     return { success:true, star: inst.star, risky:false, levelsGained };
   } else if (Math.random() < enchantFailChance()) {
     inst.star = Math.max(0, inst.star - 1);
     return { success:false, star: inst.star, risky:true, levelsGained: 0 };
   } else {
-    inst.star = nextStar;
+    inst.star = Math.min(nextStar, cap);
     const levelsGained = awardEnchantSkillXp(ENCHANT_XP_RISKY);
     return { success:true, star: inst.star, risky:true, levelsGained };
   }
@@ -3638,7 +3812,7 @@ function attemptRegrade(instanceId) {
   const inst = state.inventory.permanent.find(x => x.instanceId === instanceId);
   if (!inst) return null;
   const tmpl = itemTemplate(inst.itemId);
-  if (inst.star >= tmpl.maxStar) { showToast('Already at max star'); return null; }
+  if (inst.star >= itemMaxStar(tmpl)) { showToast('Already at max star'); return null; }
   if ((state.inventory.stones[tmpl.category] || 0) < 1) { showToast(`Not enough ${tmpl.category} enchantment stones`); return null; }
   state.inventory.stones[tmpl.category] -= 1;
   const outcome = performStarUpgrade(inst, tmpl);
@@ -5874,7 +6048,7 @@ function renderEquippedSummary() {
       return `<div class="equipped-slot-row"><div>
         <div class="equipped-slot-label">${category === 'boost' ? 'Boost' : 'Relic'}</div>
         <div class="equipped-slot-name">${eff.template.name}</div>
-        <div class="equipped-slot-desc">+${val}% ${eff.template.effectType} — ${eff.template.desc}</div>
+        <div class="equipped-slot-desc">+${val}% ${itemBonusStatLabel(eff.template)} — ${eff.template.desc}</div>
       </div></div>`;
     }).join('');
   };
@@ -5929,8 +6103,8 @@ function renderInventoryTab() {
       const catName = cat === 'relic' ? 'Relic' : 'Boost';
       const shards = state.inventory.shards[cat] || 0;
       const stones = state.inventory.stones[cat] || 0;
-      if (filter === 'mats' || shards > 0) matEntries.push({ mat:'shards', cat, count: shards, name: catName + ' Shards', icon:'🔹' });
-      if (filter === 'mats' || stones > 0) matEntries.push({ mat:'stone', cat, count: stones, name: catName + ' Stone', icon:'💠' });
+      if (filter === 'mats' || shards > 0) matEntries.push({ mat:'shards', cat, count: shards, name: catName + ' Shards', icon: matIconHtml('shards', cat) });
+      if (filter === 'mats' || stones > 0) matEntries.push({ mat:'stone', cat, count: stones, name: catName + ' Stone', icon: matIconHtml('stone', cat) });
     });
   }
 
@@ -5951,8 +6125,10 @@ function renderInventoryTab() {
     const tmpl = itemTemplate(inst.itemId);
     const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
     const flash = shouldFlashItemType(state, itemTypeKey('item', inst.itemId)) || (!!(state.progression && state.progression.nudgeEquip) && inst.itemId === STARTER_RELIC_ID);
-    return `<div class="inv-slot${isEquipped ? ' equipped-slot' : ''}${flash ? ' unlock-pulse' : ''}" data-slot-perm="${inst.instanceId}">
-      <div class="inv-slot-icon">${tmpl.icon || '❔'}</div>
+    const unique = isUniqueItem(tmpl);
+    const glow = unique ? 'star-glow-5' : (flash ? 'unlock-pulse' : starGlowClass(inst.star, false));
+    return `<div class="inv-slot${isEquipped ? ' equipped-slot' : ''}${glow ? ' ' + glow : ''}" data-slot-perm="${inst.instanceId}">
+      <div class="inv-slot-icon">${itemIconHtml(tmpl)}</div>
       ${starRowHtml(tmpl, inst.star)}
     </div>`;
   });
@@ -5961,7 +6137,7 @@ function renderInventoryTab() {
     const flash = shouldFlashItemType(state, itemTypeKey('temp', itemId));
     return `<div class="inv-slot${flash ? ' unlock-pulse' : ''}" data-slot-temp="${itemId}">
       <div class="inv-temp-badge">TEMP</div>
-      <div class="inv-slot-icon">${tmpl.icon || '❔'}</div>
+      <div class="inv-slot-icon">${itemIconHtml(tmpl)}</div>
       ${count > 1 ? `<div class="inv-slot-count">x${count}</div>` : ''}
     </div>`;
   });
@@ -6060,10 +6236,11 @@ function renderItemDetailModal() {
     const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
     const nudgeEquip = !!(state.progression && state.progression.nudgeEquip && inst.itemId === STARTER_RELIC_ID && !isEquipped);
     body.innerHTML = `
-      <div class="item-detail-icon">${tmpl.icon || '❔'}</div>
+      <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${tmpl.name} <span class="mono" style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">${tmpl.category}</span></div>
         ${starRowHtml(tmpl, inst.star)}
+        ${isUniqueItem(tmpl) ? '<div class="l2" style="color:#f4f1ea; letter-spacing:0.14em; text-transform:uppercase; margin-top:4px;">Unique</div>' : ''}
       </div>
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
@@ -6085,7 +6262,7 @@ function renderItemDetailModal() {
     const catName = cat === 'relic' ? 'Relic' : 'Boost';
     const count = mat === 'shards' ? (state.inventory.shards[cat] || 0) : (state.inventory.stones[cat] || 0);
     const name = mat === 'shards' ? catName + ' Shards' : catName + ' Enchantment Stone';
-    const icon = mat === 'shards' ? '🔹' : '💠';
+    const icon = matIconHtml(mat, cat);
     const desc = mat === 'shards'
       ? `${SHARDS_PER_STONE} shards craft into 1 ${catName.toLowerCase()} enchantment stone at the Enchanting Table.`
       : `Used to enchant ${catName.toLowerCase()} items at the Enchanting Table.`;
@@ -6107,7 +6284,7 @@ function renderItemDetailModal() {
     save();
     const isTempEquipped = findEquippedSlot(tmpl.category, { kind:'temporary', itemId: tmpl.id }) >= 0;
     body.innerHTML = `
-      <div class="item-detail-icon">${tmpl.icon || '❔'}</div>
+      <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${tmpl.name} <span class="mono" style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">${tmpl.category}</span></div>
         <div class="quest-type-tag warmup-tag">TEMP · x${count}</div>
@@ -6206,7 +6383,7 @@ function enchantTableReady() {
 }
 function enchantAttemptChancePct(inst, tmpl) {
   if (!inst || !tmpl) return 0;
-  if (inst.star >= tmpl.maxStar) return 0;
+  if (inst.star >= itemMaxStar(tmpl)) return 0;
   if (inst.star + 1 <= REGRADE_SAFE_CEILING) return 100;
   return enchantSuccessChancePct();
 }
@@ -6216,7 +6393,7 @@ function enchantAttemptFromSlot() {
   const inst = state.inventory.permanent.find(x => x.instanceId === table.instanceId);
   if (!inst) return;
   const tmpl = itemTemplate(inst.itemId);
-  if (inst.star >= tmpl.maxStar) { showToast('Already at max star'); return; }
+  if (inst.star >= itemMaxStar(tmpl)) { showToast('Already at max star'); return; }
   const beforeStar = inst.star;
   const beforePct = itemBonusPercent(tmpl, beforeStar);
   table.animating = true;
@@ -6253,7 +6430,7 @@ function showEnchantResults(info) {
   layer.innerHTML = `<div class="enchant-results-scroll">
     <div class="card" style="margin-top:12px;">
       <div class="enchant-table-title">${info.outcome.success ? 'Enchant Success' : 'Enchant Failed'}</div>
-      <div style="text-align:center; font-size:28px; margin:8px 0;">${info.tmpl.icon || '❔'}</div>
+      <div style="text-align:center; font-size:28px; margin:8px 0;">${itemIconHtml(info.tmpl)}</div>
       <div style="text-align:center; font-family:'Barlow Condensed'; font-size:20px;">${info.tmpl.name}</div>
       <div style="text-align:center; margin:6px 0 10px;">${info.beforeStar}★ → ${info.outcome.star}★</div>
       <table class="enchant-stat-table">
@@ -6300,7 +6477,7 @@ function renderEnchantModal() {
   const table = getEnchantTable();
   const inst = table.instanceId ? state.inventory.permanent.find(x => x.instanceId === table.instanceId) : null;
   const tmpl = inst ? itemTemplate(inst.itemId) : null;
-  const maxed = !!(inst && tmpl && inst.star >= tmpl.maxStar);
+  const maxed = !!(inst && tmpl && inst.star >= itemMaxStar(tmpl));
   const chance = inst && tmpl ? enchantAttemptChancePct(inst, tmpl) : null;
   const coach = enchantCoachText(table, inst, tmpl);
   const picker = window.__enchantPicker;
@@ -6308,7 +6485,7 @@ function renderEnchantModal() {
 
   const itemSlot = inst
     ? `<div class="enchant-drop filled${coach && !table.instanceId ? '' : (coach && !table.stonePlaced && table.instanceId ? '' : '')}" id="enchantItemSlot">
-         <div class="enchant-drop-ic">${tmpl.icon || '❔'}</div>
+         <div class="enchant-drop-ic">${itemIconHtml(tmpl)}</div>
          <div class="enchant-drop-lab">${tmpl.name}</div>
        </div>`
     : `<div class="enchant-drop${coach && !table.instanceId ? ' nudge' : ''}" id="enchantItemSlot">
@@ -6317,7 +6494,7 @@ function renderEnchantModal() {
        </div>`;
   const stoneSlot = table.stonePlaced
     ? `<div class="enchant-drop filled" id="enchantStoneSlot">
-         <div class="enchant-drop-ic">💠</div>
+         <div class="enchant-drop-ic">${matIconHtml('stone', table.category || 'relic')}</div>
          <div class="enchant-drop-lab">Stone</div>
        </div>`
     : `<div class="enchant-drop${coach && table.instanceId && !table.stonePlaced ? ' nudge' : ''}" id="enchantStoneSlot">
@@ -6332,7 +6509,7 @@ function renderEnchantModal() {
       <div class="section-title" style="margin-top:0;">Choose an item</div>
       ${items.length ? `<div class="inv-slot-grid">${items.map(p => {
         const t = itemTemplate(p.itemId);
-        return `<div class="inv-slot" data-enchant-pick="${p.instanceId}"><div class="inv-slot-icon">${t.icon || '❔'}</div>${starRowHtml(t, p.star)}</div>`;
+        return `<div class="inv-slot" data-enchant-pick="${p.instanceId}"><div class="inv-slot-icon">${itemIconHtml(t)}</div>${starRowHtml(t, p.star)}</div>`;
       }).join('')}</div>` : '<div class="empty"><div class="big">No items yet</div></div>'}
       <button class="btn" id="enchantPickerCancel">Cancel</button>
     </div>`;
@@ -6342,7 +6519,7 @@ function renderEnchantModal() {
     pickerHtml = `<div class="enchant-picker show" id="enchantPicker">
       <div class="section-title" style="margin-top:0;">Place a stone</div>
       <div class="card" style="text-align:center;">
-        <div class="item-detail-icon">💠</div>
+        <div class="item-detail-icon">${matIconHtml('stone', cat)}</div>
         <div>${cat === 'relic' ? 'Relic' : 'Boost'} Enchantment Stone</div>
         <div class="l2" style="margin:8px 0;">Owned: ${have}</div>
         <button class="enchant-cast-btn" id="enchantPlaceStoneBtn" ${have < 1 ? 'disabled' : ''}>Place 1 stone</button>
@@ -6366,22 +6543,22 @@ function renderEnchantModal() {
     <div class="section-title">Craft Stones</div>
     <div class="craft-stone-grid">
       <div class="craft-stone-card">
-        <div class="craft-stone-icon">🔹</div>
+        <div class="craft-stone-icon">${matIconHtml('shards', 'relic')}</div>
         <div class="craft-stone-info">
           <div class="craft-stone-name">Relic Shards</div>
           <div class="craft-stone-count">${state.inventory.shards.relic} / ${SHARDS_PER_STONE}</div>
           <div class="craft-stone-track"><div class="craft-stone-fill" style="width:${Math.min(100, (state.inventory.shards.relic / SHARDS_PER_STONE) * 100)}%"></div></div>
-          <div class="craft-stone-result">Crafts 💠 Relic Enchantment Stone</div>
+          <div class="craft-stone-result">Crafts ${matIconHtml('stone', 'relic')} Relic Enchantment Stone</div>
         </div>
         <button class="btn craft-btn" id="craftRelicStoneBtn" ${state.inventory.shards.relic < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button>
       </div>
       <div class="craft-stone-card">
-        <div class="craft-stone-icon">🔹</div>
+        <div class="craft-stone-icon">${matIconHtml('shards', 'boost')}</div>
         <div class="craft-stone-info">
           <div class="craft-stone-name">Boost Shards</div>
           <div class="craft-stone-count">${state.inventory.shards.boost} / ${SHARDS_PER_STONE}</div>
           <div class="craft-stone-track"><div class="craft-stone-fill" style="width:${Math.min(100, (state.inventory.shards.boost / SHARDS_PER_STONE) * 100)}%"></div></div>
-          <div class="craft-stone-result">Crafts 💠 Boost Enchantment Stone</div>
+          <div class="craft-stone-result">Crafts ${matIconHtml('stone', 'boost')} Boost Enchantment Stone</div>
         </div>
         <button class="btn craft-btn" id="craftBoostStoneBtn" ${state.inventory.shards.boost < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button>
       </div>
@@ -6463,6 +6640,7 @@ function dismissBoxReveal() {
   const overlay = document.getElementById('boxRevealOverlay');
   if (overlay) {
     overlay.onclick = null;
+    overlay.classList.remove('unique-reveal');
     overlay.style.display = 'none';
   }
   afterPaint(() => {
@@ -6485,14 +6663,15 @@ function getBoxRevealTier(outcome) {
   if (outcome.kind === 'stone') return outcome.rarity || maxStarToRevealTier(outcome.result && outcome.result.tmpl && outcome.result.tmpl.maxStar);
   const tmpl = outcome.result && outcome.result.tmpl;
   if (!tmpl) return 'common';
-  if (!tmpl.permanent) return 'uncommon';
-  return maxStarToRevealTier(tmpl.maxStar || 2);
+  const star = outcome.result.inst ? outcome.result.inst.star : (outcome.result.star != null ? outcome.result.star : 0);
+  return itemRevealTier(tmpl, star);
 }
 const BOX_TIER_META = {
   common:    { label: '',          color: 'var(--text-dim)', buildMs: 500 },
   uncommon:  { label: '',          color: 'var(--a2)',       buildMs: 750 },
   rare:      { label: 'Rare',      color: 'var(--a1)',       buildMs: 1000 },
   legendary: { label: 'Legendary', color: 'var(--gain)',     buildMs: 1400 },
+  unique:    { label: 'Legendary', color: '#f4f1ea',         buildMs: 1800 },
 };
 function showBoxReveal(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
@@ -6506,6 +6685,7 @@ function showBoxReveal(category, outcome) {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
+  overlay.classList.toggle('unique-reveal', tier === 'unique');
   overlay.style.display = 'flex';
   overlay.onclick = null; // disabled during build-up so the suspense can't be skipped
   content.innerHTML = `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${buildupColor};">${boxBuildupInnerHtml(category, artFn)}</div>`;
@@ -6519,14 +6699,19 @@ function showBoxReveal(category, outcome) {
       let bodyLine;
       if (outcome.kind === 'shards') bodyLine = `+${outcome.amount} ${catLabel}shards`;
       else if (outcome.kind === 'stone') bodyLine = `+1 ${catLabel}enchantment stone`;
-      else bodyLine = tmpl.permanent ? (outcome.result.kind === 'dupe-gems' ? `Already owned — converted to +${outcome.result.gems} gems` : 'New item acquired!') : `+1 charge`;
+      else if (tmpl.permanent && outcome.result.kind === 'dupe-gems') bodyLine = `Already owned — converted to +${outcome.result.gems} gems`;
+      else if (tier === 'unique') bodyLine = 'A unique has awakened';
+      else bodyLine = tmpl.permanent ? 'New item acquired!' : `+1 charge`;
       if (outcome.extraLine) bodyLine += ` · ${outcome.extraLine}`;
       if (outcome.gemsWon) bodyLine += ` · +1 bonus gem`;
+      const prizeIcon = outcome.kind === 'shards' ? matIconHtml('shards', category)
+        : outcome.kind === 'stone' ? matIconHtml('stone', category)
+        : (typeof itemIconHtml === 'function' ? itemIconHtml(tmpl) : (tmpl.icon || lootFallback));
       content.innerHTML = `
-        <div class="box-reveal-burst-flash"></div>
+        ${tier === 'unique' ? '<div class="box-reveal-unique-flash"></div>' : '<div class="box-reveal-burst-flash"></div>'}
         <div class="box-reveal-card tier-${tier}">
           ${meta.label ? `<div class="box-reveal-tier-label" style="color:${meta.color};">${meta.label}</div>` : ''}
-          <div class="rarity-burst" style="color:${meta.color};">${tmpl.icon || lootFallback}</div>
+          <div class="rarity-burst" style="color:${meta.color};">${prizeIcon}</div>
           <div class="rn">${tmpl.name}</div>
           <div class="rd">${bodyLine}</div>
           <div class="box-reveal-hint">Tap to close</div>
@@ -6905,6 +7090,8 @@ function itemBonusPercent(tmpl, star) {
 }
 function itemBonusStatLabel(tmpl) {
   if (!tmpl) return 'Bonus';
+  if (tmpl.effectType === 'enchantSuccess') return 'Enchant success';
+  if (tmpl.effectType === 'enchantXp') return 'Enchant XP';
   if (tmpl.effectType === 'gold') return 'Session gold';
   if (tmpl.scope === 'session') return 'Session points';
   if (tmpl.scope === 'exercise') return 'Exercise points';
@@ -7452,7 +7639,7 @@ function feedbackBoxOpen(tier) {
   ]);
   vibrate([16, 28, 22]);
   setTimeout(() => {
-    if (tier === 'legendary') {
+    if (tier === 'legendary' || tier === 'unique') {
       playToneSequence([
         { freq: 523, durationMs: 90, type: 'triangle', delayMs: 0, vol: 0.18 },
         { freq: 659, durationMs: 90, type: 'triangle', delayMs: 80, vol: 0.18 },
