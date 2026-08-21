@@ -266,6 +266,18 @@ async function fetchManifestFromRaw(ref) {
   return null;
 }
 
+async function fetchLatestCommitSha(ref) {
+  const res = await CapacitorHttp.get({
+    url: `https://api.github.com/repos/${UPDATE_REPO}/commits/${encodeURIComponent(ref)}`,
+    headers: authHeaders(),
+    connectTimeout: 8000,
+    readTimeout: 12000,
+  });
+  if (res.status !== 200) return null;
+  const data = parseGithubJson(res.data);
+  return data && data.sha ? data.sha : null;
+}
+
 async function fetchManifestFromApi(ref) {
   const headers = authHeaders();
   const manUrl = `https://api.github.com/repos/${UPDATE_REPO}/contents/live-update/manifest.json?ref=${encodeURIComponent(ref)}`;
@@ -283,7 +295,11 @@ async function fetchManifestFromApi(ref) {
   const zipUrlApi = `https://api.github.com/repos/${UPDATE_REPO}/contents/live-update/www.zip?ref=${encodeURIComponent(ref)}`;
   const zipRes = await CapacitorHttp.get({ url: zipUrlApi, headers, connectTimeout: 8000, readTimeout: 15000 });
   const zipMeta = parseGithubJson(zipRes.data);
-  const zipUrl = zipMeta?.download_url;
+  let zipUrl = zipMeta && zipMeta.download_url;
+  try {
+    const sha = await fetchLatestCommitSha(ref);
+    if (sha) zipUrl = `https://raw.githubusercontent.com/${UPDATE_REPO}/${sha}/live-update/www.zip`;
+  } catch (_) { /* keep download_url */ }
   if (!zipUrl) return null;
   return { version: manifest.version, zipUrl, public: !getGithubToken() };
 }
@@ -291,13 +307,13 @@ async function fetchManifestFromApi(ref) {
 async function fetchLatestManifest() {
   for (const ref of UPDATE_REFS) {
     try {
+      const api = await fetchManifestFromApi(ref);
+      if (api) return api;
+    } catch (_) { /* token missing or not yet public */ }
+    try {
       const raw = await fetchManifestFromRaw(ref);
       if (raw) return raw;
     } catch (_) { /* private repos 404 here */ }
-    try {
-      const api = await fetchManifestFromApi(ref);
-      if (api) return api;
-    } catch (_) { /* token missing or invalid */ }
   }
   return getGithubToken() ? null : { privateRepo: true };
 }
