@@ -812,7 +812,9 @@
   .equipped-slot-label { font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   .equipped-slot-name { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 600; }
   .equipped-slot-desc { font-size: 11px; color: var(--text-dim); }
-  .star-row { color: var(--gain); font-size: 11px; letter-spacing: 1px; }
+  .star-row { font-size: 11px; letter-spacing: 1px; line-height: 1; }
+  .star-on { color: var(--gain); }
+  .star-off { color: var(--text-dim); opacity: 0.55; }
 
   /* --- v5.2: named RPG gear slots + set-bonus tracker --- */
   .gear-loadout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1005,6 +1007,8 @@
     position: fixed; z-index: 250; max-width: 280px; min-width: 210px;
     background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
     padding: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    max-height: calc(100dvh - var(--app-sat) - 96px - var(--app-sab));
+    overflow-y: auto;
   }
 
   /* --- v2.1 / v4.9: Shop storefront --- */
@@ -2064,7 +2068,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.18</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.19</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -3158,8 +3162,13 @@ function itemRevealTier(tmpl, star) {
 function starRowHtml(tmpl, star) {
   if (!tmpl || !tmpl.permanent) return '';
   const max = itemMaxStar(tmpl);
-  const filled = Math.max(0, Math.min(max, Number(star) || 0));
-  return `<div class="star-row">${'★'.repeat(filled)}${'☆'.repeat(max - filled)}</div>`;
+  const n = Number(star);
+  const filled = Math.max(0, Math.min(max, Number.isFinite(n) ? n : 0));
+  let row = '<div class="star-row">';
+  for (let i = 0; i < max; i++) {
+    row += i < filled ? '<span class="star-on">★</span>' : '<span class="star-off">☆</span>';
+  }
+  return row + '</div>';
 }
 const ITEMS_CATALOG = [
   { id:'doubleDown', name:'Double Down', category:'boost', slot:'boost', setId:null, permanent:false, duration:1, icon:'⚡',
@@ -3551,16 +3560,14 @@ function checkLevelUp(prevPoints, newPoints) {
 
     const tierGoldAmt = awardGold(getLevelTierIndex(newTier.id) * 20, 'level tier up');
     state.gems = (state.gems || 0) + 1;
-    const boostOutcome = openBoxFree('boost');
-    const relicOutcome = openBoxFree('relic');
     let guaranteed = null;
     if (RANK_GUARANTEE_TIERS.includes(newTier.id)) guaranteed = grantGuaranteedPermanentItem(newTier.id);
     lines.push(
       { icon:'🏆', label:'New Tier', value: newTier.name },
       { icon:'🪙', label:'Tier Gold', value: '+' + tierGoldAmt },
       { icon:'💎', label:'Gems', value: '+1' },
-      { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
-      { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name }
+      sealedBoxRewardLine(state, 'boost'),
+      sealedBoxRewardLine(state, 'relic')
     );
     if (guaranteed) lines.push({ icon:'✨', label:'Guaranteed Item', value: `${guaranteed.tmpl.name} (${guaranteed.star}★)` });
   }
@@ -3900,12 +3907,10 @@ function grantSeasonEndReward(finishRank) {
     { icon:'💎', label:'Gems', value: '+' + rew.seasonGems },
   ];
   for (let i = 0; i < (rew.seasonBoostBoxes || 0); i++) {
-    const boostOutcome = openBoxFree('boost');
-    lines.push({ icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name });
+    lines.push(sealedBoxRewardLine(state, 'boost'));
   }
   for (let i = 0; i < (rew.seasonRelicBoxes || 0); i++) {
-    const relicOutcome = openBoxFree('relic');
-    lines.push({ icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name });
+    lines.push(sealedBoxRewardLine(state, 'relic'));
   }
   save();
   queueReward({ title:'Season Ended', subtitle: `Finished ${finishRank.name}`, lines, accentColor: finishRank.color });
@@ -3950,12 +3955,10 @@ function claimDailyLogin() {
     const weekReady = !state.dailyLogin.lastWeeklyBoxDate || daysBetweenDates(state.dailyLogin.lastWeeklyBoxDate, today) >= 7;
     if (weekReady) {
       for (let i = 0; i < (reward.weeklyBoostBoxes || 0); i++) {
-        const boostOutcome = openBoxFree('boost');
-        lines.push({ icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name });
+        lines.push(sealedBoxRewardLine(state, 'boost'));
       }
       for (let i = 0; i < (reward.weeklyRelicBoxes || 0); i++) {
-        const relicOutcome = openBoxFree('relic');
-        lines.push({ icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name });
+        lines.push(sealedBoxRewardLine(state, 'relic'));
       }
       state.dailyLogin.lastWeeklyBoxDate = today;
     }
@@ -4811,24 +4814,21 @@ function defeatBoss(bossId) {
   state.bosses = state.bosses.filter(b => b.id !== bossId);
 
   // Bigger-than-routine reward: guaranteed one Boost Box AND one Relic Box
-  // (rather than a random single box), a larger gold amount than a normal
-  // session, and a chance at a bonus streak freeze — all respecting the same
-  // equipment-tagged pools boxes already use.
-  const boostOutcome = openBoxFree('boost');
-  const relicOutcome = openBoxFree('relic');
+  // (sealed into Inventory — the player opens them), a larger gold amount than
+  // a normal session, and a chance at a bonus streak freeze.
   const goldAmt = awardGold(80, 'boss defeat');
   let gotFreeze = false;
   if (Math.random() < 0.4) { state.streakFreezes = (state.streakFreezes || 0) + 1; gotFreeze = true; }
-  save();
 
   const ptsAmt = boss.earnedPoints || 0;
   const lines = [
     { icon:'⭐', label:'Points', value: '+' + ptsAmt },
     { icon:'🪙', label:'Gold', value: '+' + goldAmt },
-    { icon:'⚡', label:'Boost Box', value: boostOutcome.result.tmpl.name },
-    { icon:'🛡️', label:'Relic Box', value: relicOutcome.result.tmpl.name },
+    sealedBoxRewardLine(state, 'boost'),
+    sealedBoxRewardLine(state, 'relic'),
   ];
   if (gotFreeze) lines.push({ icon:'🧊', label:'Streak Freeze', value: '+1' });
+  save();
   queueReward({ kind:'boss', title:'Boss Defeated!', subtitle: boss.name + ' cleared', lines, accentColor:'var(--gain)' });
 }
 function bossLootPreviewLines() {
@@ -6887,9 +6887,7 @@ function renderInventoryTab() {
   enchantEntry.classList.toggle('unlock-pulse', false);
 
   const filter = state.activeInvFilter || 'all';
-  const sealedBoxes = (filter === 'all' || filter === 'relic')
-    ? (state.inventory.boxes || []).filter(b => !b.opened)
-    : [];
+  const sealedBoxes = (state.inventory.boxes || []).filter(b => boxMatchesInvFilter(b, filter));
   const permItems = (filter === 'mats') ? [] : state.inventory.permanent.filter(inst => {
     const tmpl = itemTemplate(inst.itemId);
     if (!tmpl || !isEquippableItemSlot(tmpl)) return false;
@@ -6921,9 +6919,10 @@ function renderInventoryTab() {
 
   const boxSlots = sealedBoxes.map(box => {
     const boxId = box.itemId || STARTER_BOX_ID;
+    const tmpl = boxTemplate(boxId);
     const glow = invSlotGlowClass(state, boxId, shouldFlashItemType(state, itemTypeKey('box', boxId)));
     return `<div class="inv-slot${glow ? ' ' + glow : ''}" data-slot-box="${box.instanceId}">
-      <div class="inv-slot-icon">${STARTER_BOX_TMPL.icon}</div>
+      <div class="inv-slot-icon">${tmpl.icon}</div>
     </div>`;
   });
   const permSlots = permItems.map(inst => {
@@ -6943,7 +6942,7 @@ function renderInventoryTab() {
       ${count > 1 ? `<div class="inv-slot-count">x${count}</div>` : ''}
     </div>`;
   });
-  const matSlots = matEntries.map(m => `<div class="inv-slot${suppressRewardItemGlow(state) ? '' : (shouldFlashItemType(state, itemTypeKey(m.mat, m.cat)) ? ' unlock-pulse' : '')}" data-slot-mat="${m.mat}:${m.cat}">
+  const matSlots = matEntries.map(m => `<div class="inv-slot" data-slot-mat="${m.mat}:${m.cat}">
       <div class="inv-slot-icon">${m.icon}</div>
       <div class="inv-slot-count">x${m.count}</div>
     </div>`);
@@ -6962,21 +6961,43 @@ function renderInventoryTab() {
 // v2.9: anchored popup at the tapped slot, RPG-tooltip style, instead of a
 // full window. Tapping the same slot again toggles it closed; tapping a
 // different slot just repositions/re-renders it there.
+// v6.3: measure after content is rendered, then clamp inside the status-bar
+// / tab-bar safe area. Never pin with unconstrained `bottom` — that grew
+// tall cards up under the status bar and clipped the item photo.
 function positionItemDetailPopup(anchorEl) {
   const popup = document.getElementById('itemDetailPopup');
+  if (!popup || !anchorEl) return;
   const rect = anchorEl.getBoundingClientRect();
   const popupWidth = 264;
   let left = rect.left + rect.width / 2 - popupWidth / 2;
   left = Math.max(10, Math.min(left, window.innerWidth - popupWidth - 10));
   popup.style.left = left + 'px';
   popup.style.width = popupWidth + 'px';
-  if (rect.top > 220) {
-    popup.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
-    popup.style.top = 'auto';
+
+  const gap = 8;
+  const safeTop = ((typeof appSafeTop === 'function' ? appSafeTop() : 0) || 0) + gap;
+  const tabbar = document.querySelector('nav.tabbar');
+  const tabTop = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
+  const floor = tabTop - gap;
+  const popupH = Math.max(popup.offsetHeight || 0, 120);
+  const spaceBelow = floor - (rect.bottom + gap);
+  const spaceAbove = rect.top - gap - safeTop;
+
+  let top;
+  if (spaceBelow >= popupH || spaceBelow >= spaceAbove) {
+    top = rect.bottom + gap;
+    if (top + popupH > floor) top = Math.max(safeTop, floor - popupH);
   } else {
-    popup.style.top = (rect.bottom + 8) + 'px';
-    popup.style.bottom = 'auto';
+    top = rect.top - gap - popupH;
+    if (top < safeTop) top = safeTop;
   }
+  if (top + popupH > floor) top = Math.max(safeTop, floor - popupH);
+  popup.style.top = top + 'px';
+  popup.style.bottom = 'auto';
+}
+function finishItemDetailRender() {
+  const target = window.__itemDetailTarget;
+  if (target && target.anchorEl) positionItemDetailPopup(target.anchorEl);
 }
 function openItemDetailModal(kind, id, anchorEl) {
   const prev = window.__itemDetailTarget;
@@ -6984,10 +7005,9 @@ function openItemDetailModal(kind, id, anchorEl) {
     closeItemDetailModal(); // tapping the same item again closes it
     return;
   }
-  window.__itemDetailTarget = { kind, id };
+  window.__itemDetailTarget = { kind, id, anchorEl: anchorEl || null };
   document.getElementById('itemDetailPopup').style.display = 'block';
   document.getElementById('itemDetailPopupBackdrop').style.display = 'block';
-  if (anchorEl) positionItemDetailPopup(anchorEl);
   renderItemDetailModal();
 }
 function closeItemDetailModal() {
@@ -7002,37 +7022,20 @@ function renderItemDetailModal() {
   if (target.kind === 'box') {
     const box = (state.inventory.boxes || []).find(b => b.instanceId === target.id && !b.opened);
     if (!box) { closeItemDetailModal(); return; }
+    const tmpl = boxTemplate(box.itemId || STARTER_BOX_ID);
     acknowledgeItemType(state, itemTypeKey('box', box.itemId || STARTER_BOX_ID));
     save();
     body.innerHTML = `
-      <div class="item-detail-icon">${STARTER_BOX_TMPL.icon}</div>
-      <div class="inv-item-name" style="text-align:center;">${STARTER_BOX_TMPL.name}</div>
-      <div class="dd" style="text-align:center; margin:8px 0 14px;">${STARTER_BOX_TMPL.desc}</div>
+      <div class="item-detail-icon">${tmpl.icon}</div>
+      <div class="inv-item-name" style="text-align:center;">${tmpl.name}</div>
+      <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center;">
-        <button class="inv-btn" id="itemDetailOpenBoxBtn">Open Box</button>
+        <button class="inv-btn inv-btn-equip" id="itemDetailOpenBoxBtn">Open Box</button>
       </div>`;
     document.getElementById('itemDetailOpenBoxBtn').addEventListener('click', () => {
-      closeItemDetailModal();
-      const overlay = document.getElementById('boxRevealOverlay');
-      window.__boxRevealOpen = true;
-      coverBoxRevealOverlay(overlay, 'starter');
-      queueBoxOpenWork(() => {
-        if (!window.__boxRevealOpen) return;
-        const loot = openStarterVictoryBox(state);
-        if (!loot) {
-          hideBoxRevealOverlay(overlay);
-          window.__boxRevealOpen = false;
-          window.setTimeout(() => { try { save(); renderInventoryTab(); } catch (err) {} }, 400);
-          return;
-        }
-        const relicTmpl = itemTemplate(STARTER_RELIC_ID) || { name: 'Relic', icon: '🪨' };
-        showBoxReveal('starter', {
-          kind: 'item',
-          result: { kind: 'new', tmpl: relicTmpl },
-          extraLine: '+1 Relic Enchantment Stone'
-        });
-      });
+      openInventoryBox(box);
     });
+    finishItemDetailRender();
     return;
   }
   if (target.kind === 'permanent') {
@@ -7111,7 +7114,7 @@ function renderItemDetailModal() {
       ${itemSetBonusHtml(tmpl)}
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
-        <button class="inv-btn${isTempEquipped ? ' equipped' : ''}" id="itemDetailActivateBtn">${isTempEquipped ? 'Unequip' : 'Activate'}</button>
+        <button class="inv-btn inv-btn-equip${isTempEquipped ? ' equipped' : ''}" id="itemDetailActivateBtn">${isTempEquipped ? 'Unequip' : 'Activate'}</button>
         ${count > 0 ? '<button class="inv-btn" id="itemDetailDestroyBtn">Destroy</button>' : ''}
       </div>`;
     document.getElementById('itemDetailActivateBtn').addEventListener('click', () => {
@@ -7130,6 +7133,48 @@ function renderItemDetailModal() {
       else renderItemDetailModal();
     });
   }
+  finishItemDetailRender();
+}
+function openInventoryBox(box) {
+  if (!box || box.opened) return;
+  if (boxRevealIsBusy(Date.now(), window.__boxRevealOpen, window.__boxRevealGuardUntil)) return;
+  closeItemDetailModal();
+  const overlay = document.getElementById('boxRevealOverlay');
+  const itemId = box.itemId || STARTER_BOX_ID;
+  const tmpl = boxTemplate(itemId);
+  const category = tmpl.category === 'boost' ? 'boost' : 'relic';
+  window.__boxRevealOpen = true;
+  coverBoxRevealOverlay(overlay, itemId === STARTER_BOX_ID ? 'starter' : category);
+  queueBoxOpenWork(() => {
+    if (!window.__boxRevealOpen) return;
+    if (itemId === STARTER_BOX_ID) {
+      const loot = openStarterVictoryBox(state);
+      if (!loot) {
+        hideBoxRevealOverlay(overlay);
+        window.__boxRevealOpen = false;
+        window.setTimeout(() => { try { save(); renderInventoryTab(); } catch (err) {} }, 400);
+        return;
+      }
+      const relicTmpl = itemTemplate(STARTER_RELIC_ID) || { name: 'Relic', icon: '🪨' };
+      showBoxReveal('starter', {
+        kind: 'item',
+        result: { kind: 'new', tmpl: relicTmpl },
+        extraLine: '+1 Relic Enchantment Stone'
+      });
+      return;
+    }
+    const live = (state.inventory.boxes || []).find(b => b.instanceId === box.instanceId && !b.opened);
+    if (!live) {
+      hideBoxRevealOverlay(overlay);
+      window.__boxRevealOpen = false;
+      window.setTimeout(() => { try { save(); renderInventoryTab(); } catch (err) {} }, 400);
+      return;
+    }
+    live.opened = true;
+    state.inventory.boxes = state.inventory.boxes.filter(b => !b.opened);
+    const outcome = openBoxFree(category);
+    showBoxReveal(category, outcome);
+  });
 }
 function openShopModal() {
   document.getElementById('shopModal').style.display = 'flex';
@@ -7859,8 +7904,63 @@ const STARTER_BOX_TMPL = {
   id: STARTER_BOX_ID,
   name: 'First Victory Box',
   icon: '📦',
+  category: 'relic',
   desc: 'A sealed reward for finishing your first workout. Open it to find a Relic and an Enchantment Stone.'
 };
+const SHOP_BOOST_BOX_ID = 'shopBoostBox';
+const SHOP_RELIC_BOX_ID = 'shopRelicBox';
+const BOOST_BOX_TMPL = {
+  id: SHOP_BOOST_BOX_ID,
+  name: 'Boost Box',
+  icon: '⚡',
+  category: 'boost',
+  desc: 'A sealed Boost Box. Open it from Inventory when you are ready.'
+};
+const RELIC_BOX_TMPL = {
+  id: SHOP_RELIC_BOX_ID,
+  name: 'Relic Box',
+  icon: '🛡️',
+  category: 'relic',
+  desc: 'A sealed Relic Box. Open it from Inventory when you are ready.'
+};
+function boxTemplate(itemId) {
+  if (itemId === SHOP_BOOST_BOX_ID) return BOOST_BOX_TMPL;
+  if (itemId === SHOP_RELIC_BOX_ID) return RELIC_BOX_TMPL;
+  return STARTER_BOX_TMPL;
+}
+function boxMatchesInvFilter(box, filter) {
+  if (!box || box.opened) return false;
+  if (filter === 'mats') return false;
+  if (!filter || filter === 'all') return true;
+  const tmpl = boxTemplate(box.itemId || STARTER_BOX_ID);
+  return tmpl.category === filter;
+}
+function grantSealedBox(s, category) {
+  if (!s) return null;
+  const cat = category === 'relic' ? 'relic' : 'boost';
+  const tmpl = boxTemplate(cat === 'relic' ? SHOP_RELIC_BOX_ID : SHOP_BOOST_BOX_ID);
+  s.inventory = s.inventory || { permanent: [], tempCharges: {}, shards: { boost: 0, relic: 0 }, stones: { boost: 0, relic: 0 }, boxes: [] };
+  s.inventory.boxes = Array.isArray(s.inventory.boxes) ? s.inventory.boxes : [];
+  const inst = {
+    instanceId: 'box-' + cat + '-' + Date.now().toString(36) + '-' + s.inventory.boxes.length + '-' + Math.floor(Math.random() * 1e9).toString(36),
+    itemId: tmpl.id,
+    opened: false
+  };
+  s.inventory.boxes.push(inst);
+  if (typeof noteItemTypeGranted === 'function' && typeof itemTypeKey === 'function') {
+    noteItemTypeGranted(s, itemTypeKey('box', tmpl.id));
+  }
+  return { itemId: tmpl.id, instanceId: inst.instanceId, tmpl };
+}
+function sealedBoxRewardLine(s, category) {
+  const granted = grantSealedBox(s, category);
+  const tmpl = (granted && granted.tmpl) || boxTemplate(category === 'relic' ? SHOP_RELIC_BOX_ID : SHOP_BOOST_BOX_ID);
+  return {
+    icon: category === 'relic' ? '🛡️' : '⚡',
+    label: tmpl.name,
+    value: 'Added to Inventory'
+  };
+}
 const RANK_WALKTHROUGH_GOLD = 80;
 const RANK_WALKTHROUGH_GEMS = 1;
 const RANK_WALKTHROUGH_STEPS = [

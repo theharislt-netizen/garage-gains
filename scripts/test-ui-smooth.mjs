@@ -40,7 +40,7 @@ assert(handleOpen.includes('renderInventoryTab()'), 'inventory refreshes after a
 assert(handleOpen.indexOf('hideBoxRevealOverlay') < handleOpen.indexOf('renderInventoryTab()'),
   'inventory refresh waits until after the overlay hides');
 
-const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html.indexOf('if (target.kind === \'permanent\')'));
+const starterOpen = html.slice(html.indexOf('function openInventoryBox'), html.indexOf('function openShopModal'));
 assert(starterOpen.includes('showBoxReveal'), 'starter box still uses the reveal');
 assert(starterOpen.includes('coverBoxRevealOverlay'), 'starter open covers the screen first');
 assert(starterOpen.indexOf('coverBoxRevealOverlay') < starterOpen.indexOf('openStarterVictoryBox'), 'starter loot waits until the overlay is on');

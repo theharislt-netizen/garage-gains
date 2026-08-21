@@ -132,11 +132,12 @@ assert(html.includes('id="boxPrizeBurst"') && html.includes('id="boxPrizeUnique"
   'burst flashes are pre-mounted');
 assert(html.includes('shop-behind-box'), 'shop can hide without a rebuild');
 
-const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html.indexOf('if (target.kind === \'permanent\')'));
+const starterOpen = html.slice(html.indexOf('function openInventoryBox'), html.indexOf('function openShopModal'));
 assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yielded open');
 assert(starterOpen.includes('coverBoxRevealOverlay'), 'starter cover starts the shake via the shared helper');
+assert(html.includes('openInventoryBox(box)'), 'Inventory Open Box button routes through the shared opener');
 
-assert(html.includes('3.4.18'), 'About version bumped for v5.4');
+assert(html.includes('3.4.19'), 'About version bumped for v5.4');
 
 const matIconHtml = vm.runInContext('matIconHtml', ctx);
 const shardSvg = matIconHtml('shards', 'boost');
