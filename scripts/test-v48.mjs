@@ -67,9 +67,10 @@ const signals = pickSignalExercises(routine);
 assert(signals.length < routine.length, 'signal subset must be smaller than the full routine');
 assert(signals.length >= 3, 'enough signal families to cover the routine');
 assert(signals.some(s => s.id === 'dbRow'), 'dumbbell family prefers dbRow');
+assert(signals.some(s => s.id === 'dbCurl'), 'dumbbell curls are tested as their own variety, not skipped');
+assert(signals.some(s => s.id === 'ohPress'), 'dumbbell press is included as a distinct focus');
 assert(signals.some(s => s.id === 'plank'), 'timed family prefers plank');
 assert(signals.some(s => s.id === 'standardPushup'), 'bodyweight push prefers standard push-up');
-assert(!signals.some(s => s.id === 'dbCurl'), 'other dumbbell lifts are forecasted, not tested');
 assert(!signals.some(s => s.id === 'hollowHold'), 'second timed hold is forecasted from plank');
 
 const signalResults = [
@@ -150,6 +151,6 @@ const glowRule = html.slice(glowAt, html.indexOf('}', glowAt) + 1);
 assert(glowRule.includes('animation: tutorial-guidance-glow-pulse'), 'glow pulses with box-shadow');
 assert(!/transform|scale\s*\(/i.test(glowRule), 'guidance glow must not use transform/scale');
 assert(html.includes("source: 'forecast'") && html.includes("source: 'tested'"), 'baselines record tested vs forecast origin');
-assert(html.includes('3.4.15'), 'About version bumped for v4.8');
+assert(html.includes('3.4.16'), 'About version bumped for v4.8');
 
 console.log('v4.8 tests ok — baseline quest, signal forecasts, silent refine, intro, Dashboard default, glow');

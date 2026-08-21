@@ -104,7 +104,8 @@ assert(boxed.progression.starterBoxGranted === true, 'starter box flag is set on
 const buildFn = sliceFn('buildBaselineQuestExercises', 'showBaselineIntro');
 assert(!buildFn.includes('suggestedSets: 1'), 'baseline quest must not force suggestedSets to 1');
 assert(buildFn.includes('pacing: BASELINE_QUEST_PACING'), 'baseline quest still uses test-set pacing copy');
-assert(buildFn.includes('...e'), 'catalog suggestedSets stay on each signal lift');
+assert(buildFn.includes('...e'), 'catalog fields stay on each signal lift');
+assert(buildFn.includes('baselineQuestSuggestedSets'), 'baseline quest caps sets per exercise');
 
 const commitFn = sliceFn('commitSet', 'deleteSet');
 assert(commitFn.includes('baselineQuestIsFinished(questList, sets)'), 'commitSet waits for genuine quest completion');
@@ -117,7 +118,7 @@ assert(completeFn.includes('grantStarterVictoryBox(state)'), 'starter box still 
 assert(completeFn.includes("title:'Baseline Complete'"), 'reward title is workout-complete, not a single set');
 assert(!completeFn.includes("title:'Baseline Set'"), 'old single-set reward title is gone');
 
-assert(html.includes('3.4.15'), 'About version bumped for v5.5');
+assert(html.includes('3.4.16'), 'About version bumped for v5.5');
 
 const routine = [
   { id: 'standardPushup', day: 'push', suggestedSets: 4, equip: [] },

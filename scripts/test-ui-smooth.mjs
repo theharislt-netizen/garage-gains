@@ -36,7 +36,9 @@ assert(!revealClose.includes('renderShopModal()'), 'dismiss tap must not rebuild
 assert(!revealClose.includes('renderHeader()'), 'dismissing a box must not rebuild the whole header');
 assert(handleOpen.includes('hideBoxRevealOverlay'), 'dismiss hides the overlay immediately');
 assert(!handleOpen.includes('renderShopModal()'), 'dismiss must not rebuild the shop');
-assert(!handleOpen.includes('renderInventoryTab()'), 'dismiss must not rebuild inventory on the hide frame');
+assert(handleOpen.includes('renderInventoryTab()'), 'inventory refreshes after a box-open');
+assert(handleOpen.indexOf('hideBoxRevealOverlay') < handleOpen.indexOf('renderInventoryTab()'),
+  'inventory refresh waits until after the overlay hides');
 
 const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html.indexOf('if (target.kind === \'permanent\')'));
 assert(starterOpen.includes('showBoxReveal'), 'starter box still uses the reveal');

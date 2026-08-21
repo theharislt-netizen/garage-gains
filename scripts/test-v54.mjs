@@ -88,7 +88,9 @@ assert(dismissFn.includes('afterPaint'), 'shop unhide waits for a committed fram
 assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('coverShopForBoxReveal(false)'),
   'overlay hides before the shop is shown again');
 assert(!dismissFn.includes('renderShopModal'), 'dismiss does not rebuild the shop');
-assert(!dismissFn.includes('renderInventoryTab'), 'dismiss does not rebuild inventory');
+assert(dismissFn.includes('renderInventoryTab'), 'dismiss refreshes inventory after hide');
+assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('renderInventoryTab'),
+  'inventory refresh waits until after hide');
 assert(dismissFn.includes('save()'), 'dismiss still persists later');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
@@ -134,7 +136,7 @@ const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html
 assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yielded open');
 assert(starterOpen.includes('coverBoxRevealOverlay'), 'starter cover starts the shake via the shared helper');
 
-assert(html.includes('3.4.15'), 'About version bumped for v5.4');
+assert(html.includes('3.4.16'), 'About version bumped for v5.4');
 
 const matIconHtml = vm.runInContext('matIconHtml', ctx);
 const shardSvg = matIconHtml('shards', 'boost');

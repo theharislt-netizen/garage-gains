@@ -363,13 +363,18 @@
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .sticky-sub.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
-  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; padding-left: 22px; overflow: visible; }
+  .ml-badge-frame {
+    position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0;
+    padding-left: 22px; overflow: visible;
+    filter: drop-shadow(0 0 10px var(--rank-color, rgba(var(--a1-rgb),0.4)));
+  }
   .ml-icon {
     position: absolute; left: 4px; top: 50%; transform: translateY(-50%);
     width: 34px; height: 34px; border-radius: 50%; z-index: 3; flex-shrink: 0;
     background: var(--panel); border: 2px solid var(--rank-color, rgba(var(--a1-rgb),0.7));
     display: flex; align-items: center; justify-content: center;
-    filter: drop-shadow(0 0 6px var(--rank-color, rgba(var(--a1-rgb),0.5)));
+    box-shadow: 0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.45));
+    filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.55)));
     transition: all 0.4s ease;
   }
   .ml-icon svg { width: 16px; height: 16px; }
@@ -379,7 +384,8 @@
     border-radius: 8px 18px 8px 18px;
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
     border: 1.5px solid var(--rank-color, rgba(var(--a1-rgb),0.5)); color: var(--text);
-    filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.3)));
+    box-shadow: 0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.4));
+    filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.45)));
     transition: all 0.4s ease; white-space: nowrap; cursor: pointer;
   }
   .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 1; min-width: 0; max-width: 7em; overflow: hidden; text-overflow: ellipsis; }
@@ -1576,6 +1582,15 @@
   .inv-primary-label { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700; text-transform: uppercase; }
   .inv-primary-sub { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
   .inv-primary-sub:empty { display: none; }
+  .inv-primary-btn.tutorial-guidance-glow {
+    animation: tutorial-guidance-glow-pulse 1.8s ease-in-out infinite;
+  }
+  .item-unequip-warn {
+    margin-top: 10px; padding: 8px 10px; text-align: center;
+    font-size: 11.5px; line-height: 1.4; color: var(--gain);
+    border: 1px solid rgba(255,182,72,0.35); border-radius: 8px;
+    background: rgba(255,182,72,0.08);
+  }
 
   /* --- v3.2: exercise wiki + per-row link icon --- */
   .wiki-link-btn {
@@ -1903,7 +1918,6 @@
       <div class="inv-primary-btn" id="invLoadoutEntry">
         <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6 12 4l4 2v6c0 3.2-1.6 5.4-4 6.8C9.6 17.4 8 15.2 8 12V6Z"/><path d="M9.5 11h5M12 8.5V14"/></svg></span>
         <div class="inv-primary-label">Loadout</div>
-        <div class="inv-primary-sub">Gear</div>
       </div>
       <div class="inv-primary-btn" id="invEnchantEntry">
         <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/><circle cx="12" cy="12" r="2.5"/></svg></span>
@@ -2048,7 +2062,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.15</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.16</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2658,7 +2672,9 @@ const SIGNAL_PREFERENCE = {
   'bodyweight:pull': ['rearDelt'],
   'bodyweight:core': ['legRaise']
 };
+const SIGNAL_VARIETY_EXTRAS = ['dbCurl', 'ohPress', 'weightedCrunch'];
 const BASELINE_QUEST_PACING = 'Max-effort work. Push as far as you can with good form — this sets your starting target.';
+const BASELINE_QUEST_MAX_SETS = 2;
 function signalFamilyKey(ex) {
   if (!ex) return 'unknown';
   if (ex.isTime) return 'timed';
@@ -2668,16 +2684,29 @@ function signalFamilyKey(ex) {
   }
   return 'bodyweight:' + (ex.day || 'other');
 }
+function signalVarietyKey(ex) {
+  if (!ex) return 'unknown';
+  if (ex.isTime) return 'timed';
+  const fam = signalFamilyKey(ex);
+  const focus = (Array.isArray(ex.focus) && ex.focus[0]) || ex.day || 'other';
+  return fam + ':' + focus;
+}
+function baselineQuestSuggestedSets(ex) {
+  const n = Number(ex && ex.suggestedSets);
+  const catalog = Number.isFinite(n) && n > 0 ? Math.floor(n) : BASELINE_QUEST_MAX_SETS;
+  return Math.min(catalog, BASELINE_QUEST_MAX_SETS);
+}
 function pickSignalExercises(exercises) {
   const list = Array.isArray(exercises) ? exercises.filter(Boolean) : [];
-  const byFamily = {};
+  const byVariety = {};
   list.forEach(ex => {
-    const fam = signalFamilyKey(ex);
-    if (!byFamily[fam]) byFamily[fam] = [];
-    byFamily[fam].push(ex);
+    const key = signalVarietyKey(ex);
+    if (!byVariety[key]) byVariety[key] = [];
+    byVariety[key].push(ex);
   });
-  const signals = Object.keys(byFamily).map(fam => {
-    const members = byFamily[fam];
+  const signals = Object.keys(byVariety).map(key => {
+    const members = byVariety[key];
+    const fam = signalFamilyKey(members[0]);
     const pref = SIGNAL_PREFERENCE[fam] || [];
     for (let i = 0; i < pref.length; i++) {
       const hit = members.find(e => e.id === pref[i]);
@@ -2685,6 +2714,10 @@ function pickSignalExercises(exercises) {
     }
     return members[0];
   }).filter(Boolean);
+  SIGNAL_VARIETY_EXTRAS.forEach(id => {
+    const hit = list.find(e => e && e.id === id);
+    if (hit && !signals.some(s => s.id === id)) signals.push(hit);
+  });
   const dayOrder = { push: 0, pull: 1, core: 2 };
   signals.sort((a, b) => {
     if (!!a.isTime !== !!b.isTime) return a.isTime ? 1 : -1;
@@ -2868,9 +2901,21 @@ function shouldTutorialGuideBox(s, boxItemId) {
   const id = boxItemId || 'starterVictoryBox';
   return id === 'starterVictoryBox';
 }
+function shouldTutorialGuideEnchant(s) {
+  const p = s && s.progression;
+  return !!(p && p.starterBoxOpened && !p.enchantTutorialDone);
+}
+function suppressRewardItemGlow(s) {
+  return shouldTutorialGuideEnchant(s);
+}
 function invSlotGlowClass(s, boxItemId, wouldFlash) {
   if (shouldTutorialGuideBox(s, boxItemId)) return 'tutorial-guidance-glow';
   return wouldFlash ? 'unlock-pulse' : '';
+}
+function invRewardItemGlowClass(s, inst, tmpl, unique, starGlow) {
+  if (suppressRewardItemGlow(s)) return '';
+  if (unique) return 'star-glow-5';
+  return typeof starGlow === 'function' ? starGlow(inst && inst.star, false) : '';
 }
 function tutorialAwardIsBoxOnly(s) {
   const inv = (s && s.inventory) || {};
@@ -3294,6 +3339,13 @@ function setBonusBreakdownForTemplate(tmpl, counts) {
       active: n >= bonus.count,
     })),
   };
+}
+function setBonusWouldDropOnUnequip(tmpl, counts) {
+  const breakdown = setBonusBreakdownForTemplate(tmpl, counts);
+  if (!breakdown) return false;
+  const n = Number(breakdown.equipped) || 0;
+  if (n <= 0) return false;
+  return (breakdown.bonuses || []).some(bonus => bonus && bonus.active && (n - 1) < bonus.count);
 }
 function itemSetName(tmpl) {
   const set = tmpl && gearSetById(tmpl.setId);
@@ -4868,7 +4920,31 @@ function applySeasonRankIcon(el) {
   el.innerHTML = RANK_ICON_SVG[rank.id] || '';
   el.style.color = rank.color;
   el.style.setProperty('--rank-color', rank.color);
+  el.style.setProperty('--rank-color2', rank.color2 || rank.color);
   el.style.borderColor = rank.color;
+}
+function applyRankPairChrome(iconEl, badgeEl, frameEl) {
+  ensureSeason();
+  const rank = getRank((state.season && state.season.points) || 0);
+  const subCls = rank.sub2 ? ' rank-sub2' : '';
+  const topCls = rank.top ? ' rank-top' : '';
+  const pairCls = (rank.cls || 'rank-f1') + subCls + topCls;
+  if (frameEl && frameEl.style) {
+    frameEl.style.setProperty('--rank-color', rank.color);
+    frameEl.style.setProperty('--rank-color2', rank.color2 || rank.color);
+  }
+  if (badgeEl) {
+    badgeEl.className = 'name-badge ' + pairCls;
+    if (badgeEl.style) {
+      badgeEl.style.setProperty('--rank-color', rank.color);
+      badgeEl.style.setProperty('--rank-color2', rank.color2 || rank.color);
+    }
+  }
+  if (iconEl) {
+    iconEl.className = 'ml-icon ' + pairCls;
+    applySeasonRankIcon(iconEl);
+  }
+  return rank;
 }
 
 function setInstanceDashboardChrome(inInstance) {
@@ -6686,7 +6762,8 @@ function renderInventoryTab() {
   document.getElementById('invLoadoutEntry').onclick = openLoadoutModal;
   const enchantEntry = document.getElementById('invEnchantEntry');
   enchantEntry.onclick = openEnchantModal;
-  enchantEntry.classList.toggle('unlock-pulse', !!(state.progression && state.progression.nudgeEnchant && state.progression.starterBoxOpened));
+  enchantEntry.classList.toggle('tutorial-guidance-glow', shouldTutorialGuideEnchant(state));
+  enchantEntry.classList.toggle('unlock-pulse', false);
 
   const filter = state.activeInvFilter || 'all';
   const sealedBoxes = (filter === 'all' || filter === 'relic')
@@ -6725,9 +6802,8 @@ function renderInventoryTab() {
   });
   const permSlots = permItems.map(inst => {
     const tmpl = itemTemplate(inst.itemId);
-    const flash = shouldFlashItemType(state, itemTypeKey('item', inst.itemId)) || (!!(state.progression && state.progression.nudgeEquip) && inst.itemId === STARTER_RELIC_ID);
     const unique = isUniqueItem(tmpl);
-    const glow = unique ? 'star-glow-5' : (flash ? 'unlock-pulse' : starGlowClass(inst.star, false));
+    const glow = invRewardItemGlowClass(state, inst, tmpl, unique, starGlowClass);
     return `<div class="inv-slot${glow ? ' ' + glow : ''}" data-slot-perm="${inst.instanceId}">
       <div class="inv-slot-icon">${itemIconHtml(tmpl)}</div>
       ${starRowHtml(tmpl, inst.star)}
@@ -6735,14 +6811,13 @@ function renderInventoryTab() {
   });
   const tempSlots = tempItems.map(([itemId, count]) => {
     const tmpl = itemTemplate(itemId);
-    const flash = shouldFlashItemType(state, itemTypeKey('temp', itemId));
-    return `<div class="inv-slot${flash ? ' unlock-pulse' : ''}" data-slot-temp="${itemId}">
+    return `<div class="inv-slot" data-slot-temp="${itemId}">
       <div class="inv-temp-badge">TEMP</div>
       <div class="inv-slot-icon">${itemIconHtml(tmpl)}</div>
       ${count > 1 ? `<div class="inv-slot-count">x${count}</div>` : ''}
     </div>`;
   });
-  const matSlots = matEntries.map(m => `<div class="inv-slot${shouldFlashItemType(state, itemTypeKey(m.mat, m.cat)) ? ' unlock-pulse' : ''}" data-slot-mat="${m.mat}:${m.cat}">
+  const matSlots = matEntries.map(m => `<div class="inv-slot${suppressRewardItemGlow(state) ? '' : (shouldFlashItemType(state, itemTypeKey(m.mat, m.cat)) ? ' unlock-pulse' : '')}" data-slot-mat="${m.mat}:${m.cat}">
       <div class="inv-slot-icon">${m.icon}</div>
       <div class="inv-slot-count">x${m.count}</div>
     </div>`);
@@ -6841,8 +6916,11 @@ function renderItemDetailModal() {
     acknowledgeItemType(state, itemTypeKey('item', inst.itemId));
     save();
     const isEquipped = !!findEquippedSlot(tmpl.category, { kind:'permanent', instanceId: inst.instanceId });
-    const nudgeEquip = !!(state.progression && state.progression.nudgeEquip && inst.itemId === STARTER_RELIC_ID && !isEquipped);
     const slotLabel = itemSlotLabel(tmpl);
+    const setCounts = equippedSetCountsFromTemplates(getAllEquippedGearEffects().map(e => e.template));
+    const unequipWarn = isEquipped && setBonusWouldDropOnUnequip(tmpl, setCounts)
+      ? `<div class="item-unequip-warn">Gear shouldn't be removed — this piece is holding an active set bonus.</div>`
+      : '';
     body.innerHTML = `
       <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
@@ -6855,9 +6933,10 @@ function renderItemDetailModal() {
       ${itemSetBonusHtml(tmpl)}
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
-        <button class="inv-btn inv-btn-equip${isEquipped ? ' equipped' : ''}${nudgeEquip ? ' unlock-pulse' : ''}" id="itemDetailEquipBtn">${isEquipped ? 'Unequip' : 'Equip'}</button>
+        <button class="inv-btn inv-btn-equip${isEquipped ? ' equipped' : ''}" id="itemDetailEquipBtn">${isEquipped ? 'Unequip' : 'Equip'}</button>
         <button class="inv-btn inv-btn-salvage" id="itemDetailSalvageBtn" ${isEquipped ? 'disabled' : ''}>Salvage</button>
-      </div>`;
+      </div>
+      ${unequipWarn}`;
     document.getElementById('itemDetailEquipBtn').addEventListener('click', () => {
       toggleEquipItem(tmpl.category, { kind:'permanent', instanceId: inst.instanceId });
       closeItemDetailModal();
@@ -7331,6 +7410,7 @@ function dismissBoxReveal() {
   hideBoxRevealOverlay(overlay);
   afterPaint(() => {
     coverShopForBoxReveal(false);
+    try { renderInventoryTab(); } catch (err) {}
     scheduleIdleWork(() => { try { save(); } catch (err) {} }, 80);
   });
 }
@@ -7767,12 +7847,9 @@ function openStarterVictoryBox(s) {
   }
   s.progression.starterBoxOpened = true;
   s.progression.nudgeInventory = false;
-  if (s.progression.equipTutorialDone) {
+  s.progression.nudgeEquip = false;
+  if (!s.progression.enchantTutorialDone) {
     s.progression.nudgeEnchant = true;
-    s.progression.nudgeEquip = false;
-  } else {
-    s.progression.nudgeEquip = true;
-    s.progression.nudgeEnchant = false;
   }
   const relic = s.inventory.permanent.find(x => x.itemId === STARTER_RELIC_ID);
   return { relicInst: relic, stoneCategory: 'relic', stoneAmount: 1 };
@@ -8805,30 +8882,22 @@ function renderHeader() {
   ensureSeason();
   updateRankTabBadge();
 
-  // v2.2: primary badge now shows Level (indefinite, always-visible), not
-  // seasonal Rank. Same visual-tier system, just addressed via LEVEL_TIERS.
-  const level = getLevel(state.totalPoints);
-  const tier = getLevelTier(level);
+  // Hero banner icon + name badge share the current RANK color and glow,
+  // not the Level visual family. The tag text stays "Level N".
   const nameBadge = document.getElementById('nameBadge');
   const nameBadgeIcon = document.getElementById('nameBadgeIcon');
   const nameBadgeRow = document.getElementById('nameBadgeRow');
-  const subCls = tier.sub2 ? ' rank-sub2' : '';
-  const topCls = tier.top ? ' rank-top' : '';
+  const rank = applyRankPairChrome(nameBadgeIcon, nameBadge, document.getElementById('mlBadgeFrame'));
   if (nameBadge) {
-    nameBadge.className = 'name-badge ' + tier.cls + subCls + topCls;
-    nameBadge.style.setProperty('--rank-color', tier.color);
-    nameBadge.style.setProperty('--rank-color2', tier.color2);
     nameBadge.onclick = openRankModal;
     const rankTag = document.getElementById('rankTag');
     if (rankTag) {
       rankTag.textContent = isOwnerAdminSandbox()
         ? getRank((state.season && state.season.points) || 0).name
-        : ('Level ' + level);
+        : ('Level ' + getLevel(state.totalPoints));
     }
   }
   if (nameBadgeIcon) {
-    nameBadgeIcon.className = 'ml-icon ' + tier.cls + subCls + topCls;
-    applySeasonRankIcon(nameBadgeIcon);
     nameBadgeIcon.onclick = (e) => { e.stopPropagation(); openRankModal(); };
   }
   // v2.4: the name text specifically opens Profile — distinct from tapping
@@ -8838,7 +8907,7 @@ function renderHeader() {
   const nbNameText = document.getElementById('nbNameText');
   if (nbNameText) nbNameText.onclick = (e) => { e.stopPropagation(); openProfileScreen(); };
   if (nameBadgeRow) {
-    nameBadgeRow.style.background = `radial-gradient(ellipse at center, ${tier.color}26, transparent 72%)`;
+    nameBadgeRow.style.background = `radial-gradient(ellipse at center, ${rank.color}26, transparent 72%)`;
   }
 
   const badgeRowMini = document.getElementById('badgeRowMini');
@@ -9156,7 +9225,7 @@ function buildBaselineQuestExercises(s) {
   return rec.signalIds.map(id => {
     const e = catalog.find(x => x.id === id);
     if (!e) return null;
-    return { ...e, pacing: BASELINE_QUEST_PACING };
+    return { ...e, pacing: BASELINE_QUEST_PACING, suggestedSets: baselineQuestSuggestedSets(e) };
   }).filter(Boolean);
 }
 function showBaselineIntro() {

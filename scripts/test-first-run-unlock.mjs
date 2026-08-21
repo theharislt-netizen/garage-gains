@@ -107,8 +107,8 @@ assert(loot && loot.stoneAmount === 1, 'opening the box grants a stone');
 assert(mid.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID && x.star === 0), 'guaranteed 0-star relic');
 assert(mid.inventory.stones.relic === 1, 'one enchantment stone');
 assert(mid.inventory.boxes.length === 0, 'opened box leaves inventory');
-assert(mid.progression.nudgeEquip === true, 'Equip is the next onboarding pulse');
-assert(mid.progression.nudgeEnchant === false, 'Enchant waits until the first relic is equipped');
+assert(mid.progression.nudgeEnchant === true, 'Enchant is the next onboarding pulse');
+assert(mid.progression.nudgeEquip === false, 'reward items do not keep an equip glow');
 assert(openStarterVictoryBox(mid) === null, 'cannot open the same box twice');
 
 assert(markEquipTutorialDone(mid) === true, 'equip tutorial completes only after Equip');

@@ -77,7 +77,9 @@ assert(openFn.indexOf('coverBoxRevealOverlay') < openFn.indexOf('openBoxFree'),
 const dismissFn = html.slice(html.indexOf('function dismissBoxReveal'), html.indexOf('function getBoxRevealTier'));
 assert(dismissFn.includes('hideBoxRevealOverlay'), 'dismiss hides immediately');
 assert(!dismissFn.includes('renderShopModal'), 'dismiss does not rebuild the shop');
-assert(!dismissFn.includes('renderInventoryTab'), 'dismiss does not rebuild inventory');
+assert(dismissFn.includes('renderInventoryTab'), 'dismiss refreshes inventory after hide');
+assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('renderInventoryTab'),
+  'inventory refresh waits until after hide');
 assert(dismissFn.includes('save()'), 'dismiss still persists later');
 assert(
   /afterPaint|scheduleIdleWork|setTimeout/.test(dismissFn),
@@ -98,6 +100,6 @@ assert(html.includes("You'll receive +${amount}"), 'confirm shows the salvage pa
 assert(html.includes('function openSalvageConfirm'), 'salvage confirm is not a browser dialog');
 assert(!html.includes('if (!confirm(`Salvage'), 'browser confirm is gone from salvage');
 
-assert(html.includes('3.4.15'), 'About version bumped for v5.3');
+assert(html.includes('3.4.16'), 'About version bumped for v5.3');
 
 console.log('v5.3 tests ok — loadout window, banner icon, stock photos, salvage dupes, box tap lag');
