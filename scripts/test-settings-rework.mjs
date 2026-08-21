@@ -43,7 +43,7 @@ assert(dataPane.includes('id="exportBtn"') && dataPane.includes('id="importBtn"'
 const aboutPaneStart = html.indexOf('data-settings-pane="about"');
 assert(aboutPaneStart > 0, 'About pane missing');
 const aboutPane = html.slice(aboutPaneStart, html.indexOf('data-settings-pane="data"', aboutPaneStart));
-assert(aboutPane.includes('Version') && aboutPane.includes('3.4.1'), 'About pane must show the version');
+assert(aboutPane.includes('Version') && aboutPane.includes('3.4.2'), 'About pane must show the version');
 assert(aboutPane.includes('Split'), 'About pane must show the split');
 
 assert(!html.includes('id="addHomeBtn"'), 'Add to Home Screen control must be removed');

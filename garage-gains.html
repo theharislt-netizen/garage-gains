@@ -60,20 +60,22 @@
   .mono { font-family: 'JetBrains Mono', monospace; }
   .grad-text { background: linear-gradient(90deg, var(--a1), var(--a2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-  .topbar { padding: 20px 18px 4px; }
+  .topbar { padding: 8px 18px 0; }
   .topbar .wordmark { font-size: 15px; letter-spacing: 0.14em; color: var(--text-dim); }
   .topbar .wordmark b { color: var(--text); }
-  .day-header { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; position: relative; z-index: 2; flex-shrink: 0; }
-  .day-line { display: flex; align-items: baseline; gap: 10px; }
-  .day-header .dayname { font-size: 30px; line-height: 1.15; }
-  .day-header .datestr { font-family: 'JetBrains Mono'; font-size: 16px; color: var(--text-dim); }
+  .day-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 0; position: relative; z-index: 2; flex-shrink: 0; }
+  .day-line { display: flex; align-items: center; gap: 8px; }
+  .day-header .dayname {
+    font-family: 'Barlow Condensed'; font-size: 12px; line-height: 1; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
   .day-type-pill {
-    font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 5px 13px; border-radius: 100px; font-weight: 600;
+    font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 100px; font-weight: 600;
     background: rgba(var(--a1-rgb),0.14); color: var(--a1); border: 1px solid rgba(var(--a1-rgb),0.4);
   }
 
-  .led-wrap { padding: 16px 18px 8px; position: relative; z-index: 1; flex-shrink: 0; margin-top: 2px; }
+  .led-wrap { padding: 8px 18px 12px; position: relative; z-index: 1; flex-shrink: 0; margin-top: 2px; }
   .led-track { position: relative; height: 12px; border-radius: 100px; background: var(--panel); border: 1px solid var(--line); overflow: visible; }
   .led-fill {
     position: relative; height: 100%; border-radius: 100px;
@@ -1382,19 +1384,16 @@
     <div class="badge-row-mini" id="badgeRowMini"></div>
     <div class="topbar">
       <div class="day-header">
-        <div class="day-line">
-          <span class="dayname" id="dayName">Monday</span>
-          <span class="datestr" id="dateStr">18</span>
-        </div>
-        <div class="day-type-pill" id="dayBadge">Push</div>
+        <div class="day-type-pill" id="dayBadge">Push Day</div>
+        <span class="dayname" id="dayName">Monday</span>
       </div>
     </div>
 
     <div class="led-wrap" id="ledWrap" style="position:relative;">
       <div class="led-track"><div class="led-fill" id="ledFill"></div></div>
       <div class="led-meta">
-        <div class="led-pts"><span id="ledPts">0</span><span class="of" id="ledOf"> / 0 pts</span></div>
-        <div class="led-status" id="ledStatus">Let's go</div>
+        <div class="led-pts"><span id="ledPts">Lv 1</span><span class="of" id="ledOf"> → 2</span></div>
+        <div class="led-status" id="ledStatus">pts to Level 2</div>
       </div>
     </div>
 
@@ -1747,7 +1746,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.1</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.2</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2308,6 +2307,40 @@ function shouldFlashItemType(s, key) {
   return !!(s && s.inventory && Array.isArray(s.inventory.unseenTypes) && s.inventory.unseenTypes.includes(key));
 }
 /* === v44-helpers-lib end === */
+
+/* === v45-helpers-lib begin === */
+function levelBarState(points) {
+  const p = Math.max(0, Number(points) || 0);
+  const level = typeof getLevel === 'function' ? getLevel(p) : 1;
+  const cur = typeof pointsForLevel === 'function' ? pointsForLevel(level) : 0;
+  const next = typeof pointsForLevel === 'function' ? pointsForLevel(level + 1) : Math.max(1, cur + 1);
+  const span = Math.max(1, next - cur);
+  const into = Math.max(0, p - cur);
+  return {
+    level,
+    nextLevel: level + 1,
+    points: p,
+    into,
+    span,
+    remaining: Math.max(0, next - p),
+    pct: Math.min(100, (into / span) * 100)
+  };
+}
+function bossPacingNoteForSet(setIndex) {
+  const n = (Number(setIndex) || 0) + 1;
+  if (n === 1) return 'Opening strike. Every rep chips this boss — this is a fight, not a baseline set.';
+  return 'Keep the pressure on. Log what you actually hit until this boss drops.';
+}
+function ensureBossFightSets(boss) {
+  if (!boss || typeof boss !== 'object') return {};
+  if (!boss.fightSets || typeof boss.fightSets !== 'object' || Array.isArray(boss.fightSets)) boss.fightSets = {};
+  return boss.fightSets;
+}
+function repsFromLog(log, exId) {
+  if (!log || typeof log !== 'object') return [];
+  return Array.isArray(log[exId]) ? log[exId] : [];
+}
+/* === v45-helpers-lib end === */
 
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
@@ -3566,7 +3599,7 @@ function generateBoss() {
   const id = 'boss' + Date.now() + Math.floor(Math.random()*1000);
   const seed = Math.abs(hashStr(id));
   return {
-    id, exIds, targets, progress,
+    id, exIds, targets, progress, fightSets: {},
     name: BOSS_NAMES[seed % BOSS_NAMES.length],
     image: BOSS_IMAGES[seed % BOSS_IMAGES.length],
     status: 'available', // 'available' -> 'active' -> removed on defeat
@@ -3583,6 +3616,7 @@ function ensureBosses() {
   // Defensive migration: older saves used a single exId per boss; discard any
   // boss objects that predate the multi-exercise shape rather than crash on them.
   state.bosses = (state.bosses || []).filter(b => Array.isArray(b.exIds));
+  state.bosses.forEach(ensureBossFightSets);
   while (state.bosses.length < BOSS_MAX_SLOTS_LAUNCH) {
     const boss = generateBoss();
     if (!boss) break;
@@ -3593,13 +3627,15 @@ function startBoss(bossId) {
   const boss = state.bosses.find(b => b.id === bossId);
   if (!boss || boss.status === 'active') return;
   boss.status = 'active';
+  ensureBossFightSets(boss);
   save();
 }
 // Called from commitSet the moment a new set is logged — only bosses the person
 // has explicitly started take damage (no passive chip-away before engaging).
 function applyBossDamage(exId, val) {
+  if (!window.__activeInstance || window.__activeInstance.type !== 'boss') return;
   state.bosses = state.bosses || [];
-  const boss = state.bosses.find(b => b.status === 'active' && b.exIds.includes(exId));
+  const boss = state.bosses.find(b => b.id === window.__activeInstance.bossId && b.status === 'active' && b.exIds.includes(exId));
   if (!boss) return;
   boss.progress[exId] = Math.min(boss.targets[exId], boss.progress[exId] + val);
   boss.earnedPoints = (boss.earnedPoints || 0) + unitPoints(exId, val);
@@ -4727,12 +4763,21 @@ function renderRankTab() {
       <div class="ml-icon ${rank.cls}${subCls}${topCls}" style="position:static; margin:0 auto 10px; width:52px; height:52px;" id="rankTabIcon"></div>
       <div style="font-family:'Barlow Condensed'; font-size:24px; font-weight:700; text-transform:uppercase;" id="rankTabName">${rank.name}</div>
       <div class="mono" style="font-size:12px; color:var(--text-dim); margin-top:4px;">Season ${state.season.number} · ${state.season.points} pts</div>
-      ${nextRank
-        ? `<div class="rank-bar-track" style="margin-top:12px;"><div class="rank-bar-fill" style="width:${Math.min(100, ((state.season.points - rank.min) / (nextRank.min - rank.min)) * 100)}%"></div></div><div class="mono" style="font-size:10.5px; color:var(--text-dim); margin-top:4px;">${nextRank.min - state.season.points} pts to ${nextRank.name}</div>`
-        : `<div class="mono" style="font-size:10.5px; color:var(--gain); margin-top:8px;">Top rank reached</div>`}
+      <div class="rank-bar-wrap" id="rankTabSeasonBarWrap" style="padding:14px 0 0;">
+        <div class="rb-icon">
+          <div class="rb-emblem" id="rankTabRbIconStart"></div>
+          <div class="rb-num" id="rankTabRbNumStart"></div>
+        </div>
+        <div class="rb-mid">
+          <div class="rb-track"><div class="rb-fill" id="rankTabRbFill"></div></div>
+          <div class="rb-progress-text" id="rankTabRbProgressText"></div>
+        </div>
+        <div class="rb-icon">
+          <div class="rb-emblem" id="rankTabRbIconEnd"></div>
+          <div class="rb-num" id="rankTabRbNumEnd"></div>
+        </div>
+      </div>
     </div>
-    <div class="section-title">Your Rank Rewards</div>
-    <div class="card">${perkRows}</div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;">Daily Login</div>
       <div class="wk-row">
@@ -4740,6 +4785,8 @@ function renderRankTab() {
         <button class="go-btn${claimed ? ' claimed' : ''}" id="dailyLoginClaimBtn" ${claimed ? 'disabled' : ''}>${claimed ? '✓ Claimed' : 'Claim'}</button>
       </div>
     </div>
+    <div class="section-title">Your Rank Rewards</div>
+    <div class="card">${perkRows}</div>
     <div class="card" style="text-align:center; padding:16px;">
       <div class="section-title" style="margin:0 0 6px; justify-content:center;">Season Ends</div>
       <div class="mono" style="font-size:22px; font-weight:700;" id="rankCountdownClock">--</div>
@@ -4752,6 +4799,7 @@ function renderRankTab() {
   iconEl.style.color = rank.color;
   iconEl.style.borderColor = rank.color;
   document.getElementById('rankTabName').style.color = rank.color;
+  populateSeasonRankBar(RANK_TAB_SEASON_RB_IDS);
   updateRankCountdownDisplay();
   const claimBtn = document.getElementById('dailyLoginClaimBtn');
   if (claimBtn && !claimed) claimBtn.addEventListener('click', () => { claimDailyLogin(); renderRankTab(); updateRankTabBadge(); });
@@ -7484,6 +7532,17 @@ function getSessionData(dateKey) {
   return state.workoutLog[dateKey];
 }
 function getExReps(session, exId) { return session.sets[exId] || []; }
+function activeBoss() {
+  if (!window.__activeInstance || window.__activeInstance.type !== 'boss') return null;
+  return (state.bosses || []).find(b => b.id === window.__activeInstance.bossId) || null;
+}
+function getActiveRepsMap(dateKey) {
+  const boss = activeBoss();
+  if (boss) return ensureBossFightSets(boss);
+  const session = getSessionData(dateKey);
+  if (!session.sets) session.sets = {};
+  return session.sets;
+}
 
 function dateFromStr(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
 function addDays(dateKey, n) { const dt = dateFromStr(dateKey); dt.setDate(dt.getDate()+n); return todayStr(dt); }
@@ -7502,9 +7561,8 @@ function renderHeader() {
   ensureProfileShape();
   const now = new Date();
   document.getElementById('dayName').textContent = WEEKDAY_NAMES[now.getDay()];
-  document.getElementById('dateStr').textContent = String(now.getDate());
   const dayType = getTodayDayType();
-  document.getElementById('dayBadge').textContent = dayType ? DAY_NAMES[dayType] : 'Rest';
+  document.getElementById('dayBadge').textContent = dayType ? (DAY_NAMES[dayType] + ' Day') : 'Rest Day';
   document.getElementById('nbNameText').textContent = state.profile.displayName;
 
   const nbStreak = document.getElementById('nbStreak');
@@ -7629,6 +7687,7 @@ function populateSeasonRankBar(ids) {
   const endNum = document.getElementById(ids.numEnd);
   const fill = document.getElementById(ids.fill);
   const progressText = document.getElementById(ids.text);
+  if (!startIcon || !endIcon || !fill || !progressText) return;
   if (!isRankUnlocked()) {
     // v2.6 fix: clearing only the icon art left the plate's border on its CSS
     // class default (a generic gold ring), which reads as a broken/missing
@@ -7667,6 +7726,7 @@ function populateSeasonRankBar(ids) {
   }
 }
 const STATS_SEASON_RB_IDS = { iconStart:'statsSeasonRbIconStart', iconEnd:'statsSeasonRbIconEnd', numStart:'statsSeasonRbNumStart', numEnd:'statsSeasonRbNumEnd', fill:'statsSeasonRbFill', text:'statsSeasonRbProgressText' };
+const RANK_TAB_SEASON_RB_IDS = { iconStart:'rankTabRbIconStart', iconEnd:'rankTabRbIconEnd', numStart:'rankTabRbNumStart', numEnd:'rankTabRbNumEnd', fill:'rankTabRbFill', text:'rankTabRbProgressText' };
 function renderStatsSeasonRankBar() { populateSeasonRankBar(STATS_SEASON_RB_IDS); }
 
 // Streak progress bar — RPG "next upgrade" preview: shows how far into the current
@@ -7714,22 +7774,23 @@ function renderStreakBar() {
 // are now parameters. No change to the underlying stepper/timer/set-logging
 // behavior itself — this is purely where those same cards get mounted.
 function renderExerciseCardsInto(containerEl, exList, dateKey) {
-  const session = getSessionData(dateKey);
+  const boss = activeBoss();
+  const sets = getActiveRepsMap(dateKey);
   let autoExpandId = null;
   for (const ex of exList) {
-    const reps = getExReps(session, ex.id);
+    const reps = repsFromLog(sets, ex.id);
     if (reps.length < ex.suggestedSets) { autoExpandId = ex.id; break; }
   }
   const currentExId = window.__expandedEx || autoExpandId;
 
   const cardMeta = [];
   exList.forEach(ex => {
-    const reps = getExReps(session, ex.id);
+    const reps = repsFromLog(sets, ex.id);
     const loggedCount = reps.length;
     const isComplete = loggedCount >= ex.suggestedSets;
 
     const bl = getBaseline(ex.id);
-    const lastWk = sameDayLastWeek(ex.id, dateKey);
+    const lastWk = boss ? null : sameDayLastWeek(ex.id, dateKey);
     const best = state.bests[ex.id];
     const totalReps = reps.reduce((a,b)=>a+(b||0),0);
     const isPB = best && loggedCount > 0 && totalReps >= best.totalReps;
@@ -7806,7 +7867,7 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
           <button class="finish-btn" data-ex="${ex.id}" data-idx="${activeIdx}">Finish Set</button>`;
       }
 
-      const pacingNote = pacingNoteForSet(ex.pacing, activeIdx);
+      const pacingNote = boss ? bossPacingNoteForSet(activeIdx) : pacingNoteForSet(ex.pacing, activeIdx);
       bodyHtml = `
         <div class="set-panel">
           <div class="set-panel-label">${setLabel}</div>
@@ -7862,6 +7923,10 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
 // =========================================================
 function enterInstance(instanceObj, isResume) {
   if (window.__quickLogOpen) closeQuickLog(true);
+  if (instanceObj && instanceObj.type === 'boss') {
+    const boss = (state.bosses || []).find(b => b.id === instanceObj.bossId);
+    if (boss) ensureBossFightSets(boss);
+  }
   window.__activeInstance = instanceObj;
   window.__instanceJustEntered = !isResume;
   window.__autoCommitFirst = !isResume;
@@ -8003,10 +8068,10 @@ function maybeAutoCommitFirstLoop(inst, dateKey) {
     } else {
       exList = getDayExercises(getTodayDayType());
     }
-    const session = getSessionData(dateKey);
-    const first = exList.find(ex => getExReps(session, ex.id).length < ex.suggestedSets);
+    const sets = getActiveRepsMap(dateKey);
+    const first = exList.find(ex => repsFromLog(sets, ex.id).length < ex.suggestedSets);
     if (first && first.isTime) {
-      const reps = getExReps(session, first.id);
+      const reps = repsFromLog(sets, first.id);
       const idx = (uiActiveSetIdx[first.id] === undefined || uiActiveSetIdx[first.id] === null) ? reps.length : uiActiveSetIdx[first.id];
       const bl = getBaseline(first.id);
       const target = bl ? Math.round(bl.perSetAvg) : 0;
@@ -8033,19 +8098,16 @@ function renderToday() {
   if (dayType) {
     const session = getSessionData(dateKey);
     const exList = getDayExercises(dayType);
-    let goalPoints = 0, currentPoints = 0, allDone = true;
-    let anyBaselineYet = false;
+    let currentPoints = 0;
     exList.forEach(ex => {
-      if (getBaseline(ex.id)) { goalPoints += ex.suggestedSets * 20; anyBaselineYet = true; }
       const reps = getExReps(session, ex.id);
       reps.forEach(r => { currentPoints += unitPoints(ex.id, r); });
-      if (reps.length < ex.suggestedSets) allDone = false;
     });
-    updateLed(currentPoints, goalPoints, { hide: !anyBaselineYet });
+    updateLed();
     finalizeSessionIfNeeded(dateKey, currentPoints);
     syncTabLocks();
   } else {
-    updateLed(0, 0, { hide: true });
+    updateLed();
     finalizeSessionIfNeeded(dateKey, 0);
   }
 
@@ -8350,30 +8412,25 @@ function recalculateAllPoints() {
 }
 
 let __lastLedCurrent = 0;
-function updateLed(current, goal, opts) {
-  const hide = opts && opts.hide;
+function updateLed() {
   const fillEl = document.getElementById('ledFill');
-  const pct = goal > 0 ? Math.min(current / goal, 1) * 100 : 0;
-  fillEl.style.width = pct + '%';
-  fillEl.classList.toggle('over', goal > 0 && current >= goal);
-  if (current > __lastLedCurrent) {
+  const ptsEl = document.getElementById('ledPts');
+  const ofEl = document.getElementById('ledOf');
+  const statusEl = document.getElementById('ledStatus');
+  if (!fillEl || !ptsEl || !ofEl || !statusEl) return;
+  const bar = levelBarState(state.totalPoints);
+  fillEl.style.width = bar.pct + '%';
+  fillEl.classList.remove('over');
+  if (bar.points > __lastLedCurrent) {
     fillEl.classList.remove('pulse-gain'); void fillEl.offsetWidth; fillEl.classList.add('pulse-gain');
     const wrap = document.getElementById('ledWrap');
     if (wrap) { wrap.classList.remove('pulse-flash'); void wrap.offsetWidth; wrap.classList.add('pulse-flash'); }
   }
-  __lastLedCurrent = current;
-  document.getElementById('ledPts').textContent = current;
-  const ofEl = document.getElementById('ledOf');
-  const statusEl = document.getElementById('ledStatus');
-  if (hide || goal === 0) {
-    ofEl.textContent = ' pts';
-    statusEl.textContent = current === 0 ? 'Setting your baseline' : 'Baseline in progress';
-    statusEl.classList.remove('hit');
-  } else {
-    ofEl.textContent = ' / ' + goal + ' pts';
-    if (current >= goal) { statusEl.textContent = 'Goal hit'; statusEl.classList.add('hit'); }
-    else { statusEl.textContent = current === 0 ? "Let's go" : 'Keep going'; statusEl.classList.remove('hit'); }
-  }
+  __lastLedCurrent = bar.points;
+  ptsEl.textContent = 'Lv ' + bar.level;
+  ofEl.textContent = ' → ' + bar.nextLevel;
+  statusEl.textContent = bar.remaining + ' pts to Level ' + bar.nextLevel;
+  statusEl.classList.remove('hit');
 }
 
 function showPointsPop(amount) {
@@ -8638,11 +8695,13 @@ function attachTodayListeners(dateKey) {
   // timer/rank-up logic in exactly one place.
   function commitSet(exId, idx, val) {
     const ex = getAllExercises().find(e => e.id === exId);
+    const boss = activeBoss();
     const session = getSessionData(dateKey);
-    if (!session.sets[exId]) session.sets[exId] = [];
-    const isNewSet = session.sets[exId][idx] === undefined;
-    const oldVal = session.sets[exId][idx]; // undefined when this is a new set
-    session.sets[exId][idx] = val;
+    const sets = getActiveRepsMap(dateKey);
+    if (!sets[exId]) sets[exId] = [];
+    const isNewSet = sets[exId][idx] === undefined;
+    const oldVal = sets[exId][idx];
+    sets[exId][idx] = val;
 
     // Credit points live, the moment a set is finished, rather than waiting
     // for the whole day to be done. A baseline gets locked the first time an
@@ -8673,50 +8732,63 @@ function attachTodayListeners(dateKey) {
       // literally the one that originally locked it — baselines are a single
       // global anchor per exercise, not per-session, so editing any other
       // historical session must never change the rate future sets are scored at.
+      // Boss-fight logs never rewrite baselines; they live in fightSets only.
       const oldEarned = unitPoints(exId, oldVal);
       const delta = earned - oldEarned;
       if (delta !== 0) creditPoints(delta);
-      const bl = getBaseline(exId);
-      if (bl && bl.date === dateKey) {
-        const reps = session.sets[exId];
-        const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
-        state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+      if (!boss) {
+        const bl = getBaseline(exId);
+        if (bl && bl.date === dateKey) {
+          const reps = sets[exId];
+          const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
+          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+        }
       }
       awardBadges(); // an upward edit could newly cross a points/streak badge threshold
     }
     // PB fix (v2.1.1): recompute this exercise's best immediately, independent
-    // of whether the rest of today's session gets finished.
-    if (recomputeBestForExercise(exId)) feedbackPersonalBest();
+    // of whether the rest of today's session gets finished. Boss-fight copies
+    // are a separate instance — they must not count as gym PBs.
+    if (!boss && recomputeBestForExercise(exId)) feedbackPersonalBest();
     save();
 
-    const lastWk = sameDayLastWeek(exId, dateKey);
-    const lastR = lastWk ? lastWk.reps[idx] : null;
-    if (lastR !== null && lastR !== undefined && val > lastR) {
-      const chip = document.getElementById('gain-' + exId);
-      if (chip) { chip.textContent = `+${val - lastR} ${ex.isTime?'s':'reps'} vs same day last week`; chip.classList.add('show'); }
+    if (!boss) {
+      const lastWk = sameDayLastWeek(exId, dateKey);
+      const lastR = lastWk ? lastWk.reps[idx] : null;
+      if (lastR !== null && lastR !== undefined && val > lastR) {
+        const chip = document.getElementById('gain-' + exId);
+        if (chip) { chip.textContent = `+${val - lastR} ${ex.isTime?'s':'reps'} vs same day last week`; chip.classList.add('show'); }
+      }
     }
 
     if (isNewSet && earned > 0) { showPointsPop(earned); feedbackSetFinished(); }
 
-    const stillShort = session.sets[exId].length < ex.suggestedSets;
+    const stillShort = sets[exId].length < ex.suggestedSets;
     uiActiveSetIdx[exId] = null; // next tap continues onto a new set
     window.__tipOpen = null;
     if (window.__quickLogOpen) {
       window.__expandedEx = exId;
     } else if (!stillShort) {
-      const dt = getTodayDayType();
-      const exList = getDayExercises(dt);
-      const nextEx = exList.find(e => e.id !== exId && getExReps(session, e.id).length < e.suggestedSets);
-      window.__expandedEx = nextEx ? nextEx.id : null;
+      if (boss) {
+        const nextEx = (boss.exIds || [])
+          .map(id => getAllExercises().find(e => e.id === id))
+          .find(e => e && e.id !== exId && repsFromLog(sets, e.id).length < e.suggestedSets);
+        window.__expandedEx = nextEx ? nextEx.id : null;
+      } else {
+        const dt = getTodayDayType();
+        const exList = getDayExercises(dt);
+        const nextEx = exList.find(e => e.id !== exId && getExReps(session, e.id).length < e.suggestedSets);
+        window.__expandedEx = nextEx ? nextEx.id : null;
+      }
     }
     if (!window.__quickLogOpen) {
-      const others = (window.__activeInstance && window.__activeInstance.type === 'boss')
-        ? ((state.bosses.find(b => b.id === window.__activeInstance.bossId) || {}).exIds || [])
+      const others = boss
+        ? (boss.exIds || [])
             .map(id => getAllExercises().find(e => e.id === id)).filter(e => e && e.id !== exId)
-            .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }))
+            .map(e => ({ loggedCount: repsFromLog(sets, e.id).length, suggestedSets: e.suggestedSets }))
         : getDayExercises(getTodayDayType() || '').filter(e => e.id !== exId)
             .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }));
-      if (hasRemainingSuggestedWork(session.sets[exId].length, ex.suggestedSets, others)) startRestTimer(ex);
+      if (hasRemainingSuggestedWork(sets[exId].length, ex.suggestedSets, others)) startRestTimer(ex);
       else clearRestTimer();
     }
     setTimeout(() => refreshAfterSetChange(), (!window.__quickLogOpen && !stillShort) ? 550 : 0);
@@ -8730,8 +8802,9 @@ function attachTodayListeners(dateKey) {
   // per spec, since unwinding it could cascade into breaking a streak that
   // later days have already built on top of.
   function deleteSet(exId, idx) {
-    const session = getSessionData(dateKey);
-    const reps = session.sets[exId];
+    const boss = activeBoss();
+    const sets = getActiveRepsMap(dateKey);
+    const reps = sets[exId];
     if (!reps || reps[idx] === undefined) return;
     const oldVal = reps[idx];
     const oldEarned = unitPoints(exId, oldVal);
@@ -8739,19 +8812,21 @@ function attachTodayListeners(dateKey) {
 
     if (oldEarned !== 0) creditPoints(-oldEarned);
 
-    const bl = getBaseline(exId);
-    if (bl && bl.date === dateKey) {
-      if (reps.length > 0) {
-        const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
-        state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+    if (!boss) {
+      const bl = getBaseline(exId);
+      if (bl && bl.date === dateKey) {
+        if (reps.length > 0) {
+          const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
+          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+        }
+        // If every set for this exercise on its baseline-locking day gets
+        // deleted, the baseline is intentionally left as-is (last known good
+        // rate) rather than deleted outright — an exercise with a locked
+        // baseline and zero remaining sets logged for it is an edge case with
+        // no clean "correct" rate to fall back to.
       }
-      // If every set for this exercise on its baseline-locking day gets
-      // deleted, the baseline is intentionally left as-is (last known good
-      // rate) rather than deleted outright — an exercise with a locked
-      // baseline and zero remaining sets logged for it is an edge case with
-      // no clean "correct" rate to fall back to.
+      recomputeBestForExercise(exId);
     }
-    recomputeBestForExercise(exId);
     uiActiveSetIdx[exId] = null;
     save();
     refreshAfterSetChange();
