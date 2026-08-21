@@ -46,13 +46,18 @@ assert(boxBuildupInnerHtml('starter', shopBoxArtSvg) === '📦', 'starter box ke
 const handleOpen = html.slice(html.indexOf('function handleOpenBox'), html.indexOf('function getBoxRevealTier'));
 assert(handleOpen.includes('boxRevealIsBusy'), 'Buy is ignored while the overlay is up');
 assert(handleOpen.includes('showBoxReveal(category, outcome)'), 'box tap still opens the reveal');
+assert(handleOpen.includes('coverBoxRevealOverlay'), 'tap paints the overlay cover first');
+assert(handleOpen.indexOf('coverBoxRevealOverlay') < handleOpen.indexOf('openBoxFree'),
+  'loot must wait until the overlay cover is on screen');
 assert(!handleOpen.slice(handleOpen.indexOf('function handleOpenBox'), handleOpen.indexOf('function dismissBoxReveal')).includes('renderShopModal()'),
   'opening a box must not rebuild the shop under the overlay');
 assert(handleOpen.includes('function dismissBoxReveal'), 'dismiss is a dedicated closer');
+assert(handleOpen.includes('hideBoxRevealOverlay'), 'dismiss hides via the idle class, not a display:none hitch');
 assert(handleOpen.indexOf('showBoxReveal') < handleOpen.indexOf('save()'), 'save waits until the overlay is gone');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
-assert(showFn.includes('boxBuildupInnerHtml(category'), 'build-up renders the chest, not the prize');
+assert(showFn.includes('paintBoxRevealOverlay'), 'build-up renders the chest, not the prize');
+assert(showFn.includes('afterPaint(() => feedbackBoxOpen(tier))'), 'open SFX waits until after the overlay paints');
 assert(showFn.includes('dismissBoxReveal()'), 'tap routes through the guarded dismiss');
 assert(showFn.includes('Tap to close'), 'reveal tells you how to dismiss');
 assert(showFn.includes('e.stopPropagation()'), 'overlay tap must not fall through to Buy');
@@ -66,6 +71,6 @@ assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('@keyframes boxItemIn
   'item-in must not scale');
 
 assert(html.includes("showBoxReveal('starter'"), 'starter box uses the starter build-up, not a shop chest');
-assert(html.includes('3.4.8'), 'About version bumped for the box-open fix');
+assert(html.includes('3.4.9'), 'About version bumped for the box-open fix');
 
 console.log('box-reveal tests ok — chest art on open, prize stays visible, Buy guarded after dismiss');

@@ -684,7 +684,20 @@
      Deliberately light on text — big tappable cards over paragraphs, one
      question per screen, progress dots instead of a "step 3 of 7" label. --- */
   .ob-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; padding-top: var(--app-sat); }
-  #boxRevealOverlay { touch-action: manipulation; pointer-events: auto; }
+  /* Stay in the compositor as a hidden flex layer so opening does not pay a
+     display:none → flex layout hitch on the tap frame. */
+  #boxRevealOverlay {
+    touch-action: manipulation;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    z-index: 320;
+  }
+  #boxRevealOverlay.box-reveal-on {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
   .ob-panel { flex: 1; display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; width: 100%; padding: 18px 18px 0; min-height: 0; }
   .ob-progress { display: flex; justify-content: center; gap: 6px; padding: 10px 0 18px; flex-shrink: 0; }
   .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all 0.25s ease; }
@@ -1662,7 +1675,7 @@
     </div>
   </div>
 
-  <div id="boxRevealOverlay" class="ob-overlay" style="display:none; align-items:center; justify-content:center;">
+  <div id="boxRevealOverlay" class="ob-overlay" style="align-items:center; justify-content:center;">
     <div id="boxRevealContent" style="text-align:center;"></div>
   </div>
 
@@ -1823,7 +1836,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.8</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.9</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2652,6 +2665,29 @@ function boxBuildupInnerHtml(category, artFn) {
   }
   return '📦';
 }
+function boxRevealBuildupHtml(category, artFn) {
+  const color = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
+  return `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${color};">${boxBuildupInnerHtml(category, artFn)}</div>`;
+}
+function coverBoxRevealOverlay(overlay) {
+  if (!overlay) return false;
+  overlay.classList.add('box-reveal-on');
+  overlay.classList.remove('unique-reveal');
+  overlay.onclick = null;
+  return true;
+}
+function paintBoxRevealOverlay(overlay, content, category, artFn) {
+  if (!coverBoxRevealOverlay(overlay) || !content) return false;
+  if (!content.querySelector('#boxBuildupIcon')) {
+    content.innerHTML = boxRevealBuildupHtml(category, artFn);
+  }
+  return true;
+}
+function hideBoxRevealOverlay(overlay) {
+  if (!overlay) return;
+  overlay.onclick = null;
+  overlay.classList.remove('box-reveal-on', 'unique-reveal');
+}
 /* === box-reveal-lib end === */
 
 /* === item-catalog-lib begin === */
@@ -2660,27 +2696,30 @@ const UNIQUE_STAR = 5;
 const REGULAR_STAR_WEIGHTS = [35, 28, 20, 12, 5];
 const UNIQUE_ITEM_CHANCE = 0.08;
 function _svg(d) {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+}
+function _glyph(d) {
+  return `<svg viewBox="0 0 24 24" fill="currentColor">${d}</svg>`;
 }
 function itemIconSvg(id) {
-  if (id === 'doubleDown') return _svg('<path d="M13 2L4 14h7l-1 8 10-14h-7l1-6z"/>');
-  if (id === 'secondWind') return _svg('<path d="M4 8h11a3 3 0 010 6H9"/><path d="M4 14h9a3 3 0 000-6"/>');
-  if (id === 'ironFocus') return _svg('<circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/>');
-  if (id === 'emberHalo') return _svg('<circle cx="12" cy="13" r="6"/><path d="M12 4l1.4 3.2L17 8l-3 2.1.8 3.4L12 11.8 9.2 13.5l.8-3.4L7 8l3.6-.8L12 4z"/>');
-  if (id === 'gildthread') return _svg('<circle cx="12" cy="12" r="7"/><path d="M9 12h6M12 9v6"/><path d="M7 17c4 3 6 3 10 0"/>');
-  if (id === 'hexwick') return _svg('<path d="M12 21c3.5-2 5-5 5-8 0-4-5-6-5-10 0 4-5 6-5 10 0 3 1.5 6 5 8z"/><path d="M12 11v4"/>');
-  if (id === 'lorequill') return _svg('<path d="M5 19l4-1 10-10-3-3L6 15l-1 4z"/><path d="M14 7l3 3"/>');
-  if (id === 'wornCharm') return _svg('<circle cx="12" cy="14" r="5.5"/><path d="M12 4v4M9 6.5c1 .8 2 .8 3 0s2-.8 3 0"/>');
-  if (id === 'grindersChair') return _svg('<path d="M7 10h10v3H7z"/><path d="M8 13v6M16 13v6M6 19h12"/><path d="M9 7l3-3 3 3"/>');
-  if (id === 'oathboundBand') return _svg('<circle cx="12" cy="13" r="6"/><path d="M9 9.2l3-3.2 3 3.2"/><path d="M12 10v6"/>');
-  if (id === 'vaultSigil') return _svg('<rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V8a3 3 0 016 0v2"/><circle cx="12" cy="15" r="1.4"/>');
-  if (id === 'featherweightWraps') return _svg('<path d="M6 19c6-1 9-6 11-14 0 0-6 1-9 5 0 0 6-1 8 2-3 1-7 3-10 7z"/><path d="M7 12c2 .5 4 2 5 4"/>');
-  if (id === 'cinderAnvil') return _svg('<path d="M5 14h14l-2 5H7l-2-5z"/><path d="M7 14V11h10v3"/><path d="M12 7v4M9 8l3-3 3 3"/>');
-  if (id === 'spellboundChisel') return _svg('<path d="M14 3l7 7-9 9H5v-7l9-9z"/><path d="M8 16l3 3"/>');
-  if (id === 'legendaryDumbbell') return _svg('<path d="M4 10h3v4H4zM17 10h3v4h-3zM7 11h10v2H7z"/><path d="M12 4l1.2 2.4 2.6.3-2 1.9.5 2.6L12 10.2 9.7 11.2l.5-2.6-2-1.9 2.6-.3L12 4z"/>');
-  if (id === 'firstLight') return _svg('<circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/>');
-  if (id === 'crownUnbroken') return _svg('<path d="M4 16l2-8 6 4 6-4 2 8H4z"/><path d="M5 16h14v2H5z"/><path d="M8 8V6M12 7V4M16 8V6"/>');
-  if (id === 'lastEmber') return _svg('<path d="M12 20c3.2-1.8 5-4.6 5-7.4C17 8 12 6 12 3c0 3-5 5-5 9.6 0 2.8 1.8 5.6 5 7.4z"/><circle cx="12" cy="13" r="2"/>');
+  if (id === 'doubleDown') return _glyph('<path d="M13 2 4 14h7l-1 8 10-14h-7l1-6z"/>');
+  if (id === 'secondWind') return _svg('<path d="M4 9h11a3.2 3.2 0 1 1 0 6.4H9"/><path d="M4 14.2h9.5a2.6 2.6 0 1 0 0-5.2H8"/>');
+  if (id === 'ironFocus') return _svg('<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>');
+  if (id === 'emberHalo') return _svg('<circle cx="12" cy="13.2" r="7.2"/><path d="M12 5.2c.6 2.4-1.8 3.6-1.8 5.8a3.8 3.8 0 1 0 7.6 0c0-2.2-2.4-3.4-1.8-5.8 1.1 1.6 2.8 3.2 2.8 5.8a5.6 5.6 0 1 1-11.2 0c0-2.6 1.7-4.2 2.8-5.8z" fill="currentColor" stroke="none"/>');
+  if (id === 'gildthread') return _svg('<circle cx="12" cy="12" r="8"/><path d="M8.5 12h7M12 8.5v7"/><path d="M8 16.6c2.6 1.8 5.4 1.8 8 0"/>');
+  if (id === 'hexwick') return _glyph('<path d="M11.1 3.2h1.8l.7 3.2c2.8 1.2 4.6 3.6 4.6 6.6 0 3.6-2.6 7.4-6.2 8.8-3.6-1.4-6.2-5.2-6.2-8.8 0-3 1.8-5.4 4.6-6.6l.7-3.2z"/><rect x="11.2" y="10.4" width="1.6" height="5.2" rx="0.6" fill="var(--bg)"/>');
+  if (id === 'lorequill') return _svg('<path d="M5 19.2 9.2 18 20 7.2 16.8 4 6 14.8 5 19.2z"/><path d="M14.2 6.6 17.4 9.8"/><path d="M7.2 16.2 9.4 17.2"/>');
+  if (id === 'wornCharm') return _svg('<ellipse cx="12" cy="14.2" rx="6.4" ry="5.2"/><path d="M12 4.2v5"/><path d="M9.2 6.4c1.2.9 2.4.9 2.8 0 .4-.9 1.6-.9 2.8 0"/>');
+  if (id === 'grindersChair') return _svg('<path d="M6 4.2v9"/><path d="M18 4.2v16"/><path d="M6 13.2h12"/><path d="M6 20.2v-7"/><path d="M9.2 4.2 12 2.2 14.8 4.2"/>');
+  if (id === 'oathboundBand') return _svg('<circle cx="12" cy="13.2" r="6.4"/><path d="M9.2 8.4 12 5.2 14.8 8.4"/><path d="M12 9.6v6.4"/>');
+  if (id === 'vaultSigil') return _svg('<rect x="5.5" y="10" width="13" height="10.2" rx="2"/><path d="M8.6 10V7.6a3.4 3.4 0 0 1 6.8 0V10"/><circle cx="12" cy="15.4" r="1.3" fill="currentColor"/>');
+  if (id === 'featherweightWraps') return _svg('<path d="M4.2 4.2c5.6 3.6 9.2 11.2 15.6 15.6"/><path d="M4.2 19.8c5.6-3.6 9.2-11.2 15.6-15.6"/>');
+  if (id === 'cinderAnvil') return _svg('<path d="M5 14.2h14l-1.8 5.4H6.8L5 14.2z"/><path d="M7.2 14.2V11h9.6v3.2"/><path d="M12 6.6v4.4M8.8 8 12 5.2 15.2 8"/>');
+  if (id === 'spellboundChisel') return _svg('<path d="M14.2 3.2 20.8 9.8 11.4 19.2H5.2v-6.2L14.2 3.2z"/><path d="M8.2 16.2 10.8 18.8"/>');
+  if (id === 'legendaryDumbbell') return _svg('<rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="5" y="7" width="2.5" height="10" rx="1"/><rect x="16.5" y="7" width="2.5" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/>');
+  if (id === 'firstLight') return _glyph('<circle cx="12" cy="12" r="4"/><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.9 1.9M17 17l1.9 1.9M18.9 5.1 17 7M7 17l-1.9 1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>');
+  if (id === 'crownUnbroken') return _glyph('<path d="M3.6 16.4 5.8 7.2 12 11.4 18.2 7.2 20.4 16.4H3.6z"/><rect x="4.4" y="16.4" width="15.2" height="2.4" rx="0.6"/>');
+  if (id === 'lastEmber') return _glyph('<path d="M12 21c3.4-1.8 5.2-4.8 5.2-7.8 0-4.2-5.2-6.2-5.2-9.4 0 3.2-5.2 5.2-5.2 9.4 0 3 1.8 6 5.2 7.8z"/><circle cx="12" cy="13.4" r="2" fill="var(--bg)"/>');
   return '';
 }
 function matIconSvg(kind, cat) {
@@ -6210,20 +6249,29 @@ function renderItemDetailModal() {
         <button class="inv-btn" id="itemDetailOpenBoxBtn">Open Box</button>
       </div>`;
     document.getElementById('itemDetailOpenBoxBtn').addEventListener('click', () => {
-      const loot = openStarterVictoryBox(state);
       closeItemDetailModal();
-      if (!loot) {
-        save();
-        renderInventoryTab();
-        return;
-      }
-      const relicTmpl = itemTemplate(STARTER_RELIC_ID) || { name: 'Relic', icon: '🪨' };
-      showBoxReveal('starter', {
-        kind: 'item',
-        result: { kind: 'new', tmpl: relicTmpl },
-        extraLine: '+1 Relic Enchantment Stone'
+      const overlay = document.getElementById('boxRevealOverlay');
+      const content = document.getElementById('boxRevealContent');
+      window.__boxRevealOpen = true;
+      coverBoxRevealOverlay(overlay);
+      afterPaint(() => {
+        const loot = openStarterVictoryBox(state);
+        if (!loot) {
+          hideBoxRevealOverlay(overlay);
+          window.__boxRevealOpen = false;
+          save();
+          renderInventoryTab();
+          return;
+        }
+        paintBoxRevealOverlay(overlay, content, 'starter', null);
+        const relicTmpl = itemTemplate(STARTER_RELIC_ID) || { name: 'Relic', icon: '🪨' };
+        showBoxReveal('starter', {
+          kind: 'item',
+          result: { kind: 'new', tmpl: relicTmpl },
+          extraLine: '+1 Relic Enchantment Stone'
+        });
+        afterPaint(() => save());
       });
-      afterPaint(() => save());
     });
     return;
   }
@@ -6628,9 +6676,19 @@ function renderShopModal() {
 }
 function handleOpenBox(category) {
   if (boxRevealIsBusy(Date.now(), window.__boxRevealOpen, window.__boxRevealGuardUntil)) return;
-  const outcome = openBox(category);
-  if (!outcome) return;
-  showBoxReveal(category, outcome);
+  const cost = BOX_COST[category];
+  if (!isAdminSandbox(state) && state.gold < cost) { showToast('Not enough gold'); return; }
+  const overlay = document.getElementById('boxRevealOverlay');
+  const content = document.getElementById('boxRevealContent');
+  window.__boxRevealOpen = true;
+  coverBoxRevealOverlay(overlay);
+  afterPaint(() => {
+    if (!window.__boxRevealOpen) return;
+    if (!isAdminSandbox(state)) state.gold -= cost;
+    const outcome = openBoxFree(category);
+    paintBoxRevealOverlay(overlay, content, category, typeof shopBoxArtSvg === 'function' ? shopBoxArtSvg : null);
+    showBoxReveal(category, outcome);
+  });
 }
 function dismissBoxReveal() {
   if (!window.__boxRevealOpen) return;
@@ -6638,11 +6696,7 @@ function dismissBoxReveal() {
   window.__boxRevealGuardUntil = Date.now() + boxRevealDismissGuardMs();
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
-  if (overlay) {
-    overlay.onclick = null;
-    overlay.classList.remove('unique-reveal');
-    overlay.style.display = 'none';
-  }
+  hideBoxRevealOverlay(overlay);
   afterPaint(() => {
     save();
     refreshHeaderCurrency();
@@ -6679,17 +6733,13 @@ function showBoxReveal(category, outcome) {
   const tier = getBoxRevealTier(outcome);
   const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
   const lootFallback = category === 'boost' ? '⚡' : (category === 'relic' ? '🛡️' : '📦');
-  const buildupColor = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
   const artFn = typeof shopBoxArtSvg === 'function' ? shopBoxArtSvg : null;
 
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
-  overlay.classList.toggle('unique-reveal', tier === 'unique');
-  overlay.style.display = 'flex';
-  overlay.onclick = null; // disabled during build-up so the suspense can't be skipped
-  content.innerHTML = `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${buildupColor};">${boxBuildupInnerHtml(category, artFn)}</div>`;
-  feedbackBoxOpen(tier);
+  paintBoxRevealOverlay(overlay, content, category, artFn);
+  afterPaint(() => feedbackBoxOpen(tier));
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
@@ -6707,6 +6757,7 @@ function showBoxReveal(category, outcome) {
       const prizeIcon = outcome.kind === 'shards' ? matIconHtml('shards', category)
         : outcome.kind === 'stone' ? matIconHtml('stone', category)
         : (typeof itemIconHtml === 'function' ? itemIconHtml(tmpl) : (tmpl.icon || lootFallback));
+      overlay.classList.toggle('unique-reveal', tier === 'unique');
       content.innerHTML = `
         ${tier === 'unique' ? '<div class="box-reveal-unique-flash"></div>' : '<div class="box-reveal-burst-flash"></div>'}
         <div class="box-reveal-card tier-${tier}">
