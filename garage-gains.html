@@ -1343,9 +1343,9 @@
     <div class="card">
       <div class="settings-row"><div>Export data<div class="l2">Save a backup file to your phone</div></div></div>
       <button class="btn" id="exportBtn">Export Backup</button>
-      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore from a backup file</div></div></div>
+      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore a .json backup from this app or the browser version</div></div></div>
       <button class="btn" id="importBtn">Import Backup</button>
-      <input type="file" id="importFile" accept="application/json">
+      <input type="file" id="importFile" accept=".json,application/json,text/plain,text/*,*/*" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
       <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
       <button class="btn" id="recalcPointsBtn">Recalculate Points</button>
     </div>
@@ -1353,7 +1353,7 @@
     <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
     <div class="section-title">About</div>
     <div class="card">
-      <div class="settings-row"><div>Version</div><div class="l2 mono">3.2</div></div>
+      <div class="settings-row"><div>Version</div><div class="l2 mono">3.3.2</div></div>
       <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
     </div>
   </section>
@@ -5282,11 +5282,11 @@ function feedbackStreakTier() { playToneSequence([{ freq:480, durationMs:100, de
 function feedbackInstanceEnter() { playToneSequence([{ freq:300, durationMs:80, delayMs:0 }, { freq:700, durationMs:180, delayMs:70 }]); vibrate([0, 30, 20, 60]); }
 
 let toastTimer;
-function showToast(msg) {
+function showToast(msg, ms) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), ms || 2200);
 }
 
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => switchView(tab.dataset.view)));
@@ -6930,8 +6930,155 @@ document.getElementById('streakModalClose').addEventListener('click', closeStrea
 document.getElementById('streakTierModal').addEventListener('click', (e) => {
   if (e.target.id === 'streakTierModal') closeStreakModal();
 });
+/* === backup-restore-lib begin === */
+function stripBackupBom(text) {
+  if (text == null) return '';
+  let s = String(text).replace(/^\uFEFF/, '');
+  if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
+  if (s.includes('\u0000')) s = s.replace(/\u0000/g, '');
+  return s.trim();
+}
+function parseBackupText(text) {
+  const raw = stripBackupBom(text);
+  if (!raw) throw new Error('empty');
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start < 0 || end <= start) throw err;
+    parsed = JSON.parse(raw.slice(start, end + 1));
+  }
+  if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+  return parsed;
+}
+function looksLikeAppState(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+  const keys = ['workoutLog', 'totalPoints', 'weightLog', 'bests', 'onboarding', 'customExercises', 'customDaySchedule', 'streak', 'baselines', 'unlockedBadges', 'equipment'];
+  return keys.some(k => Object.prototype.hasOwnProperty.call(o, k));
+}
+function unwrapBackup(parsed) {
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch (e) { return null; }
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (parsed.garageGains_v1 && !looksLikeAppState(parsed)) {
+    const inner = parsed.garageGains_v1;
+    if (typeof inner === 'string') {
+      try { parsed = JSON.parse(inner); } catch (e) { parsed = inner; }
+    } else {
+      parsed = inner;
+    }
+  }
+  for (let i = 0; i < 4; i++) {
+    if (looksLikeAppState(parsed)) return parsed;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (parsed.state && typeof parsed.state === 'object') { parsed = parsed.state; continue; }
+    if (parsed.data && typeof parsed.data === 'object') { parsed = parsed.data; continue; }
+    if (parsed.backup && typeof parsed.backup === 'object') { parsed = parsed.backup; continue; }
+    if (parsed.profileData && typeof parsed.profileData === 'object') { parsed = parsed.profileData; continue; }
+    return null;
+  }
+  return looksLikeAppState(parsed) ? parsed : null;
+}
+function backupHasProgress(s) {
+  if (!s) return false;
+  const log = s.workoutLog && typeof s.workoutLog === 'object' ? s.workoutLog : {};
+  if (Object.keys(log).length) return true;
+  if ((s.totalPoints || 0) > 0) return true;
+  if (s.onboarding && (s.onboarding.name || (s.onboarding.equipment && s.onboarding.equipment.length))) return true;
+  if (s.customExercises && (s.customExercises.push || s.customExercises.pull || s.customExercises.core)) return true;
+  if (s.profile && s.profile.displayName) return true;
+  if (Array.isArray(s.weightLog) && s.weightLog.length) return true;
+  if (s.bests && Object.keys(s.bests).length) return true;
+  if (Array.isArray(s.equipment) && s.equipment.length) return true;
+  return false;
+}
+function countBackupWorkouts(s) {
+  const log = (s && s.workoutLog) || {};
+  return Object.keys(log).filter(d => {
+    const sess = log[d];
+    if (!sess || typeof sess !== 'object') return false;
+    if (sess.completed) return true;
+    const sets = sess.sets || {};
+    return Object.values(sets).some(arr => Array.isArray(arr) && arr.some(r => r !== null && r !== undefined));
+  }).length;
+}
+/* === backup-restore-lib end === */
+
+function buildBackupPayload() {
+  return {
+    app: 'rigcore',
+    format: 1,
+    exportedAt: new Date().toISOString(),
+    state: state
+  };
+}
+function applyImportedBackupText(text) {
+  let parsed;
+  try {
+    parsed = parseBackupText(text);
+  } catch (err) {
+    showToast('Import failed — not a backup file');
+    return false;
+  }
+  const extracted = unwrapBackup(parsed);
+  if (!extracted) {
+    showToast('Import failed — this file has no RIGCORE progress');
+    return false;
+  }
+  if (!backupHasProgress(extracted)) {
+    showToast('This backup has no workout history');
+    return false;
+  }
+
+  const restored = Object.assign(defaultState(), extracted);
+  Object.values(restored.workoutLog || {}).forEach(session => {
+    Object.keys(session.sets || {}).forEach(exId => {
+      session.sets[exId] = (session.sets[exId] || []).filter(r => r !== null && r !== undefined);
+    });
+  });
+  if (!restored.exercises || !restored.exercises.length) {
+    restored.exercises = EXERCISES.map(e => ({ ...e, archived: false }));
+  }
+  state = restored;
+  ensureProfileShape();
+  ensureInventoryShape();
+
+  const meta = getCurrentProfileMeta();
+  if (meta) {
+    meta.onboarded = true;
+    const nm = (state.onboarding && state.onboarding.name) || (state.profile && state.profile.displayName);
+    if (nm && String(nm).trim()) meta.name = String(nm).trim().slice(0, 24);
+    saveRegistry();
+  }
+  save();
+
+  const overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.setAttribute('data-theme', state.theme || 'rig');
+  window.__expandedEx = null;
+  window.__expandedUpcoming = null;
+  uiActiveSetIdx = {};
+
+  renderThemeGrid();
+  renderToday();
+  renderProfilesList();
+  renderStats();
+  switchView('today');
+
+  const n = countBackupWorkouts(state);
+  const pts = state.totalPoints || 0;
+  if (n) showToast('Restored ' + n + ' workout' + (n === 1 ? '' : 's') + ' · ' + pts + ' pts', 3600);
+  else showToast('Backup restored · ' + pts + ' pts', 3600);
+  return true;
+}
+window.buildBackupPayload = buildBackupPayload;
+window.applyImportedBackupText = applyImportedBackupText;
+
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(buildBackupPayload(), null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `garage-gains-backup-${todayStr()}.json`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
@@ -6941,16 +7088,8 @@ document.getElementById('importBtn').addEventListener('click', () => document.ge
 document.getElementById('importFile').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = (evt) => {
-    try {
-      const parsed = JSON.parse(evt.target.result);
-      state = Object.assign(defaultState(), parsed);
-      save();
-      document.body.setAttribute('data-theme', state.theme || 'rig');
-      showToast('Backup restored');
-      renderThemeGrid(); renderToday();
-    } catch(err) { showToast('Import failed — invalid file'); }
-  };
+  reader.onload = (evt) => applyImportedBackupText(evt.target.result);
+  reader.onerror = () => showToast('Import failed — could not read file');
   reader.readAsText(file); e.target.value = '';
 });
 document.getElementById('recalcPointsBtn').addEventListener('click', () => {

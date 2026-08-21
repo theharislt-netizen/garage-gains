@@ -2,7 +2,7 @@
  * Native Android bridge for RIGCORE.
  * Bundled into www/native-bridge.js and injected after the web app boots.
  */
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -26,6 +26,8 @@ function todayStamp() {
   );
 }
 
+const BackupImport = registerPlugin('BackupImport');
+
 function currentProfileJson() {
   let id = 'p1';
   try {
@@ -34,6 +36,29 @@ function currentProfileJson() {
   } catch (_) { /* keep p1 */ }
   const key = id === 'p1' ? STORE_KEY : STORE_KEY + '::' + id;
   return localStorage.getItem(key) || '{}';
+}
+
+function backupJsonForExport() {
+  if (typeof window.buildBackupPayload === 'function') {
+    try {
+      return JSON.stringify(window.buildBackupPayload(), null, 2);
+    } catch (_) { /* fall through */ }
+  }
+  const raw = currentProfileJson();
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    if (parsed && parsed.app === 'rigcore' && parsed.state) {
+      return JSON.stringify(parsed, null, 2);
+    }
+    return JSON.stringify({
+      app: 'rigcore',
+      format: 1,
+      exportedAt: new Date().toISOString(),
+      state: parsed,
+    }, null, 2);
+  } catch (_) {
+    return raw || '{}';
+  }
 }
 
 function hideHomeScreenShortcut() {
@@ -72,7 +97,7 @@ function closeTopOverlay() {
 
 async function exportBackup() {
   const filename = `garage-gains-backup-${todayStamp()}.json`;
-  const data = currentProfileJson();
+  const data = backupJsonForExport();
   await Filesystem.writeFile({
     path: filename,
     data,
@@ -103,6 +128,32 @@ function wireExport() {
     } catch (err) {
       console.error('export failed', err);
       if (typeof window.showToast === 'function') window.showToast('Export failed');
+    }
+  });
+}
+
+function fallbackFileInput() {
+  const input = document.getElementById('importFile');
+  if (input) input.click();
+}
+
+function wireImport() {
+  const importBtn = document.getElementById('importBtn');
+  if (!importBtn) return;
+  const clone = importBtn.cloneNode(true);
+  importBtn.parentNode.replaceChild(clone, importBtn);
+  clone.addEventListener('click', async () => {
+    try {
+      const res = await BackupImport.pickBackup();
+      if (!res || res.canceled) return;
+      if (typeof window.applyImportedBackupText === 'function') {
+        window.applyImportedBackupText(res.text || '');
+      } else {
+        toast('Import failed — restart the app and try again');
+      }
+    } catch (err) {
+      console.error('native import failed', err);
+      fallbackFileInput();
     }
   });
 }
@@ -323,6 +374,7 @@ async function setup() {
   hideHomeScreenShortcut();
   wireYoutube();
   wireExport();
+  wireImport();
   wireHaptics();
   localBundleVersion().then((v) => wireUpdateStatus(v));
   checkAndApplyUpdate();
