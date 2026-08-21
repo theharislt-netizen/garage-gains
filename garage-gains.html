@@ -1343,7 +1343,7 @@
     <div class="card">
       <div class="settings-row"><div>Export data<div class="l2">Save a backup file to your phone</div></div></div>
       <button class="btn" id="exportBtn">Export Backup</button>
-      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore a .json backup from this app or the browser version</div></div></div>
+      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore your name, routine, and history from a .json backup</div></div></div>
       <button class="btn" id="importBtn">Import Backup</button>
       <input type="file" id="importFile" accept=".json,application/json,text/plain,text/*,*/*" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
       <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
@@ -6938,61 +6938,91 @@ function stripBackupBom(text) {
   if (s.includes('\u0000')) s = s.replace(/\u0000/g, '');
   return s.trim();
 }
+function tryParseJson(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = stripBackupBom(value);
+  if (!trimmed) return value;
+  try { return JSON.parse(trimmed); } catch (_) {}
+  try {
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
+  } catch (_) {}
+  try {
+    const b64 = trimmed.replace(/\s/g, '');
+    if (b64.length > 8 && /^[A-Za-z0-9+/=]+$/.test(b64)) {
+      const decoded = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('utf8');
+      return JSON.parse(stripBackupBom(decoded));
+    }
+  } catch (_) {}
+  return value;
+}
 function parseBackupText(text) {
   const raw = stripBackupBom(text);
   if (!raw) throw new Error('empty');
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    const start = raw.indexOf('{');
-    const end = raw.lastIndexOf('}');
-    if (start < 0 || end <= start) throw err;
-    parsed = JSON.parse(raw.slice(start, end + 1));
-  }
-  if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-  return parsed;
+  const parsed = tryParseJson(raw);
+  if (parsed === raw || parsed == null) throw new Error('invalid');
+  return typeof parsed === 'string' ? tryParseJson(parsed) : parsed;
 }
-function looksLikeAppState(o) {
-  if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
-  const keys = ['workoutLog', 'totalPoints', 'weightLog', 'bests', 'onboarding', 'customExercises', 'customDaySchedule', 'streak', 'baselines', 'unlockedBadges', 'equipment'];
-  return keys.some(k => Object.prototype.hasOwnProperty.call(o, k));
+function backupDisplayName(s) {
+  if (!s || typeof s !== 'object') return '';
+  if (s.id && (s.muscle || s.suggestedSets || s.equip)) return '';
+  const fromOb = s.onboarding && s.onboarding.name;
+  const fromProfile = s.profile && s.profile.displayName;
+  const fromRoot = s.name || s.displayName;
+  const fromReg = s.registry && Array.isArray(s.registry.profiles)
+    ? ((s.registry.profiles.find(p => p && p.id === s.registry.currentId) || s.registry.profiles[0]) || {}).name
+    : '';
+  const name = fromOb || fromProfile || fromRoot || fromReg || '';
+  return String(name).trim();
+}
+function backupHasRoutine(s) {
+  if (!s || typeof s !== 'object') return false;
+  const ex = s.customExercises;
+  if (ex && typeof ex === 'object') {
+    if (Object.keys(ex).some(k => Array.isArray(ex[k]) && ex[k].length)) return true;
+    if ('push' in ex || 'pull' in ex || 'core' in ex) return true;
+  }
+  if (s.customDaySchedule && typeof s.customDaySchedule === 'object' && Object.keys(s.customDaySchedule).length) return true;
+  if (Array.isArray(s.equipment) && s.equipment.length) return true;
+  if (s.onboarding && Array.isArray(s.onboarding.equipment) && s.onboarding.equipment.length) return true;
+  return false;
+}
+function scoreAppState(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return 0;
+  const keys = ['workoutLog', 'totalPoints', 'weightLog', 'bests', 'onboarding', 'customExercises', 'customDaySchedule', 'streak', 'baselines', 'unlockedBadges', 'equipment', 'profile', 'exercises', 'dumbbellRange'];
+  let n = 0;
+  for (let i = 0; i < keys.length; i++) if (Object.prototype.hasOwnProperty.call(o, keys[i])) n += 2;
+  if (backupDisplayName(o)) n += 4;
+  if (backupHasRoutine(o)) n += 5;
+  return n;
+}
+function looksLikeAppState(o) { return scoreAppState(o) >= 2; }
+function walkBackupNode(node, depth, best) {
+  if (node == null || depth > 6) return best;
+  node = tryParseJson(node);
+  if (!node || typeof node !== 'object') return best;
+  const score = scoreAppState(node);
+  if (score > (best ? best.score : 0)) best = { node, score };
+  const kids = Array.isArray(node) ? node : Object.values(node);
+  for (let i = 0; i < kids.length; i++) best = walkBackupNode(kids[i], depth + 1, best);
+  return best;
 }
 function unwrapBackup(parsed) {
-  if (typeof parsed === 'string') {
-    try { parsed = JSON.parse(parsed); } catch (e) { return null; }
-  }
+  parsed = tryParseJson(parsed);
   if (!parsed || typeof parsed !== 'object') return null;
-  if (parsed.garageGains_v1 && !looksLikeAppState(parsed)) {
-    const inner = parsed.garageGains_v1;
-    if (typeof inner === 'string') {
-      try { parsed = JSON.parse(inner); } catch (e) { parsed = inner; }
-    } else {
-      parsed = inner;
-    }
-  }
-  for (let i = 0; i < 4; i++) {
-    if (looksLikeAppState(parsed)) return parsed;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-    if (parsed.state && typeof parsed.state === 'object') { parsed = parsed.state; continue; }
-    if (parsed.data && typeof parsed.data === 'object') { parsed = parsed.data; continue; }
-    if (parsed.backup && typeof parsed.backup === 'object') { parsed = parsed.backup; continue; }
-    if (parsed.profileData && typeof parsed.profileData === 'object') { parsed = parsed.profileData; continue; }
-    return null;
-  }
-  return looksLikeAppState(parsed) ? parsed : null;
+  const found = walkBackupNode(parsed, 0, null);
+  if (found && (backupHasProgress(found.node) || found.score >= 2)) return found.node;
+  return null;
 }
 function backupHasProgress(s) {
-  if (!s) return false;
+  if (!s || typeof s !== 'object') return false;
+  if (backupDisplayName(s)) return true;
+  if (backupHasRoutine(s)) return true;
   const log = s.workoutLog && typeof s.workoutLog === 'object' ? s.workoutLog : {};
   if (Object.keys(log).length) return true;
   if ((s.totalPoints || 0) > 0) return true;
-  if (s.onboarding && (s.onboarding.name || (s.onboarding.equipment && s.onboarding.equipment.length))) return true;
-  if (s.customExercises && (s.customExercises.push || s.customExercises.pull || s.customExercises.core)) return true;
-  if (s.profile && s.profile.displayName) return true;
-  if (Array.isArray(s.weightLog) && s.weightLog.length) return true;
   if (s.bests && Object.keys(s.bests).length) return true;
-  if (Array.isArray(s.equipment) && s.equipment.length) return true;
   return false;
 }
 function countBackupWorkouts(s) {
@@ -7012,7 +7042,8 @@ function buildBackupPayload() {
     app: 'rigcore',
     format: 1,
     exportedAt: new Date().toISOString(),
-    state: state
+    state: state,
+    registry: typeof registry !== 'undefined' ? registry : undefined
   };
 }
 function applyImportedBackupText(text) {
@@ -7024,12 +7055,8 @@ function applyImportedBackupText(text) {
     return false;
   }
   const extracted = unwrapBackup(parsed);
-  if (!extracted) {
-    showToast('Import failed — this file has no RIGCORE progress');
-    return false;
-  }
-  if (!backupHasProgress(extracted)) {
-    showToast('This backup has no workout history');
+  if (!extracted || !backupHasProgress(extracted)) {
+    showToast('This file has no name or workout routine');
     return false;
   }
 
@@ -7042,6 +7069,13 @@ function applyImportedBackupText(text) {
   if (!restored.exercises || !restored.exercises.length) {
     restored.exercises = EXERCISES.map(e => ({ ...e, archived: false }));
   }
+  const name = backupDisplayName(extracted) || backupDisplayName(restored);
+  if (name) {
+    restored.profile = restored.profile || { displayName: '', equippedBanner: null, displayedAchievementIds: [] };
+    restored.profile.displayName = name.slice(0, 16);
+    restored.onboarding = restored.onboarding || {};
+    restored.onboarding.name = name;
+  }
   state = restored;
   ensureProfileShape();
   ensureInventoryShape();
@@ -7049,8 +7083,7 @@ function applyImportedBackupText(text) {
   const meta = getCurrentProfileMeta();
   if (meta) {
     meta.onboarded = true;
-    const nm = (state.onboarding && state.onboarding.name) || (state.profile && state.profile.displayName);
-    if (nm && String(nm).trim()) meta.name = String(nm).trim().slice(0, 24);
+    if (name) meta.name = name.slice(0, 24);
     saveRegistry();
   }
   save();
@@ -7074,8 +7107,10 @@ function applyImportedBackupText(text) {
 
   const n = countBackupWorkouts(state);
   const pts = state.totalPoints || 0;
-  if (n) showToast('Restored ' + n + ' workout' + (n === 1 ? '' : 's') + ' · ' + pts + ' pts', 3600);
-  else showToast('Backup restored · ' + pts + ' pts', 3600);
+  const who = name || 'your profile';
+  if (n) showToast('Restored ' + who + ' · ' + n + ' workout' + (n === 1 ? '' : 's'), 3600);
+  else if (backupHasRoutine(state)) showToast('Restored routine for ' + who, 3600);
+  else showToast('Restored ' + who, 3600);
   return true;
 }
 window.buildBackupPayload = buildBackupPayload;

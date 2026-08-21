@@ -16,7 +16,7 @@ if (begin < 0 || end < 0 || end <= begin) {
   throw new Error('backup-restore-lib markers missing from garage-gains.html');
 }
 const lib = html.slice(begin, end);
-const ctx = { console };
+const ctx = { console, Buffer, atob: (s) => Buffer.from(s, 'base64').toString('utf8') };
 vm.createContext(ctx);
 vm.runInContext(lib, ctx);
 
@@ -110,5 +110,27 @@ assert(appliedRaw.ok && appliedRaw.state.customExercises.push[0] === 'chairDips'
 
 assert(applyLikeApp('{}').ok === false, 'empty JSON must not toast-success');
 assert(applyLikeApp('{"title":"RIGCORE backup"}').ok === false, 'share metadata must not toast-success');
+
+const routineOnly = {
+  onboarding: { name: 'Haris', freq: 5, equipment: ['chair', 'dumbbell'] },
+  customExercises: { push: ['chairDips'], pull: ['tableRows'], core: ['plank'] },
+  customDaySchedule: { 0: null, 1: 'push', 2: 'pull', 3: 'core', 4: 'push', 5: 'pull', 6: null },
+  equipment: ['chair', 'dumbbell'],
+  profile: { displayName: 'Haris' },
+  workoutLog: {},
+  totalPoints: 0,
+};
+assert(backupHasProgress(routineOnly), 'name + routine with no logged workouts is restorable');
+assert(unwrapBackup(routineOnly).customExercises.push[0] === 'chairDips', 'routine-only raw state should unwrap');
+assert(unwrapBackup({ app: 'rigcore', format: 1, state: routineOnly }).onboarding.name === 'Haris', 'wrapped routine-only should unwrap');
+assert(unwrapBackup({ app: 'rigcore', state: JSON.stringify(routineOnly) }).customDaySchedule[1] === 'push', 'stringified nested state should unwrap');
+const appliedRoutine = applyLikeApp(JSON.stringify({ v: 1, savedAt: 'x', state: routineOnly }));
+assert(appliedRoutine.ok, 'routine-only backup should apply');
+assert(appliedRoutine.state.customExercises.pull[0] === 'tableRows', 'applied routine must keep exercise list');
+assert(appliedRoutine.state.onboarding.name === 'Haris', 'applied routine must keep name');
+
+const nameAndSchedule = { name: 'Haris', customDaySchedule: { 1: 'push', 2: 'pull' } };
+assert(backupHasProgress(nameAndSchedule), 'top-level name + schedule is restorable');
+assert(unwrapBackup({ backup: nameAndSchedule }).name === 'Haris', 'nested name+schedule should unwrap');
 
 console.log('backup restore tests passed');
