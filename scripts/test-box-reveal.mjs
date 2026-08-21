@@ -60,7 +60,7 @@ assert(html.includes('box-art-boost') && html.includes('box-art-relic'), 'chest 
 assert(!showFn.includes('paintBoxRevealOverlay'), 'reveal must not rewrite the chest on open');
 assert(showFn.includes('feedbackBoxOpen(tier)'), 'open SFX still plays after cover');
 assert(showFn.includes('dismissBoxReveal()'), 'tap routes through the guarded dismiss');
-assert(showFn.includes('Tap to close'), 'reveal tells you how to dismiss');
+assert(html.includes('Tap to close'), 'reveal tells you how to dismiss');
 assert(showFn.includes('e.stopPropagation()'), 'overlay tap must not fall through to Buy');
 
 const burstRuleAt = html.indexOf('.box-reveal-card .rarity-burst');
@@ -72,6 +72,6 @@ assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('@keyframes boxItemIn
   'item-in must not scale');
 
 assert(html.includes("showBoxReveal('starter'"), 'starter box uses the starter build-up, not a shop chest');
-assert(html.includes('3.4.11'), 'About version bumped for the box-open fix');
+assert(html.includes('3.4.12'), 'About version bumped for the box-open fix');
 
 console.log('box-reveal tests ok — chest art on open, prize stays visible, Buy guarded after dismiss');

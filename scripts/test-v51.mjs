@@ -72,7 +72,8 @@ assert(openFn.indexOf('coverBoxRevealOverlay') < openFn.indexOf('openBoxFree'),
   'tap frame covers the shop before rolling loot');
 assert(openFn.indexOf('coverBoxRevealOverlay') < openFn.indexOf('openBoxFree'),
   'cover is synchronous on the tap');
-assert(openFn.includes('setTimeout'), 'loot waits off the tap thread');
+assert(openFn.includes('queueBoxOpenWork') || openFn.includes('afterPaint') || openFn.includes('setTimeout'),
+  'loot waits off the tap thread');
 assert(!openFn.includes('paintBoxRevealOverlay'), 'tap must not write chest innerHTML');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
@@ -102,6 +103,6 @@ assert(itemIconSvg('doubleDown').includes('fill="currentColor"'),
   'Double Down stays a filled bolt like the previous set');
 assert(itemIconSvg('firstLight') !== itemIconSvg('ironFocus'), 'new items still have distinct icons');
 
-assert(html.includes('3.4.11'), 'About version bumped for v5.1');
+assert(html.includes('3.4.12'), 'About version bumped for v5.1');
 
 console.log('v5.1 tests ok — overlay paints first, item icons match previous language, materials unchanged');

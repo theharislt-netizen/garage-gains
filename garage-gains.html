@@ -692,12 +692,18 @@
     visibility: hidden;
     opacity: 0;
     z-index: 320;
+    transform: translateZ(0);
+    contain: layout style;
   }
   #boxRevealOverlay.box-reveal-on {
     visibility: visible;
     opacity: 1;
     pointer-events: auto;
   }
+  #shopModal.shop-behind-box {
+    visibility: hidden;
+  }
+  #boxRevealContent { position: relative; width: 100%; min-height: 96px; }
   .ob-panel { flex: 1; display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; width: 100%; padding: 18px 18px 0; min-height: 0; }
   .ob-progress { display: flex; justify-content: center; gap: 6px; padding: 10px 0 18px; flex-shrink: 0; }
   .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all 0.25s ease; }
@@ -975,23 +981,30 @@
   /* Opening uses the chest art (not the loot icon). The item fade-in must
      stay visible — ruBurst ends at opacity 0 and was wiping the prize. */
   .box-reveal-buildup {
-    width: 96px; height: 96px; margin: 0 auto; font-size: 64px; line-height: 96px; text-align: center;
-    animation: boxShake 0.22s ease-in-out infinite;
+    position: absolute; left: 50%; top: 50%; width: 96px; height: 96px;
+    margin-left: -48px; margin-top: -48px;
+    font-size: 64px; line-height: 96px; text-align: center;
+    visibility: hidden; opacity: 0; pointer-events: none;
   }
   .box-reveal-buildup svg { width: 96px; height: 96px; display: block; }
-  #boxRevealOverlay .box-art-boost,
-  #boxRevealOverlay .box-art-relic,
-  #boxRevealOverlay .box-art-starter { display: none; }
-  #boxRevealOverlay.box-cat-boost:not(.box-prize-on) .box-art-boost { display: block; }
-  #boxRevealOverlay.box-cat-relic:not(.box-prize-on) .box-art-relic { display: block; }
-  #boxRevealOverlay.box-cat-starter:not(.box-prize-on) .box-art-starter { display: block; }
-  #boxRevealPrize { display: none; }
-  #boxRevealOverlay.box-prize-on #boxRevealPrize { display: block; }
+  #boxRevealOverlay.box-cat-boost:not(.box-prize-on) .box-art-boost,
+  #boxRevealOverlay.box-cat-relic:not(.box-prize-on) .box-art-relic,
+  #boxRevealOverlay.box-cat-starter:not(.box-prize-on) .box-art-starter {
+    visibility: visible; opacity: 1; animation: boxShake 0.22s ease-in-out infinite;
+  }
+  #boxRevealPrize {
+    visibility: hidden; opacity: 0; pointer-events: none;
+  }
+  #boxRevealOverlay.box-prize-on #boxRevealPrize {
+    visibility: visible; opacity: 1; pointer-events: auto;
+  }
   @keyframes boxShake { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   .box-reveal-burst-flash {
     position: fixed; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.7), var(--a1) 42%, transparent 75%);
+  }
+  #boxRevealOverlay.box-prize-on:not(.unique-reveal) .box-reveal-burst-flash {
     animation: boxBurstFlash 0.4s ease-out forwards;
   }
   @keyframes boxBurstFlash { 0% { opacity: 0; } 30% { opacity: 0.55; } 100% { opacity: 0; } }
@@ -1014,6 +1027,8 @@
   .box-reveal-unique-flash {
     position: fixed; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.62), transparent 64%);
+  }
+  #boxRevealOverlay.box-prize-on.unique-reveal .box-reveal-unique-flash {
     animation: boxUniqueFlash 0.7s ease-out forwards;
   }
   @keyframes boxUniqueFlash {
@@ -1021,8 +1036,8 @@
     22% { opacity: 1; }
     100% { opacity: 0; }
   }
-  @keyframes tierPulse { 0%, 100% { filter: drop-shadow(0 0 8px var(--a1)); } 50% { filter: drop-shadow(0 0 18px var(--a1)); } }
-  @keyframes tierPulseBig { 0%, 100% { filter: drop-shadow(0 0 14px var(--gain)); } 50% { filter: drop-shadow(0 0 34px var(--gain)); } }
+  @keyframes tierPulse { 0%, 100% { box-shadow: 0 0 8px var(--a1); } 50% { box-shadow: 0 0 18px var(--a1); } }
+  @keyframes tierPulseBig { 0%, 100% { box-shadow: 0 0 14px var(--gain); } 50% { box-shadow: 0 0 34px var(--gain); } }
 
   /* --- v2.1: Daily challenge --- */
 
@@ -1750,7 +1765,20 @@
         </svg>
       </div>
       <div class="box-reveal-buildup box-art-starter" id="boxArtStarter" style="color:var(--gain);">📦</div>
-      <div id="boxRevealPrize"></div>
+      <div id="boxRevealPrize">
+        <div class="box-reveal-burst-flash" id="boxPrizeBurst"></div>
+        <div class="box-reveal-unique-flash" id="boxPrizeUnique"></div>
+        <div class="box-reveal-card" id="boxPrizeCard">
+          <div class="box-reveal-tier-label" id="boxPrizeTier"></div>
+          <div class="rarity-burst" id="boxPrizeIcon">
+            <img class="item-photo" id="boxPrizePhoto" alt="" width="64" height="64" decoding="async" hidden>
+            <span id="boxPrizeMat"></span>
+          </div>
+          <div class="rn" id="boxPrizeName"></div>
+          <div class="rd" id="boxPrizeBody"></div>
+          <div class="box-reveal-hint">Tap to close</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1916,7 +1944,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.11</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.12</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2788,6 +2816,9 @@ function scheduleIdleWork(fn, delayMs) {
   } else {
     setTimeout(run, wait);
   }
+}
+function queueBoxOpenWork(fn) {
+  afterPaint(() => scheduleIdleWork(fn, 48));
 }
 /* === box-reveal-lib end === */
 
@@ -6531,7 +6562,8 @@ function renderItemDetailModal() {
       const overlay = document.getElementById('boxRevealOverlay');
       window.__boxRevealOpen = true;
       coverBoxRevealOverlay(overlay, 'starter');
-      window.setTimeout(() => {
+      queueBoxOpenWork(() => {
+        if (!window.__boxRevealOpen) return;
         const loot = openStarterVictoryBox(state);
         if (!loot) {
           hideBoxRevealOverlay(overlay);
@@ -6545,8 +6577,7 @@ function renderItemDetailModal() {
           result: { kind: 'new', tmpl: relicTmpl },
           extraLine: '+1 Relic Enchantment Stone'
         });
-        window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
-      }, 110);
+      });
     });
     return;
   }
@@ -6642,6 +6673,7 @@ function renderItemDetailModal() {
 function openShopModal() {
   document.getElementById('shopModal').style.display = 'flex';
   renderShopModal();
+  scheduleIdleWork(warmBoxPrizePhotos, 200);
 }
 function closeShopModal() { document.getElementById('shopModal').style.display = 'none'; }
 function openLoadoutModal() {
@@ -7000,21 +7032,39 @@ function renderShopModal() {
   document.getElementById('openRelicBox').addEventListener('click', () => handleOpenBox('relic'));
   body.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => { buyDirectItem(btn.dataset.buy); renderShopModal(); renderEquippedSummary(); }));
 }
+function coverShopForBoxReveal(on) {
+  const shop = document.getElementById('shopModal');
+  if (shop) shop.classList.toggle('shop-behind-box', !!on);
+}
+function warmBoxPrizePhotos() {
+  if (window.__boxPrizePhotosWarm) return;
+  window.__boxPrizePhotosWarm = true;
+  try {
+    (typeof ITEMS_CATALOG === 'undefined' ? [] : ITEMS_CATALOG).forEach(t => {
+      if (!t || !t.id) return;
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = 'gear/' + t.id + '.jpg';
+    });
+  } catch (err) {}
+}
 function handleOpenBox(category) {
   if (boxRevealIsBusy(Date.now(), window.__boxRevealOpen, window.__boxRevealGuardUntil)) return;
   const cost = BOX_COST[category];
   if (!isAdminSandbox(state) && state.gold < cost) { showToast('Not enough gold'); return; }
   const overlay = document.getElementById('boxRevealOverlay');
   window.__boxRevealOpen = true;
+  if (!isAdminSandbox(state)) state.gold -= cost;
   coverBoxRevealOverlay(overlay, category);
-  window.setTimeout(() => {
+  coverShopForBoxReveal(true);
+  queueBoxOpenWork(() => {
     if (!window.__boxRevealOpen) return;
-    if (!isAdminSandbox(state)) state.gold -= cost;
     const outcome = openBoxFree(category);
-    refreshHeaderCurrency();
-    patchShopGoldChip();
     showBoxReveal(category, outcome);
-  }, 110);
+    scheduleIdleWork(() => {
+      try { refreshHeaderCurrency(); patchShopGoldChip(); } catch (err) {}
+    }, 80);
+  });
 }
 function dismissBoxReveal() {
   if (!window.__boxRevealOpen) return;
@@ -7023,6 +7073,7 @@ function dismissBoxReveal() {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
+  coverShopForBoxReveal(false);
   window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
 }
 // v3.0 §6: box opening excitement pass — resolves a rarity tier for the
@@ -7045,56 +7096,84 @@ const BOX_TIER_META = {
   legendary: { label: 'Legendary', color: 'var(--gain)',     buildMs: 1400 },
   unique:    { label: 'Legendary', color: '#f4f1ea',         buildMs: 1800 },
 };
-function showBoxReveal(category, outcome) {
+function boxRevealPrizeCopy(category, outcome, tier) {
+  const lootFallback = category === 'boost' ? '⚡' : (category === 'relic' ? '🛡️' : '📦');
+  const tmpl = (outcome && outcome.result && outcome.result.tmpl) || { name: 'Loot', icon: lootFallback };
+  const catLabel = (category === 'boost' || category === 'relic') ? category + ' ' : '';
+  let bodyLine;
+  if (outcome && outcome.kind === 'shards') bodyLine = `+${outcome.amount} ${catLabel}shards`;
+  else if (outcome && outcome.kind === 'stone') bodyLine = `+1 ${catLabel}enchantment stone`;
+  else if (outcome && outcome.result && outcome.result.kind === 'dupe-salvage') bodyLine = `Already owned — converted to +${outcome.result.amount} ${outcome.result.category} shards`;
+  else if (tmpl.permanent && outcome && outcome.result && outcome.result.kind === 'dupe-gems') bodyLine = `Already owned — converted to +${outcome.result.gems} gems`;
+  else if (tier === 'unique') bodyLine = 'A unique has awakened';
+  else bodyLine = tmpl.permanent ? 'New item acquired!' : `+1 charge`;
+  if (outcome && outcome.extraLine) bodyLine += ` · ${outcome.extraLine}`;
+  if (outcome && outcome.gemsWon) bodyLine += ` · +1 bonus gem`;
+  return { tmpl, bodyLine, lootFallback };
+}
+function fillBoxRevealPrize(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
-  const prize = document.getElementById('boxRevealPrize');
+  const card = document.getElementById('boxPrizeCard');
+  const tierEl = document.getElementById('boxPrizeTier');
+  const photo = document.getElementById('boxPrizePhoto');
+  const mat = document.getElementById('boxPrizeMat');
+  const nameEl = document.getElementById('boxPrizeName');
+  const bodyEl = document.getElementById('boxPrizeBody');
   const tier = getBoxRevealTier(outcome);
   const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
-  const lootFallback = category === 'boost' ? '⚡' : (category === 'relic' ? '🛡️' : '📦');
+  const copy = boxRevealPrizeCopy(category, outcome, tier);
+  const tmpl = copy.tmpl;
+  if (card) card.className = 'box-reveal-card tier-' + tier;
+  if (tierEl) {
+    tierEl.textContent = meta.label || '';
+    tierEl.style.color = meta.color || '';
+    tierEl.style.display = meta.label ? '' : 'none';
+  }
+  if (photo && mat) {
+    if (outcome && (outcome.kind === 'shards' || outcome.kind === 'stone')) {
+      photo.hidden = true;
+      photo.removeAttribute('src');
+      mat.hidden = false;
+      mat.innerHTML = matIconHtml(outcome.kind === 'shards' ? 'shards' : 'stone', category);
+    } else if (tmpl && tmpl.id) {
+      mat.hidden = true;
+      mat.textContent = '';
+      photo.hidden = false;
+      photo.src = 'gear/' + tmpl.id + '.jpg';
+    } else {
+      photo.hidden = true;
+      mat.hidden = false;
+      mat.textContent = tmpl.icon || copy.lootFallback;
+    }
+  }
+  if (nameEl) nameEl.textContent = tmpl.name || 'Loot';
+  if (bodyEl) bodyEl.textContent = copy.bodyLine;
+  if (overlay) {
+    overlay.classList.toggle('unique-reveal', tier === 'unique');
+    overlay.classList.add('box-prize-on');
+  }
+}
+function showBoxReveal(category, outcome) {
+  const overlay = document.getElementById('boxRevealOverlay');
+  const tier = getBoxRevealTier(outcome);
+  const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
 
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
-  coverBoxRevealOverlay(overlay, category);
-  window.setTimeout(() => { try { feedbackBoxOpen(tier); } catch (err) {} }, 0);
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
     try {
-      const tmpl = (outcome.result && outcome.result.tmpl) || { name: 'Loot', icon: lootFallback };
-      const catLabel = (category === 'boost' || category === 'relic') ? category + ' ' : '';
-      let bodyLine;
-      if (outcome.kind === 'shards') bodyLine = `+${outcome.amount} ${catLabel}shards`;
-      else if (outcome.kind === 'stone') bodyLine = `+1 ${catLabel}enchantment stone`;
-      else if (outcome.result && outcome.result.kind === 'dupe-salvage') bodyLine = `Already owned — converted to +${outcome.result.amount} ${outcome.result.category} shards`;
-      else if (tmpl.permanent && outcome.result && outcome.result.kind === 'dupe-gems') bodyLine = `Already owned — converted to +${outcome.result.gems} gems`;
-      else if (tier === 'unique') bodyLine = 'A unique has awakened';
-      else bodyLine = tmpl.permanent ? 'New item acquired!' : `+1 charge`;
-      if (outcome.extraLine) bodyLine += ` · ${outcome.extraLine}`;
-      if (outcome.gemsWon) bodyLine += ` · +1 bonus gem`;
-      const prizeIcon = outcome.kind === 'shards' ? matIconHtml('shards', category)
-        : outcome.kind === 'stone' ? matIconHtml('stone', category)
-        : (typeof itemIconHtml === 'function' ? itemIconHtml(tmpl) : (tmpl.icon || lootFallback));
-      overlay.classList.toggle('unique-reveal', tier === 'unique');
-      overlay.classList.add('box-prize-on');
-      const prizeHtml = `
-        ${tier === 'unique' ? '<div class="box-reveal-unique-flash"></div>' : '<div class="box-reveal-burst-flash"></div>'}
-        <div class="box-reveal-card tier-${tier}">
-          ${meta.label ? `<div class="box-reveal-tier-label" style="color:${meta.color};">${meta.label}</div>` : ''}
-          <div class="rarity-burst" style="color:${meta.color};">${prizeIcon}</div>
-          <div class="rn">${tmpl.name}</div>
-          <div class="rd">${bodyLine}</div>
-          <div class="box-reveal-hint">Tap to close</div>
-        </div>`;
-      if (prize) prize.innerHTML = prizeHtml;
+      fillBoxRevealPrize(category, outcome);
     } catch (err) {
-      overlay.classList.add('box-prize-on');
-      if (prize) prize.innerHTML = `<div class="box-reveal-card"><div class="rn">Loot received</div><div class="rd">Tap to close</div></div>`;
+      if (overlay) overlay.classList.add('box-prize-on');
     }
-    overlay.onclick = (e) => {
+    if (overlay) overlay.onclick = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
       dismissBoxReveal();
     };
+    scheduleIdleWork(() => { try { feedbackBoxOpen(tier); } catch (err) {} }, 80);
   }, meta.buildMs);
 }
 document.getElementById('shopModalClose').addEventListener('click', closeShopModal);

@@ -161,6 +161,6 @@ assert(craftFn.includes("matIconHtml('shards', 'boost')"), 'boost shard craft us
 assert(!craftFn.includes('🔹') && !craftFn.includes('💠'), 'craft UI must not use identical emoji for both types');
 assert(craftFn.includes('itemIconHtml(t)'), 'enchant picker uses dedicated item icons');
 
-assert(html.includes('3.4.11'), 'About version bumped for v5.0');
+assert(html.includes('3.4.12'), 'About version bumped for v5.0');
 
 console.log('v5.0 tests ok — shared 0–4 pool, unique roster, weighted stars, enchant items, icons, unique glow/reveal');

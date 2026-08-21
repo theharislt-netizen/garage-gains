@@ -83,6 +83,6 @@ assert(html.includes('id="shopModal"') && html.includes('>Store<'), 'shop modal 
 assert(html.includes('.shop-grid') && html.includes('grid-template-columns: 1fr 1fr'), 'storefront is a card grid');
 assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('.shop-tile {'), html.indexOf('.inv-item-row'))),
   'shop tiles must not use scale transforms');
-assert(html.includes('3.4.11'), 'About version bumped for v4.9');
+assert(html.includes('3.4.12'), 'About version bumped for v4.9');
 
 console.log('v4.9 tests ok — storefront tiles, no Your Items, go-btn Buy, equal distinct boxes');
