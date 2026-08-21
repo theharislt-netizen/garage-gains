@@ -86,7 +86,7 @@ assert(openFn.includes('openBoxFree(category)'), 'shop purchases still open imme
 assert(openFn.includes('qty <= 1') && openFn.includes('showBoxReveal(category, outcome)'),
   'Buy 1 uses the single-item reveal');
 assert(openFn.includes('showBoxReveal(category, outcomes)'), 'Buy 10 passes the full outcome set');
-assert(openFn.includes('BOX_COST[category] * qty'), 'gold is charged per box in the batch');
+assert(openFn.includes('shopBoxGoldCost(qty)'), 'gold is charged with the bulk discount for 10');
 assert(!openFn.includes('grantSealedBox'), 'shop purchases are not stashed sealed');
 
 const showFn = sliceFn('showBoxReveal', 'youtubeDeepLink');
@@ -114,6 +114,6 @@ assert(salvageItemFn.includes('salvagePayoutForItem(tmpl, inst)'), 'salvaging us
 const salvageConfirm = sliceFn('openSalvageConfirm', 'closeSalvageConfirm');
 assert(salvageConfirm.includes('salvagePayoutForItem(tmpl, inst)'), 'salvage confirm shows the rescaled payout');
 
-assert(html.includes('3.4.22'), 'About version bumped for v6.7');
+assert(html.includes('3.4.23'), 'About version bumped for v6.7');
 
 console.log('v6.7 tests ok — persistent enchant item, Buy 1/10 batch reveal, destroy qty, salvage rebalance');

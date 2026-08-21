@@ -819,7 +819,7 @@
   .star-row { font-size: 11px; letter-spacing: 1px; line-height: 1; text-align: center; }
   .star-on { color: #ffd36a; }
   .star-off { color: rgba(255,211,106,0.4); opacity: 1; }
-  .item-visual { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 0; }
+  .item-visual { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; gap: 0; }
   /* Diablo-style: stars live ON the portrait, on a dark shelf at the bottom of
      the art — never as a detached line under the name. */
   .inv-slot-icon, .item-detail-icon, .loadout-frame-ring, .enchant-drop-ic, #boxPrizeIcon {
@@ -836,7 +836,7 @@
     background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 48%, transparent 100%);
     text-shadow: 0 1px 3px #000, 0 0 4px #000;
   }
-  .inv-slot-icon .star-row { font-size: 12px; letter-spacing: 0; padding: 12px 1px 3px; }
+  .inv-slot-icon .star-row { font-size: 11px; letter-spacing: 0; padding: 10px 1px 3px; white-space: nowrap; z-index: 3; }
   .item-detail-icon .star-row { font-size: 17px; letter-spacing: 0; padding: 18px 2px 5px; }
   .loadout-frame-ring .star-row { font-size: 12px; letter-spacing: 0; padding: 13px 2px 5px; }
   .enchant-drop-ic .star-row { font-size: 10px; letter-spacing: 0.3px; padding: 10px 1px 2px; }
@@ -984,7 +984,7 @@
     border-color: rgba(var(--a1-rgb), 0.75);
   }
   .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
-  .inv-slot-icon { font-size: 26px; line-height: 1; width: 68%; height: 68%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; }
+  .inv-slot-icon { font-size: 26px; line-height: 1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; }
   .inv-slot-icon svg { width: 28px; height: 28px; display: block; }
   .item-detail-icon { width: 88px; height: 88px; margin: 0 auto 8px; overflow: hidden; border-radius: 12px; }
   .item-detail-icon svg, .craft-stone-icon svg, .rarity-burst svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
@@ -1077,6 +1077,7 @@
   .shop-tile .go-btn { width: 100%; margin-top: 8px; }
   .shop-buy-row { display: flex; gap: 6px; margin-top: 8px; }
   .shop-tile .shop-buy-row .go-btn { width: auto; flex: 1; margin-top: 0; font-size: 12px; padding: 9px 6px; }
+  .shop-buy-amt { display: block; font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 600; opacity: 0.85; }
   .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
   .inv-item-row:last-child { border-bottom: none; }
   .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
@@ -1134,7 +1135,7 @@
   #boxPrizeStars { text-align: center; }
   #boxPrizeStars:empty { display: none; padding: 0; background: none; }
   #boxPrizeStars .star-row, .box-reveal-card .star-row {
-    font-size: 18px; letter-spacing: 2px; line-height: 1; display: block;
+    font-size: 18px; letter-spacing: 1px; line-height: 1; display: flex; justify-content: center; white-space: nowrap;
   }
   .box-reveal-card .rd { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
   .box-reveal-hint { color: var(--text-dim); font-size: 12px; margin-top: 14px; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Barlow Condensed'; }
@@ -1174,6 +1175,9 @@
     width: 100%; height: 100%;
   }
   #boxRevealOverlay.box-prize-on.box-batch-on #boxRevealPrize {
+    opacity: 1; pointer-events: none;
+  }
+  #boxRevealOverlay.box-prize-on.box-batch-on #boxPrizeCard {
     opacity: 0; pointer-events: none;
   }
   #boxBatchPrize {
@@ -1207,12 +1211,23 @@
   .box-batch-chip.box-batch-center .rarity-burst { width: 100px; height: 100px; border-radius: 18px; }
   .box-batch-chip .item-photo { width: 100%; height: 100%; object-fit: cover; }
   .box-batch-chip .star-row {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    font-size: 9px; letter-spacing: 0.5px; line-height: 1;
-    padding: 6px 2px 4px;
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    font-size: 9px; letter-spacing: 0; line-height: 1; white-space: nowrap;
+    padding: 8px 2px 3px;
     background: linear-gradient(to top, rgba(0,0,0,0.92), transparent);
+    display: flex; justify-content: center; gap: 0;
   }
-  .box-batch-chip.box-batch-center .star-row { font-size: 14px; letter-spacing: 1px; padding: 10px 4px 6px; }
+  .box-batch-chip.box-batch-center .star-row { font-size: 13px; letter-spacing: 0.5px; padding: 10px 4px 6px; }
+  .box-batch-chip.tier-unique .rarity-burst {
+    box-shadow: 0 0 18px 6px rgba(255,255,255,0.22);
+    animation: boxItemIn 0.4s ease-out, star-glow-5-pulse 1.6s ease-in-out infinite;
+  }
+  .box-batch-count {
+    position: absolute; right: -4px; top: -4px; z-index: 4;
+    min-width: 18px; padding: 1px 5px; border-radius: 8px;
+    background: rgba(0,0,0,0.82); color: #fff;
+    font-family: 'JetBrains Mono'; font-size: 10px;
+  }
   .box-batch-name {
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px;
     margin-top: 8px; line-height: 1.15;
@@ -2188,7 +2203,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.22</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.23</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2965,6 +2980,13 @@ function baselineQuestIsFinished(questExercises, sets, getLoggedCount) {
 
 /* === v49-helpers-lib begin === */
 const SHOP_BOX_PRICE = 80;
+const SHOP_BOX_BULK_QTY = 10;
+const SHOP_BOX_BULK_PRICE = 700;
+function shopBoxGoldCost(qty) {
+  qty = Math.max(1, Math.round(Number(qty) || 1));
+  if (qty >= SHOP_BOX_BULK_QTY) return SHOP_BOX_BULK_PRICE;
+  return SHOP_BOX_PRICE * qty;
+}
 const SHOP_BOX_COPY = {
   boost: {
     name: 'Boost Box',
@@ -3209,6 +3231,80 @@ function layoutBatchPrizes(count) {
     });
   }
   return spots;
+}
+function consolidateBoxOutcomes(outcomes) {
+  const list = (outcomes || []).filter(Boolean);
+  if (list.length <= 1) return list.slice();
+  const shardAmt = { boost: 0, relic: 0 };
+  const stoneAmt = { boost: 0, relic: 0 };
+  const stoneMeta = { boost: null, relic: null };
+  const temps = {};
+  const rest = [];
+  list.forEach(o => {
+    if (o.kind === 'shards') {
+      const cat = o.category === 'relic' ? 'relic' : 'boost';
+      shardAmt[cat] += Number(o.amount) || 0;
+      return;
+    }
+    if (o.kind === 'stone') {
+      const cat = o.category === 'relic' ? 'relic' : 'boost';
+      stoneAmt[cat] += Number(o.amount) || 1;
+      stoneMeta[cat] = o;
+      return;
+    }
+    const result = o.result || {};
+    if (o.kind === 'item' && result.kind === 'temp' && result.tmpl && result.tmpl.id) {
+      const id = result.tmpl.id;
+      if (!temps[id]) temps[id] = { sample: o, count: 0 };
+      temps[id].count += 1;
+      return;
+    }
+    rest.push(o);
+  });
+  const out = [];
+  ['boost', 'relic'].forEach(cat => {
+    const catName = cat === 'relic' ? 'Relic' : 'Boost';
+    if (shardAmt[cat] > 0) {
+      out.push({
+        kind: 'shards',
+        category: cat,
+        amount: shardAmt[cat],
+        result: { kind: 'shards', tmpl: { name: catName + ' Shards ×' + shardAmt[cat] } }
+      });
+    }
+    if (stoneAmt[cat] > 0) {
+      const src = stoneMeta[cat] || {};
+      const n = stoneAmt[cat];
+      const label = n === 1 ? catName + ' Enchantment Stone' : catName + ' Enchantment Stones ×' + n;
+      const prevTmpl = src.result && src.result.tmpl;
+      out.push({
+        kind: 'stone',
+        category: cat,
+        amount: n,
+        rarity: src.rarity,
+        result: {
+          kind: 'stone',
+          tmpl: {
+            name: label,
+            maxStar: prevTmpl && prevTmpl.maxStar,
+            permanent: true
+          }
+        }
+      });
+    }
+  });
+  Object.keys(temps).forEach(id => {
+    const entry = temps[id];
+    const o = Object.assign({}, entry.sample);
+    o.stackCount = entry.count;
+    if (o.result && o.result.tmpl) {
+      const tmpl = Object.assign({}, o.result.tmpl);
+      if (entry.count > 1) tmpl.name = tmpl.name + ' ×' + entry.count;
+      o.result = Object.assign({}, o.result, { tmpl });
+    }
+    out.push(o);
+  });
+  return out.concat(rest);
 }
 // Android WebView often paints only after JS goes idle. One rAF+timeout
 // still runs before the cover/hide frame, so loot/SVG/save hitch the tap.
@@ -3565,10 +3661,21 @@ function canonicalLoadoutSlotId(dest, slots) {
   return null;
 }
 function migrateEquippedToSlots(equipped, resolveSlotFn) {
+  const current = equipped && equipped.slots;
+  const hasLegacyArrays = !!(equipped && (equipped.boost || equipped.relic));
+  const keys = (current && typeof current === 'object' && !Array.isArray(current))
+    ? Object.keys(current).filter(k => current[k])
+    : [];
+  const allValid = keys.length > 0 && keys.every(k => isRelicSlotId(k) || isBoostSlotId(k));
+  if (allValid && !hasLegacyArrays) {
+    const slots = {};
+    keys.forEach(k => { slots[k] = current[k]; });
+    return { slots };
+  }
   const collected = [];
-  if (equipped && equipped.slots && typeof equipped.slots === 'object' && !Array.isArray(equipped.slots)) {
-    Object.keys(equipped.slots).forEach(key => {
-      if (equipped.slots[key]) collected.push(equipped.slots[key]);
+  if (current && typeof current === 'object' && !Array.isArray(current)) {
+    Object.keys(current).forEach(key => {
+      if (current[key]) collected.push(current[key]);
     });
   }
   if (equipped) {
@@ -4425,7 +4532,7 @@ function getEquippedEffectForSlot(slotId) {
   const eq = state.equipped && state.equipped.slots && state.equipped.slots[slotId];
   if (!eq) return null;
   if (eq.kind === 'permanent') {
-    const inst = (state.inventory.permanent || []).find(x => x.instanceId === eq.instanceId);
+    const inst = (state.inventory.permanent || []).find(x => x && String(x.instanceId) === String(eq.instanceId));
     if (!inst) return null;
     return { template: itemTemplate(inst.itemId), star: inst.star, starCap: inst.starCap, instanceId: inst.instanceId, slot: slotId };
   }
@@ -4525,6 +4632,16 @@ function ensureInventoryShape() {
     inst.starCap = normalizeStarCap(existingCap, t);
     inst.star = Math.min(Math.max(0, Number(inst.star) || 0), inst.starCap || 0);
   });
+  const seenIds = Object.create(null);
+  (state.inventory.permanent || []).forEach((inst, i) => {
+    if (!inst) return;
+    let id = inst.instanceId == null ? '' : String(inst.instanceId);
+    if (!id || seenIds[id]) {
+      inst.instanceId = 'i' + Date.now() + '-' + i + '-' + Math.floor(Math.random() * 1e9);
+      id = inst.instanceId;
+    }
+    seenIds[id] = true;
+  });
   // v5.8: named Relic slots + three generic Boost slots. Legacy 8-slot and
   // array loadouts remap onto Amulet / Ring / Cloak and Boost I–III.
   state.equipped = migrateEquippedToSlots(state.equipped, resolveEquippedSlotId);
@@ -4537,7 +4654,14 @@ function ensureInventoryShape() {
       delete slots[id];
       return;
     }
-    if (!getEquippedEffectForSlot(id)) delete slots[id];
+    const eq = slots[id];
+    if (!eq) { delete slots[id]; return; }
+    if (eq.kind === 'permanent') {
+      const inst = (state.inventory.permanent || []).find(x => x && String(x.instanceId) === String(eq.instanceId));
+      if (!inst) delete slots[id];
+      return;
+    }
+    if (eq.kind === 'temporary' && (!eq.sessionsLeft || eq.sessionsLeft <= 0)) delete slots[id];
   });
   state.streakFreezes = state.streakFreezes || 0;
 }
@@ -4822,11 +4946,11 @@ function equipItem(category, opts) {
   let tmpl;
   let eq;
   if (opts.kind === 'permanent') {
-    const inst = state.inventory.permanent.find(x => x.instanceId === opts.instanceId);
+    const inst = state.inventory.permanent.find(x => x && String(x.instanceId) === String(opts.instanceId));
     if (!inst) return;
     tmpl = itemTemplate(inst.itemId);
     if (!tmpl || tmpl.category !== category) return;
-    eq = { kind:'permanent', instanceId: opts.instanceId };
+    eq = { kind:'permanent', instanceId: inst.instanceId };
   } else if (opts.kind === 'temporary') {
     const have = state.inventory.tempCharges[opts.itemId] || 0;
     tmpl = itemTemplate(opts.itemId);
@@ -4868,7 +4992,7 @@ function findEquippedSlot(category, opts) {
   for (let i = 0; i < ids.length; i++) {
     const eq = slots[ids[i]];
     if (!eq) continue;
-    if (opts.kind === 'permanent' && eq.kind === 'permanent' && eq.instanceId === opts.instanceId) return ids[i];
+    if (opts.kind === 'permanent' && eq.kind === 'permanent' && String(eq.instanceId) === String(opts.instanceId)) return ids[i];
     if (opts.kind === 'temporary' && eq.kind === 'temporary' && eq.itemId === opts.itemId) return ids[i];
   }
   return null;
@@ -7814,8 +7938,9 @@ function renderShopModal() {
   const boxTiles = ['boost', 'relic'].map(id => {
     const copy = SHOP_BOX_COPY[id];
     const unit = BOX_COST[id];
+    const bulk = shopBoxGoldCost(10);
     const can1 = admin || state.gold >= unit;
-    const can10 = admin || state.gold >= unit * 10;
+    const can10 = admin || state.gold >= bulk;
     const openId = id === 'boost' ? 'openBoostBox' : 'openRelicBox';
     return `<article class="shop-tile shop-tile-${id}">
       <div class="shop-tile-art">${shopBoxArtSvg(id)}</div>
@@ -7824,7 +7949,7 @@ function renderShopModal() {
       <div class="shop-tile-price">${unit}g</div>
       <div class="shop-buy-row">
         <button type="button" class="go-btn" id="${openId}" ${can1 ? '' : 'disabled'}>Buy 1</button>
-        <button type="button" class="go-btn" data-open-box="${id}" data-box-qty="10" ${can10 ? '' : 'disabled'}>Buy 10</button>
+        <button type="button" class="go-btn" data-open-box="${id}" data-box-qty="10" ${can10 ? '' : 'disabled'}>Buy 10<span class="shop-buy-amt">${bulk}g</span></button>
       </div>
     </article>`;
   }).join('');
@@ -7882,7 +8007,7 @@ function warmBoxPrizePhotos() {
 function handleOpenBox(category, qty) {
   if (boxRevealIsBusy(Date.now(), window.__boxRevealOpen, window.__boxRevealGuardUntil)) return;
   qty = Math.max(1, Math.min(10, Math.round(Number(qty) || 1)));
-  const cost = BOX_COST[category] * qty;
+  const cost = shopBoxGoldCost(qty);
   if (!isAdminSandbox(state) && state.gold < cost) { showToast('Not enough gold'); return; }
   const overlay = document.getElementById('boxRevealOverlay');
   window.__boxRevealOpen = true;
@@ -7907,6 +8032,7 @@ function dismissBoxReveal() {
   window.__boxRevealOpen = false;
   window.__boxRevealGuardUntil = Date.now() + boxRevealDismissGuardMs();
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
+  if (window.__boxUniqueReplay) { clearInterval(window.__boxUniqueReplay); window.__boxUniqueReplay = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
   afterPaint(() => {
@@ -8002,9 +8128,10 @@ function fillBoxRevealPrize(category, outcome) {
   const starsEl = document.getElementById('boxPrizeStars');
   if (starsEl) {
     const result = outcome && outcome.result;
+    const inst = result && (result.inst || result);
     const starred = !!(tmpl && tmpl.permanent && tmpl.id && outcome && outcome.kind === 'item'
       && result && result.kind !== 'dupe-salvage' && result.kind !== 'dupe-gems');
-    starsEl.innerHTML = starred ? itemStarsHtml(tmpl, result) : '';
+    starsEl.innerHTML = starred ? itemStarsHtml(tmpl, inst) : '';
   }
   if (bodyEl) bodyEl.textContent = copy.bodyLine;
   return tier;
@@ -8012,9 +8139,27 @@ function fillBoxRevealPrize(category, outcome) {
 function revealFilledBoxPrize(overlay) {
   stopChestShake();
   if (!overlay) return;
+  const uniqueCount = (typeof window !== 'undefined' && window.__boxUniqueCount) || 0;
   const tier = (typeof window !== 'undefined' && window.__boxPrizeTier) || '';
-  overlay.classList.toggle('unique-reveal', tier === 'unique');
+  const unique = uniqueCount > 0 || tier === 'unique';
+  if (window.__boxUniqueReplay) { clearInterval(window.__boxUniqueReplay); window.__boxUniqueReplay = null; }
+  overlay.classList.remove('unique-reveal');
+  try { void overlay.offsetWidth; } catch (err) {}
+  overlay.classList.toggle('unique-reveal', unique);
   overlay.classList.add('box-prize-on');
+  if (unique && uniqueCount > 1) {
+    let n = 1;
+    window.__boxUniqueReplay = setInterval(() => {
+      n += 1;
+      overlay.classList.remove('unique-reveal');
+      try { void overlay.offsetWidth; } catch (err) {}
+      overlay.classList.add('unique-reveal');
+      if (n >= uniqueCount) {
+        clearInterval(window.__boxUniqueReplay);
+        window.__boxUniqueReplay = null;
+      }
+    }, 750);
+  }
 }
 function boxOutcomeStarScore(outcome) {
   if (!outcome) return 0;
@@ -8056,14 +8201,16 @@ function boxBatchChipHtml(category, outcome, spot) {
   const left = spot && spot.left != null ? spot.left : 50;
   const top = spot && spot.top != null ? spot.top : 46;
   const name = role === 'center' ? `<div class="box-batch-name">${tmpl.name || 'Loot'}</div>` : '';
+  const qty = (outcome && (Number(outcome.amount) || Number(outcome.stackCount) || 0)) || 0;
+  const qtyBadge = qty > 1 ? `<div class="box-batch-count">x${qty}</div>` : '';
   return `<div class="box-batch-chip box-batch-${role} tier-${tier}" style="left:${left}%;top:${top}%;margin-left:0;margin-top:0;transform:translate(-50%,-50%);">
-    <div class="rarity-burst">${art}${stars}</div>
+    <div class="rarity-burst">${art}${stars}${qtyBadge}</div>
     ${name}
   </div>`;
 }
 function fillBoxRevealBatch(category, outcomes) {
   const batch = document.getElementById('boxBatchPrize');
-  const list = (outcomes || []).filter(Boolean);
+  const list = consolidateBoxOutcomes(outcomes || []);
   const ranked = list.map((o, i) => ({ o, i, score: boxOutcomeStarScore(o) }))
     .sort((a, b) => b.score - a.score || a.i - b.i);
   const spots = layoutBatchPrizes(ranked.length);
@@ -8072,9 +8219,13 @@ function fillBoxRevealBatch(category, outcomes) {
     batch.setAttribute('data-batch-count', String(ranked.length));
     batch.innerHTML = chips + '<div class="box-reveal-hint box-batch-hint">Tap to close</div>';
   }
+  const uniqueCount = ranked.filter(entry => getBoxRevealTier(entry.o) === 'unique').length;
   const best = ranked[0] && ranked[0].o;
-  const tier = getBoxRevealTier(best);
-  if (typeof window !== 'undefined') window.__boxPrizeTier = tier;
+  const tier = uniqueCount > 0 ? 'unique' : getBoxRevealTier(best);
+  if (typeof window !== 'undefined') {
+    window.__boxPrizeTier = tier;
+    window.__boxUniqueCount = uniqueCount;
+  }
   return tier;
 }
 function showBoxReveal(category, outcome) {
@@ -8089,7 +8240,10 @@ function showBoxReveal(category, outcome) {
   try {
     if (overlay) overlay.classList.toggle('box-batch-on', batch);
     if (batch) tier = fillBoxRevealBatch(category, outcomes);
-    else tier = fillBoxRevealPrize(category, outcomes[0]);
+    else {
+      if (typeof window !== 'undefined') window.__boxUniqueCount = getBoxRevealTier(outcomes[0]) === 'unique' ? 1 : 0;
+      tier = fillBoxRevealPrize(category, outcomes[0]);
+    }
   } catch (err) {}
   const meta = Object.assign({}, BOX_TIER_META[tier] || BOX_TIER_META.common);
   if (batch) meta.buildMs = Math.min(1800, (meta.buildMs || 500) + 200);

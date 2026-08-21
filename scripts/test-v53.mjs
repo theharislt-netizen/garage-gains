@@ -100,6 +100,6 @@ assert(html.includes("You'll receive +${amount}"), 'confirm shows the salvage pa
 assert(html.includes('function openSalvageConfirm'), 'salvage confirm is not a browser dialog');
 assert(!html.includes('if (!confirm(`Salvage'), 'browser confirm is gone from salvage');
 
-assert(html.includes('3.4.22'), 'About version bumped for v5.3');
+assert(html.includes('3.4.23'), 'About version bumped for v5.3');
 
 console.log('v5.3 tests ok — loadout window, banner icon, stock photos, salvage dupes, box tap lag');

@@ -198,6 +198,6 @@ assert(!html.includes('Added to Inventory'), 'generic added-to-inventory copy is
 assert(html.includes("label: 'First Victory Box', value: 'x1'"), 'Victory box reward copy names the box and quantity');
 assert(boxTemplate('starterVictoryBox').name === 'First Victory Box', 'starter template name is unchanged');
 
-assert(html.includes('3.4.22'), 'About version bumped for v6.5');
+assert(html.includes('3.4.23'), 'About version bumped for v6.5');
 
 console.log('v6.5 tests ok — glow, box art, banner, stars, set count, gems, boss HP, enchant glow, victory art, reward copy');
