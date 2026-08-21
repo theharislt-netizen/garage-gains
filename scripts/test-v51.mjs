@@ -93,16 +93,16 @@ catalog.forEach(t => {
   assert(/stroke-width="1\.8"|fill="currentColor"/.test(svg),
     t.id + ' should use the previous 1.8-stroke / filled-glyph language');
 });
-assert(itemIconSvg('legendaryDumbbell').includes('rect x="3.2" y="4.2"'),
-  'Iron Sovereign uses RPG boots with plate weights');
-assert(itemIconSvg('grindersChair').includes('M7.2 7.4 12 5.4') && itemIconSvg('grindersChair').includes('M8.2 4.4v4'),
-  'Throne of the Grind uses a chestplate silhouette');
-assert(itemIconSvg('featherweightWraps').includes('M7 11h10v8.2H7z'),
-  'Windrider Wraps use a gauntlet silhouette');
+assert(itemIconSvg('legendaryDumbbell').includes('M7 5.2 12 3.4 17 5.2') && itemIconSvg('legendaryDumbbell').includes('rect x="4.2"'),
+  'Iron Sovereign uses a cloak with plate weights');
+assert(itemIconSvg('grindersChair').includes('M7 5.2 12 3.4 17 5.2') && itemIconSvg('grindersChair').includes('M9 10.4h6v2H9z'),
+  'Throne of the Grind uses a cloak silhouette');
+assert(itemIconSvg('featherweightWraps').includes('M7 5.2 12 3.4 17 5.2'),
+  'Windrider Wraps use a cloak silhouette');
 assert(itemIconSvg('doubleDown').includes('fill="currentColor"'),
   'Double Down stays a filled bolt like the previous set');
 assert(itemIconSvg('firstLight') !== itemIconSvg('ironFocus'), 'new items still have distinct icons');
 
-assert(html.includes('3.4.16'), 'About version bumped for v5.1');
+assert(html.includes('3.4.17'), 'About version bumped for v5.1');
 
 console.log('v5.1 tests ok — overlay paints first, item icons match previous language, materials unchanged');

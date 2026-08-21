@@ -188,21 +188,21 @@ catalog.forEach(t => {
 });
 assert(icons.wornCharm !== icons.vaultSigil && icons.wornCharm !== icons.crownUnbroken,
   'head pieces do not share an icon');
-assert(icons.grindersChair.includes('M7.2 7.4 12 5.4'), 'chest piece is a breastplate');
-assert(icons.oathboundBand.includes('M7.6 4.2h3.4v16.2') && icons.spellboundChisel.includes('M7.6 4.2h3.4v16.2'),
-  'leg pieces are greaves');
-assert(icons.cinderAnvil.includes('M5.6 8.4h5.4v8') && icons.legendaryDumbbell.includes('M5.6 8.4h5.4v8'),
-  'boot pieces are boots');
+assert(icons.grindersChair.includes('M7 5.2 12 3.4 17 5.2'), 'cloak relic uses a cloak silhouette');
+assert(icons.oathboundBand.includes('circle cx="12" cy="14" r="6.2"') && icons.spellboundChisel.includes('circle cx="12" cy="14" r="6.2"'),
+  'ring relics use ring silhouettes');
+assert(icons.cinderAnvil.includes('M7 5.2 12 3.4 17 5.2') && icons.legendaryDumbbell.includes('M7 5.2 12 3.4 17 5.2'),
+  'cloak relics including Iron Sovereign use cloak silhouettes');
 assert(icons.ironFocus.includes('circle cx="12" cy="15"') && icons.firstLight.includes('circle cx="12" cy="15"'),
   'amulets are pendant silhouettes');
 assert(icons.emberHalo.includes('circle cx="12" cy="14" r="6.2"') && icons.lastEmber.includes('circle cx="12" cy="14" r="6.2"'),
   'rings are ring silhouettes');
-assert(icons.hexwick.includes('M6.8 11.2h10.4v8') && icons.featherweightWraps.includes('M7 11h10v8.2H7z'),
-  'glove pieces are gauntlets');
+assert(icons.featherweightWraps.includes('M7 5.2 12 3.4 17 5.2'),
+  'wraps occupy Cloak and use a cloak silhouette');
 assert(icons.lorequill.includes('M7 5.2 12 3.4 17 5.2') && icons.gildthread.includes('M7 5.2 12 3.4 17 5.2'),
-  'cloaks are cloak silhouettes');
+  'cloak silhouettes stay on the cloak family');
 assert(icons.wornCharm !== icons.grindersChair, 'set pieces still look distinct');
 
-assert(html.includes('3.4.16'), 'About version bumped for v5.2');
+assert(html.includes('3.4.17'), 'About version bumped for v5.2');
 
 console.log('v5.2 tests ok — committed-paint box lag fix, equipment sets, gear icons, materials unchanged');

@@ -1,6 +1,6 @@
 {
   "name": "rigcore",
-  "version": "3.4.16",
+  "version": "3.4.17",
   "private": true,
   "description": "RIGCORE — garage gym tracker for Android and iPhone",
   "scripts": {
@@ -27,6 +27,7 @@
     "test:v55": "node scripts/test-v55.mjs",
     "test:v58": "node scripts/test-v58.mjs",
     "test:v60": "node scripts/test-v60.mjs",
+    "test:v61": "node scripts/test-v61.mjs",
     "test:ui-smooth": "node scripts/test-ui-smooth.mjs",
     "test:box-reveal": "node scripts/test-box-reveal.mjs",
     "test:ios": "node scripts/verify-ios-project.mjs",
