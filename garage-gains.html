@@ -1227,7 +1227,8 @@
     margin-top: 8px; line-height: 1.15;
   }
   .box-batch-chip.box-batch-sat .box-batch-name {
-    font-size: 11px; margin-top: 4px; white-space: nowrap;
+    font-size: 11px; margin-top: 4px; max-width: 86px;
+    margin-left: auto; margin-right: auto;
   }
   .box-batch-hint { position: absolute; left: 0; right: 0; bottom: 18px; }
   @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
@@ -3215,12 +3216,12 @@ function layoutBatchPrizes(count) {
   const n = Math.max(0, Math.round(Number(count) || 0));
   if (n <= 0) return [];
   if (n === 1) return [{ role: 'center', left: 50, top: 46 }];
-  const spots = [{ role: 'center', left: 50, top: 40 }];
+  const spots = [{ role: 'center', left: 50, top: 42 }];
   const sat = n - 1;
   const cols = Math.min(sat, sat <= 4 ? sat : 5);
-  const rowTop = 58;
+  const rowTop = 54;
   const rowGap = 12;
-  const span = sat >= 6 ? 72 : (sat >= 4 ? 58 : 46);
+  const span = sat >= 6 ? 72 : 58;
   for (let i = 0; i < sat; i++) {
     const row = Math.floor(i / cols);
     const col = i % cols;
