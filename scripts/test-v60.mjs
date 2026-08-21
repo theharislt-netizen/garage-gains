@@ -129,6 +129,6 @@ assert(setBonusWouldDropOnUnequip(tmpl, { ashenGrinder: 1 }) === false, 'one pie
 assert(setBonusWouldDropOnUnequip({ setId: 'nope' }, twoPiece) === false, 'non-set gear does not warn');
 assert(setBonusBreakdownForTemplate(tmpl, twoPiece).bonuses[0].active === true, '2-piece bonus is active');
 
-assert(html.includes('3.4.23'), 'About version bumped for v6');
+assert(html.includes('3.4.24'), 'About version bumped for v6');
 
 console.log('v6 tests ok — rank pair color, 2-set baseline variety, inventory refresh, no item glow, set-unequip warning');

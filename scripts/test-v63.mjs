@@ -71,6 +71,6 @@ const enchanted = starCtx.starRowHtml({ permanent: true }, 1, { star: 1, starCap
 assert((enchanted.match(/star-on/g) || []).length === 1, 'enchanting fills one star of headroom');
 assert((enchanted.match(/star-off/g) || []).length === 1, 'remaining headroom stays gray');
 
-assert(html.includes('3.4.23'), 'About version bumped for v6.3 / v6.4');
+assert(html.includes('3.4.24'), 'About version bumped for v6.3 / v6.4');
 
 console.log('v6.3 tests ok — popup clamps after render, materials do not idle-glow, stars distinguish filled vs empty');

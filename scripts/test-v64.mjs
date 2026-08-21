@@ -99,6 +99,6 @@ assert(destroyBtn.includes('inv-btn-salvage'), 'Destroy uses the same danger sty
 assert(!destroyBtn.includes('inv-btn-equip'), 'Destroy is not the primary Equip style');
 assert(html.includes('class="inv-btn" id="salvageConfirmCancel"'), 'Cancel stays a secondary bordered button');
 
-assert(html.includes('3.4.23'), 'About version bumped for v6.4');
+assert(html.includes('3.4.24'), 'About version bumped for v6.4');
 
 console.log('v6.4 tests ok — earned boxes stay sealed, shop still opens on Buy, Open/Activate match Equip');

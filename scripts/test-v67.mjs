@@ -114,6 +114,6 @@ assert(salvageItemFn.includes('salvagePayoutForItem(tmpl, inst)'), 'salvaging us
 const salvageConfirm = sliceFn('openSalvageConfirm', 'closeSalvageConfirm');
 assert(salvageConfirm.includes('salvagePayoutForItem(tmpl, inst)'), 'salvage confirm shows the rescaled payout');
 
-assert(html.includes('3.4.23'), 'About version bumped for v6.7');
+assert(html.includes('3.4.24'), 'About version bumped for v6.7');
 
 console.log('v6.7 tests ok — persistent enchant item, Buy 1/10 batch reveal, destroy qty, salvage rebalance');

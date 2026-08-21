@@ -116,6 +116,6 @@ assert(destroyFn.includes('closeItemDetailModal()'), 'Destroy confirm dismisses 
 assert(destroyFn.includes('destroyTempCharge(itemId'), 'confirming Destroy still consumes a charge');
 assert(html.includes("getElementById('destroyConfirmClose')"), 'Destroy confirm close is wired');
 
-assert(html.includes('3.4.23'), 'About version bumped for v6.6');
+assert(html.includes('3.4.24'), 'About version bumped for v6.6');
 
 console.log('v6.6 tests ok — salvage popup close, shared stars, persistent stone slot, in-app Destroy');

@@ -2203,7 +2203,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.23</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.24</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -4798,18 +4798,33 @@ function openBox(category) {
   return openBoxFree(category);
 }
 const REGRADE_SAFE_CEILING = 3;
-const ENCHANT_FAIL_CHANCE_AT_1 = 0.38;
-const ENCHANT_FAIL_CHANCE_AT_99 = 0.08;
 const ENCHANT_XP_SAFE = 80;
 const ENCHANT_XP_RISKY = 150;
-function enchantFailChance() {
-  const lv = Math.max(1, Math.min(SKILL_MAX_LEVEL, getSkillLevel('enchant')));
-  const t = (lv - 1) / Math.max(1, SKILL_MAX_LEVEL - 1);
-  let fail = ENCHANT_FAIL_CHANCE_AT_1 + (ENCHANT_FAIL_CHANCE_AT_99 - ENCHANT_FAIL_CHANCE_AT_1) * t;
-  fail *= Math.max(0.18, 1 - equippedBonusFor('enchantSuccess'));
-  return fail;
+/* === enchant-regrade-lib begin === */
+const ENCHANT_SUCCESS_RATES = [0.70, 0.55, 0.40, 0.28, 0.20];
+function enchantAttemptSuccessRate(currentStar, bonus) {
+  const idx = Math.max(0, Math.min(ENCHANT_SUCCESS_RATES.length - 1, Math.round(Number(currentStar) || 0)));
+  const success = ENCHANT_SUCCESS_RATES[idx] + (Number(bonus) || 0);
+  return Math.min(1, Math.max(0, success));
 }
-function enchantSuccessChancePct() { return Math.round((1 - enchantFailChance()) * 100); }
+function enchantAttemptSuccessPct(currentStar, bonus) {
+  return Math.round(enchantAttemptSuccessRate(currentStar, bonus) * 100);
+}
+function applyEnchantAttempt(inst, success) {
+  const star = Math.max(0, Number(inst && inst.star) || 0);
+  if (!inst) return star;
+  if (success) inst.star = star + 1;
+  return inst.star;
+}
+/* === enchant-regrade-lib end === */
+function enchantFailChance(inst) {
+  const bonus = typeof equippedBonusFor === 'function' ? equippedBonusFor('enchantSuccess') : 0;
+  return 1 - enchantAttemptSuccessRate(inst && inst.star, bonus);
+}
+function enchantSuccessChancePct(inst) {
+  const bonus = typeof equippedBonusFor === 'function' ? equippedBonusFor('enchantSuccess') : 0;
+  return enchantAttemptSuccessPct(inst && inst.star, bonus);
+}
 function awardEnchantSkillXp(amount) {
   if (!amount) return 0;
   amount = Math.round(amount * (1 + equippedBonusFor('enchantXp')));
@@ -4830,18 +4845,14 @@ function performStarUpgrade(inst, tmpl) {
     return { success:true, star: inst.star, risky:false, levelsGained: 0 };
   }
   const nextStar = inst.star + 1;
-  if (nextStar <= REGRADE_SAFE_CEILING) {
-    inst.star = Math.min(nextStar, cap);
-    const levelsGained = awardEnchantSkillXp(ENCHANT_XP_SAFE);
-    return { success:true, star: inst.star, risky:false, levelsGained };
-  } else if (Math.random() < enchantFailChance()) {
-    inst.star = Math.max(0, inst.star - 1);
-    return { success:false, star: inst.star, risky:true, levelsGained: 0 };
-  } else {
-    inst.star = Math.min(nextStar, cap);
-    const levelsGained = awardEnchantSkillXp(ENCHANT_XP_RISKY);
-    return { success:true, star: inst.star, risky:true, levelsGained };
-  }
+  const risky = nextStar > REGRADE_SAFE_CEILING;
+  const success = Math.random() < enchantAttemptSuccessRate(inst.star, equippedBonusFor('enchantSuccess'));
+  applyEnchantAttempt(inst, success);
+  if (inst.star > cap) inst.star = cap;
+  if (!success) return { success:false, star: inst.star, risky, levelsGained: 0 };
+  const xp = risky ? ENCHANT_XP_RISKY : ENCHANT_XP_SAFE;
+  const levelsGained = awardEnchantSkillXp(xp);
+  return { success:true, star: inst.star, risky, levelsGained };
 }
 // v3.0 §2: now consumes 1 matching-category enchantment stone instead of a
 // gem — stones are the new dedicated enchant currency this version
@@ -7726,8 +7737,7 @@ function enchantTableReady() {
 function enchantAttemptChancePct(inst, tmpl) {
   if (!inst || !tmpl) return 0;
   if (inst.star >= itemMaxStar(tmpl, inst)) return 0;
-  if (inst.star + 1 <= REGRADE_SAFE_CEILING) return 100;
-  return enchantSuccessChancePct();
+  return enchantSuccessChancePct(inst);
 }
 function enchantAttemptFromSlot() {
   const table = getEnchantTable();
@@ -7787,7 +7797,7 @@ function showEnchantResults(info) {
           <td>Stars</td>
           <td>${info.beforeStar}★</td>
           <td>${info.outcome.star}★</td>
-          <td class="${deltaCls}">${info.outcome.success ? '+1' : '−1'}</td>
+          <td class="${deltaCls}">${info.outcome.success ? '+1' : '0'}</td>
         </tr>
       </table>
     </div>
@@ -7811,7 +7821,7 @@ function enchantCoachText(table, inst, tmpl) {
   if (!table.instanceId) return 'Put your new relic on the table. Enchanting spends a stone to raise its star — a stronger bonus if it works.';
   if (!table.stonePlaced) return 'Place the Enchantment Stone in the other slot. The stone is consumed on the attempt.';
   const pct = enchantAttemptChancePct(inst, tmpl);
-  return `Press Enchant. This attempt is ${pct}% — early stars always succeed. Later stars can fail, so the gamble is real.`;
+  return `Press Enchant. This attempt is ${pct}% — later stars are harder, and a miss keeps your current enchant.`;
 }
 function renderEnchantModal() {
   ensureInventoryShape();
@@ -7874,7 +7884,7 @@ function renderEnchantModal() {
   body.innerHTML = `
     <div class="enchant-table">
       <div class="enchant-table-title">Enchanting Table</div>
-      <div class="enchant-table-sub">Place a relic or boost, then a matching stone. Enchanting is not guaranteed on higher stars.</div>
+      <div class="enchant-table-sub">Place a relic or boost, then a matching stone. Each next enchant is harder; a miss keeps your stars.</div>
       <div class="enchant-slots">${itemSlot}<div class="enchant-plus">+</div>${stoneSlot}</div>
       <div class="enchant-chance">${inst ? (maxed ? 'Already at max star' : `This attempt: ${chance}% success · Enchanting Lv ${getSkillLevel('enchant')}`) : 'Both slots must be filled'}</div>
       <button class="enchant-cast-btn${coach && table.instanceId && table.stonePlaced ? ' unlock-pulse' : ''}" id="enchantAttemptBtn" ${ready ? '' : 'disabled'}>Enchant</button>
