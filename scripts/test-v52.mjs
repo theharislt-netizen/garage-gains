@@ -71,7 +71,8 @@ assert(dismissFn.indexOf('hideBoxRevealOverlay') < dismissFn.indexOf('save()'),
 assert(!dismissFn.includes('renderInventoryTab()'), 'inventory is not rebuilt on dismiss');
 assert(!dismissFn.includes('renderShopModal()'), 'shop is not rebuilt on dismiss');
 assert(dismissFn.includes('save()'), 'dismiss still persists, just later');
-assert(dismissFn.includes('setTimeout'), 'persist is delayed off the hide frame');
+assert(dismissFn.includes('afterPaint') || dismissFn.includes('scheduleIdleWork') || dismissFn.includes('setTimeout'),
+  'persist is delayed off the hide frame');
 
 const showFn = html.slice(html.indexOf('function showBoxReveal'), html.indexOf('document.getElementById(\'shopModalClose\')'));
 assert(showFn.includes('feedbackBoxOpen(tier)'), 'SFX still plays after cover');
@@ -191,6 +192,6 @@ assert(icons.lorequill.includes('M7 5.2 12 3.4 17 5.2') && icons.gildthread.incl
   'cloaks are cloak silhouettes');
 assert(icons.wornCharm !== icons.grindersChair, 'set pieces still look distinct');
 
-assert(html.includes('3.4.13'), 'About version bumped for v5.2');
+assert(html.includes('3.4.14'), 'About version bumped for v5.2');
 
 console.log('v5.2 tests ok — committed-paint box lag fix, equipment sets, gear icons, materials unchanged');

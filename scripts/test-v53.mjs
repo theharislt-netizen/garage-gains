@@ -79,7 +79,8 @@ assert(dismissFn.includes('hideBoxRevealOverlay'), 'dismiss hides immediately');
 assert(!dismissFn.includes('renderShopModal'), 'dismiss does not rebuild the shop');
 assert(!dismissFn.includes('renderInventoryTab'), 'dismiss does not rebuild inventory');
 assert(dismissFn.includes('save()'), 'dismiss still persists later');
-assert(dismissFn.includes('400'), 'persist is delayed off the hide frame');
+assert(dismissFn.includes('afterPaint') || dismissFn.includes('scheduleIdleWork') || dismissFn.includes('400'),
+  'persist is delayed off the hide frame');
 
 assert(html.includes('id="boxArtBoost"') && html.includes('id="boxArtRelic"') && html.includes('id="boxArtStarter"'),
   'boost, relic, and starter chests are pre-mounted');
@@ -95,6 +96,6 @@ assert(html.includes("You'll receive +${amount}"), 'confirm shows the salvage pa
 assert(html.includes('function openSalvageConfirm'), 'salvage confirm is not a browser dialog');
 assert(!html.includes('if (!confirm(`Salvage'), 'browser confirm is gone from salvage');
 
-assert(html.includes('3.4.13'), 'About version bumped for v5.3');
+assert(html.includes('3.4.14'), 'About version bumped for v5.3');
 
 console.log('v5.3 tests ok — loadout window, banner icon, stock photos, salvage dupes, box tap lag');

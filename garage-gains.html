@@ -693,7 +693,6 @@
     opacity: 0;
     z-index: 320;
     transform: translateZ(0);
-    contain: layout style;
   }
   #boxRevealOverlay.box-reveal-on {
     visibility: visible;
@@ -817,6 +816,9 @@
   .gear-slot-ic { width: 36px; height: 36px; flex-shrink: 0; color: var(--a2); display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,0.04); }
   .gear-slot-ic svg { width: 26px; height: 26px; display: block; }
   .item-photo { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+  .item-photo[hidden], #boxPrizePhoto[hidden], #boxPrizeMat[hidden] {
+    display: none !important;
+  }
   .inv-slot-icon .item-photo, .gear-slot-ic .item-photo, .item-detail-icon .item-photo, .enchant-drop-ic .item-photo, .rarity-burst .item-photo {
     width: 100%; height: 100%; object-fit: cover;
   }
@@ -863,6 +865,13 @@
   .item-detail-icon { width: 88px; height: 88px; margin: 0 auto 8px; overflow: hidden; border-radius: 12px; }
   .item-detail-icon svg, .enchant-drop-ic svg, .craft-stone-icon svg, .rarity-burst svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
   .rarity-burst .item-photo { width: 72px; height: 72px; border-radius: 12px; }
+  #boxPrizeIcon.is-mat .item-photo { display: none !important; }
+  #boxPrizeIcon.is-photo #boxPrizeMat { display: none !important; }
+  #boxPrizeMat {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; line-height: 0;
+  }
+  #boxPrizeMat svg { width: 48px; height: 48px; display: block; margin: 0; }
   .enchant-drop-ic { width: 36px; height: 36px; overflow: hidden; border-radius: 8px; }
   .craft-stone-icon svg { width: 28px; height: 28px; }
   .craft-stone-result svg { width: 14px; height: 14px; display: inline-block; vertical-align: -3px; margin-right: 2px; }
@@ -978,30 +987,36 @@
   .box-reveal-card .rn { font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 700; }
   .box-reveal-card .rd { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
   .box-reveal-hint { color: var(--text-dim); font-size: 12px; margin-top: 14px; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Barlow Condensed'; }
-  /* Opening uses the chest art (not the loot icon). The item fade-in must
-     stay visible — ruBurst ends at opacity 0 and was wiping the prize. */
+  /* Opening uses the chest art (not the loot icon). Chests must NOT use
+     visibility:hidden — Android WebView drops CSS and WAAPI transform
+     animations on visibility-hidden nodes, which froze the box then
+     hard-cut to the prize. Opacity keeps the layer compositable. */
   .box-reveal-buildup {
     position: absolute; left: 50%; top: 50%; width: 96px; height: 96px;
     margin-left: -48px; margin-top: -48px;
     font-size: 64px; line-height: 96px; text-align: center;
-    visibility: hidden; opacity: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    will-change: transform;
+    transition: opacity 0.18s ease-out;
   }
   .box-reveal-buildup svg { width: 96px; height: 96px; display: block; }
-  #boxRevealOverlay.box-reveal-on .box-reveal-buildup {
-    animation: boxShake 0.22s ease-in-out infinite;
-  }
   #boxRevealOverlay.box-reveal-on.box-cat-boost:not(.box-prize-on) .box-art-boost,
   #boxRevealOverlay.box-reveal-on.box-cat-relic:not(.box-prize-on) .box-art-relic,
   #boxRevealOverlay.box-reveal-on.box-cat-starter:not(.box-prize-on) .box-art-starter {
-    visibility: visible; opacity: 1;
+    opacity: 1;
+  }
+  .box-reveal-buildup.is-shaking {
+    animation: boxShake 0.2s ease-in-out infinite;
   }
   #boxRevealPrize {
-    visibility: hidden; opacity: 0; pointer-events: none;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.24s ease-out;
   }
   #boxRevealOverlay.box-prize-on #boxRevealPrize {
-    visibility: visible; opacity: 1; pointer-events: auto;
+    opacity: 1; pointer-events: auto;
   }
-  @keyframes boxShake { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+  @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   .box-reveal-burst-flash {
     position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -1947,7 +1962,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.13</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.14</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2780,6 +2795,53 @@ function boxRevealBuildupHtml(category, artFn) {
   const color = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
   return `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${color};">${boxBuildupInnerHtml(category, artFn)}</div>`;
 }
+function boxRevealChestEl(overlay, category) {
+  if (!overlay || typeof overlay.querySelector !== 'function') return null;
+  const key = (category === 'boost' || category === 'relic' || category === 'starter') ? category : 'starter';
+  return overlay.querySelector('.box-art-' + key) || overlay.querySelector('#boxBuildupIcon');
+}
+function stopChestShake() {
+  const w = typeof window !== 'undefined' ? window : null;
+  if (!w) return;
+  if (w.__boxShakeAnim && typeof w.__boxShakeAnim.cancel === 'function') {
+    try { w.__boxShakeAnim.cancel(); } catch (err) {}
+  }
+  w.__boxShakeAnim = null;
+  if (w.__boxShakeEl && w.__boxShakeEl.classList) {
+    try { w.__boxShakeEl.classList.remove('is-shaking'); } catch (err) {}
+  }
+  w.__boxShakeEl = null;
+}
+function startChestShake(overlay, category) {
+  stopChestShake();
+  const el = boxRevealChestEl(overlay, category);
+  if (!el) return false;
+  const w = typeof window !== 'undefined' ? window : {};
+  w.__boxShakeEl = el;
+  try { void el.offsetWidth; } catch (err) {}
+  const kick = function() {
+    if (w.__boxShakeAnim) return;
+    if (typeof el.animate !== 'function') {
+      if (el.classList) el.classList.add('is-shaking');
+      return;
+    }
+    try {
+      w.__boxShakeAnim = el.animate(
+        [
+          { transform: 'rotate(-6deg)' },
+          { transform: 'rotate(6deg)' },
+          { transform: 'rotate(-6deg)' }
+        ],
+        { duration: 200, iterations: Infinity, easing: 'ease-in-out' }
+      );
+    } catch (err) {
+      if (el.classList) el.classList.add('is-shaking');
+    }
+  };
+  kick();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(kick);
+  return true;
+}
 function coverBoxRevealOverlay(overlay, category) {
   if (!overlay) return false;
   overlay.classList.remove('unique-reveal', 'box-prize-on', 'box-cat-boost', 'box-cat-relic', 'box-cat-starter');
@@ -2788,6 +2850,7 @@ function coverBoxRevealOverlay(overlay, category) {
     overlay.classList.add('box-cat-' + category);
   }
   overlay.onclick = null;
+  startChestShake(overlay, category);
   return true;
 }
 function paintBoxRevealOverlay(overlay, content, category, artFn) {
@@ -2798,6 +2861,7 @@ function paintBoxRevealOverlay(overlay, content, category, artFn) {
   return true;
 }
 function hideBoxRevealOverlay(overlay) {
+  stopChestShake();
   if (!overlay) return;
   overlay.onclick = null;
   overlay.classList.remove('box-reveal-on', 'unique-reveal', 'box-prize-on');
@@ -7076,8 +7140,10 @@ function dismissBoxReveal() {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
-  coverShopForBoxReveal(false);
-  window.setTimeout(() => { try { save(); } catch (err) {} }, 400);
+  afterPaint(() => {
+    coverShopForBoxReveal(false);
+    scheduleIdleWork(() => { try { save(); } catch (err) {} }, 80);
+  });
 }
 // v3.0 §6: box opening excitement pass — resolves a rarity tier for the
 // outcome (common shards -> legendary full item), then sequences a shaking
@@ -7115,17 +7181,18 @@ function boxRevealPrizeCopy(category, outcome, tier) {
   return { tmpl, bodyLine, lootFallback };
 }
 function fillBoxRevealPrize(category, outcome) {
-  const overlay = document.getElementById('boxRevealOverlay');
   const card = document.getElementById('boxPrizeCard');
   const tierEl = document.getElementById('boxPrizeTier');
   const photo = document.getElementById('boxPrizePhoto');
   const mat = document.getElementById('boxPrizeMat');
+  const iconWrap = document.getElementById('boxPrizeIcon');
   const nameEl = document.getElementById('boxPrizeName');
   const bodyEl = document.getElementById('boxPrizeBody');
   const tier = getBoxRevealTier(outcome);
   const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
   const copy = boxRevealPrizeCopy(category, outcome, tier);
   const tmpl = copy.tmpl;
+  if (typeof window !== 'undefined') window.__boxPrizeTier = tier;
   if (card) card.className = 'box-reveal-card tier-' + tier;
   if (tierEl) {
     tierEl.textContent = meta.label || '';
@@ -7133,28 +7200,41 @@ function fillBoxRevealPrize(category, outcome) {
     tierEl.style.display = meta.label ? '' : 'none';
   }
   if (photo && mat) {
-    if (outcome && (outcome.kind === 'shards' || outcome.kind === 'stone')) {
+    const isMat = !!(outcome && (outcome.kind === 'shards' || outcome.kind === 'stone'));
+    if (isMat) {
       photo.hidden = true;
       photo.removeAttribute('src');
+      photo.alt = '';
       mat.hidden = false;
-      mat.innerHTML = matIconHtml(outcome.kind === 'shards' ? 'shards' : 'stone', category);
+      mat.innerHTML = matIconHtml(outcome.kind === 'shards' ? 'shards' : 'stone', outcome.category || category);
+      if (iconWrap) { iconWrap.classList.add('is-mat'); iconWrap.classList.remove('is-photo'); }
     } else if (tmpl && tmpl.id) {
       mat.hidden = true;
       mat.textContent = '';
       photo.hidden = false;
+      photo.alt = tmpl.name || '';
       photo.src = 'gear/' + tmpl.id + '.jpg';
+      if (iconWrap) { iconWrap.classList.add('is-photo'); iconWrap.classList.remove('is-mat'); }
     } else {
       photo.hidden = true;
+      photo.removeAttribute('src');
       mat.hidden = false;
-      mat.textContent = tmpl.icon || copy.lootFallback;
+      const raw = tmpl.icon || copy.lootFallback;
+      if (typeof raw === 'string' && raw.indexOf('<') >= 0) mat.innerHTML = raw;
+      else mat.textContent = raw || '';
+      if (iconWrap) { iconWrap.classList.add('is-mat'); iconWrap.classList.remove('is-photo'); }
     }
   }
   if (nameEl) nameEl.textContent = tmpl.name || 'Loot';
   if (bodyEl) bodyEl.textContent = copy.bodyLine;
-  if (overlay) {
-    overlay.classList.toggle('unique-reveal', tier === 'unique');
-    overlay.classList.add('box-prize-on');
-  }
+  return tier;
+}
+function revealFilledBoxPrize(overlay) {
+  stopChestShake();
+  if (!overlay) return;
+  const tier = (typeof window !== 'undefined' && window.__boxPrizeTier) || '';
+  overlay.classList.toggle('unique-reveal', tier === 'unique');
+  overlay.classList.add('box-prize-on');
 }
 function showBoxReveal(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
@@ -7164,11 +7244,14 @@ function showBoxReveal(category, outcome) {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
+  try {
+    fillBoxRevealPrize(category, outcome);
+  } catch (err) {}
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
     try {
-      fillBoxRevealPrize(category, outcome);
+      revealFilledBoxPrize(overlay);
     } catch (err) {
       if (overlay) overlay.classList.add('box-prize-on');
     }
