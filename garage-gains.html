@@ -63,9 +63,9 @@
   .topbar { padding: 20px 18px 4px; }
   .topbar .wordmark { font-size: 15px; letter-spacing: 0.14em; color: var(--text-dim); }
   .topbar .wordmark b { color: var(--text); }
-  .day-header { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
+  .day-header { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; position: relative; z-index: 2; flex-shrink: 0; }
   .day-line { display: flex; align-items: baseline; gap: 10px; }
-  .day-header .dayname { font-size: 30px; line-height: 1; }
+  .day-header .dayname { font-size: 30px; line-height: 1.15; }
   .day-header .datestr { font-family: 'JetBrains Mono'; font-size: 16px; color: var(--text-dim); }
   .day-type-pill {
     font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -73,7 +73,7 @@
     background: rgba(var(--a1-rgb),0.14); color: var(--a1); border: 1px solid rgba(var(--a1-rgb),0.4);
   }
 
-  .led-wrap { padding: 16px 18px 4px; }
+  .led-wrap { padding: 16px 18px 8px; position: relative; z-index: 1; flex-shrink: 0; margin-top: 2px; }
   .led-track { position: relative; height: 12px; border-radius: 100px; background: var(--panel); border: 1px solid var(--line); overflow: visible; }
   .led-fill {
     position: relative; height: 100%; border-radius: 100px;
@@ -210,10 +210,10 @@
   .tab.active { color: var(--a2); }
   .tab svg { width: 21px; height: 21px; }
   .tab.locked { opacity: 0.34; filter: grayscale(0.8); }
-  .tab.unlock-pulse { animation: tabUnlockPulse 1.25s ease-in-out infinite; color: var(--a2); opacity: 1; filter: none; }
+  .tab.unlock-pulse { animation: tabUnlockPulse 1.1s ease-in-out infinite; color: #b455f5; opacity: 1; filter: none; }
   @keyframes tabUnlockPulse {
     0%, 100% { filter: drop-shadow(0 0 0 transparent); transform: scale(1); }
-    50% { filter: drop-shadow(0 0 8px var(--a2)); transform: scale(1.06); }
+    50% { filter: drop-shadow(0 0 18px #b455f5) drop-shadow(0 0 32px rgba(180,85,245,0.85)); transform: scale(1.16); }
   }
 
   .toast { position: fixed; bottom: calc(92px + var(--app-sab)); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 20; white-space: nowrap; }
@@ -357,7 +357,7 @@
   .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: var(--app-sat); }
   .name-badge-row { display: flex; justify-content: center; padding: 14px 14px 10px; max-width: 100%; overflow: hidden; transition: background 0.4s ease; }
   .sticky-sub {
-    overflow: hidden; max-height: 280px; opacity: 1;
+    overflow: hidden; max-height: min(72dvh, 560px); opacity: 1;
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .sticky-sub.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
@@ -796,12 +796,12 @@
     cursor: pointer; padding: 4px; gap: 2px;
   }
   .inv-slot.equipped-slot { border-color: var(--gain); box-shadow: 0 0 0 1px rgba(255,182,72,0.3); }
-  .inv-slot.unlock-pulse, .inv-primary-btn.unlock-pulse, .enchant-drop.nudge {
-    animation: slotUnlockPulse 1.3s ease-in-out infinite; border-color: var(--a2);
+  .inv-slot.unlock-pulse, .inv-primary-btn.unlock-pulse, .enchant-drop.nudge, .inv-btn.unlock-pulse {
+    animation: slotUnlockPulse 1.15s ease-in-out infinite; border-color: #b455f5;
   }
   @keyframes slotUnlockPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--a2-rgb), 0.0); }
-    50% { box-shadow: 0 0 14px 2px rgba(var(--a2-rgb), 0.55); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,85,245,0.0); transform: scale(1); }
+    50% { box-shadow: 0 0 22px 6px rgba(180,85,245,0.9), 0 0 40px 12px rgba(180,85,245,0.45); transform: scale(1.06); }
   }
   .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
   .inv-slot-icon { font-size: 26px; line-height: 1; }
@@ -846,6 +846,36 @@
   .inv-item-actions { display: flex; gap: 6px; margin-top: 6px; }
   .inv-btn { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono'; font-size: 11px; cursor: pointer; }
   .inv-btn.equipped { border-color: var(--a2); color: var(--a2); }
+  .inv-btn-equip {
+    flex: 1; min-width: 118px; padding: 11px 16px; border: none; border-radius: 10px;
+    background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d;
+    font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .inv-btn-equip.equipped { filter: brightness(0.88); }
+  .inv-btn-salvage {
+    padding: 11px 16px; border: none; border-radius: 10px;
+    background: #ff5c5c; color: #fff;
+    font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .inv-btn-salvage:disabled { opacity: 0.38; }
+  .craft-stone-grid { display: flex; flex-direction: column; gap: 12px; }
+  .craft-stone-card {
+    display: grid; grid-template-columns: 52px 1fr auto; gap: 12px;
+    align-items: center; padding: 14px; border-radius: 14px;
+    background: var(--bg); border: 1px solid var(--line);
+  }
+  .craft-stone-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 26px;
+    background: rgba(180,85,245,0.12); border: 1px solid rgba(180,85,245,0.35);
+  }
+  .craft-stone-info { min-width: 0; }
+  .craft-stone-name { font-family: 'Barlow Condensed'; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .craft-stone-count { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .craft-stone-result { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .craft-stone-track { height: 7px; border-radius: 100px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; margin-top: 8px; }
+  .craft-stone-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #b455f5, var(--a2)); }
+  .craft-stone-card .craft-btn { width: auto; margin: 0; padding: 10px 16px; }
   .box-reveal-card { padding: 30px 20px; }
   .box-reveal-card .rarity-burst { width: 100px; height: 100px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; background: radial-gradient(circle, rgba(var(--a1-rgb),0.35), transparent 70%); animation: ruBurst 1s ease-out; }
   .box-reveal-card .rn { font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 700; }
@@ -1717,7 +1747,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.0</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.1</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2187,13 +2217,97 @@ function rankGoldPerkMultiplier() {
 // LEVEL (v2.2) — the new primary, indefinite, always-visible progression
 // track, replacing Rank on the main sticky banner. Driven by the exact same
 // lifetime points economy already in place (no separate currency) — it's a
-// re-thresholding of state.totalPoints, not a new number to track. There is
-// Displayed level starts at 1 (0 points). Internal curve is still
-// floor(sqrt(points/50)); we add 1 so a new account is Level 1, not 0.
-// Inverse: points needed to reach displayed level L is 50*(L-1)^2.
-// (level 2 = 50 pts, level 6 = 1250, level 11 = 5000, level 21 = 20000).
-function getLevel(points) { return 1 + Math.floor(Math.sqrt(Math.max(0, points) / 50)); }
-function pointsForLevel(level) { const n = Math.max(1, level) - 1; return Math.round(50 * n * n); }
+// re-thresholding of state.totalPoints, not a new number to track.
+/* === v44-helpers-lib begin === */
+// Displayed level starts at 1 (0 points). v4.4 retune: K=150 so a typical
+// first workout (~250–400 provisional pts) lands on Level 2, not Level 3.
+// Inverse: points needed to reach displayed level L is K*(L-1)^2.
+// (level 2 = 150 pts, level 3 = 600, level 6 = 3750). Veterans keep the same
+// totalPoints; their displayed level follows the new curve.
+const LEVEL_CURVE_K = 150;
+function getLevel(points) { return 1 + Math.floor(Math.sqrt(Math.max(0, points) / LEVEL_CURVE_K)); }
+function pointsForLevel(level) { const n = Math.max(1, level) - 1; return Math.round(LEVEL_CURVE_K * n * n); }
+function typicalFirstWorkoutPoints() { return 16 * 12 * 2; }
+function pacingNoteForSet(pacing, setIndex) {
+  if (!pacing) return '';
+  const text = String(pacing);
+  const setNum = (Number(setIndex) || 0) + 1;
+  const mentioned = [];
+  const reNum = /\bset\s+(\d+)\b/gi;
+  let m;
+  while ((m = reNum.exec(text))) mentioned.push(Number(m[1]));
+  const reWord = /\b(first|second|third)\s+set\b/gi;
+  while ((m = reWord.exec(text))) {
+    const w = m[1].toLowerCase();
+    mentioned.push(w === 'first' ? 1 : w === 'second' ? 2 : 3);
+  }
+  if (!mentioned.length) return text;
+  return mentioned.includes(setNum) ? text : '';
+}
+function hasRemainingSuggestedWork(loggedCount, suggestedSets, others) {
+  if ((loggedCount || 0) < (suggestedSets || 0)) return true;
+  return (others || []).some(o => (o.loggedCount || 0) < (o.suggestedSets || 0));
+}
+function itemTypeKey(kind, spec) {
+  if (kind === 'item' || kind === 'permanent') return 'item:' + spec;
+  if (kind === 'temporary' || kind === 'temp') return 'temp:' + spec;
+  if (kind === 'box') return 'box:' + spec;
+  if (kind === 'shards') return 'mat:shards:' + spec;
+  if (kind === 'stone') return 'mat:stone:' + spec;
+  if (kind === 'mat') return 'mat:' + spec;
+  return String(kind) + ':' + spec;
+}
+function currentInventoryTypeKeys(s) {
+  const keys = [];
+  const inv = (s && s.inventory) || {};
+  (inv.permanent || []).forEach(p => { if (p && p.itemId) keys.push(itemTypeKey('item', p.itemId)); });
+  Object.entries(inv.tempCharges || {}).forEach(([id, n]) => { if (n > 0) keys.push(itemTypeKey('temp', id)); });
+  ['relic', 'boost'].forEach(cat => {
+    if ((inv.shards && inv.shards[cat]) > 0) keys.push(itemTypeKey('shards', cat));
+    if ((inv.stones && inv.stones[cat]) > 0) keys.push(itemTypeKey('stone', cat));
+  });
+  (inv.boxes || []).forEach(b => { if (b && !b.opened) keys.push(itemTypeKey('box', b.itemId || 'starterVictoryBox')); });
+  return keys;
+}
+function seedEverOwnedFromInventory(s, markUnseen) {
+  if (!s || typeof s !== 'object') return;
+  s.inventory = s.inventory || {};
+  if (!Array.isArray(s.inventory.everOwnedTypes)) s.inventory.everOwnedTypes = [];
+  if (!Array.isArray(s.inventory.unseenTypes)) s.inventory.unseenTypes = [];
+  currentInventoryTypeKeys(s).forEach(k => {
+    if (!s.inventory.everOwnedTypes.includes(k)) s.inventory.everOwnedTypes.push(k);
+    if (markUnseen && !s.inventory.unseenTypes.includes(k)) s.inventory.unseenTypes.push(k);
+  });
+}
+function ensureSeenItemTypes(s) {
+  if (!s || typeof s !== 'object') return false;
+  s.inventory = s.inventory || {};
+  const missing = !Array.isArray(s.inventory.everOwnedTypes) || !Array.isArray(s.inventory.unseenTypes);
+  if (!missing) return false;
+  if (!Array.isArray(s.inventory.everOwnedTypes)) s.inventory.everOwnedTypes = [];
+  if (!Array.isArray(s.inventory.unseenTypes)) s.inventory.unseenTypes = [];
+  seedEverOwnedFromInventory(s, false);
+  return true;
+}
+function noteItemTypeGranted(s, key) {
+  if (!s || !key) return false;
+  ensureSeenItemTypes(s);
+  const first = !s.inventory.everOwnedTypes.includes(key);
+  if (first) s.inventory.everOwnedTypes.push(key);
+  if (first && !s.inventory.unseenTypes.includes(key)) s.inventory.unseenTypes.push(key);
+  return first;
+}
+function acknowledgeItemType(s, key) {
+  if (!s || !key) return false;
+  ensureSeenItemTypes(s);
+  const before = s.inventory.unseenTypes.length;
+  s.inventory.unseenTypes = s.inventory.unseenTypes.filter(k => k !== key);
+  return s.inventory.unseenTypes.length !== before;
+}
+function shouldFlashItemType(s, key) {
+  return !!(s && s.inventory && Array.isArray(s.inventory.unseenTypes) && s.inventory.unseenTypes.includes(key));
+}
+/* === v44-helpers-lib end === */
 
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
@@ -2236,13 +2350,19 @@ function isRankUnlocked() {
 // sync with what actually earned the points.
 function creditPoints(amount) {
   if (!amount) return;
-  const prevPoints = state.totalPoints;
+  if (window.__levelCheckAnchor == null) window.__levelCheckAnchor = state.totalPoints;
   state.totalPoints += amount;
-  checkLevelUp(prevPoints, state.totalPoints);
   if (isRankUnlocked()) creditSeasonPoints(amount);
   if (window.__quickLogOpen) {
     window.__quickLogSessionPoints = (window.__quickLogSessionPoints || 0) + amount;
   }
+}
+function flushPendingLevelUp() {
+  if (window.__levelCheckAnchor == null) return;
+  const prev = window.__levelCheckAnchor;
+  const next = state.totalPoints;
+  window.__levelCheckAnchor = next;
+  checkLevelUp(prev, next);
 }
 // Fires on every level gained (a light toast + small gold, plus a RuneScape-
 // style tap-to-claim icon). Tier boundaries still grant the extra theme/boxes
@@ -2807,6 +2927,7 @@ function renderSkillsGrid() {
 document.getElementById('skillModalClose').addEventListener('click', closeSkillModal);
 document.getElementById('claimRewardsBtn').addEventListener('click', () => {
   feedbackRewardClaim();
+  flushPendingLevelUp();
   showNextReward();
 });
 const progressClaimContinue = document.getElementById('progressClaimContinue');
@@ -3031,6 +3152,7 @@ function ensureInventoryShape() {
   state.inventory.shards = state.inventory.shards || { boost: 0, relic: 0 };
   state.inventory.stones = state.inventory.stones || { boost: 0, relic: 0 };
   state.inventory.boxes = Array.isArray(state.inventory.boxes) ? state.inventory.boxes : [];
+  ensureSeenItemTypes(state);
   // v3.0 §5: equip slots are now arrays (up to 3 per category), capacity
   // gated by Level (see getEquipSlotCapacity). Migrates any old single-object
   // equipped state into slot 0 so nobody's current gear silently vanishes.
@@ -3046,6 +3168,7 @@ function grantItem(itemId) {
   if (!tmpl) return { kind:'none' };
   if (!tmpl.permanent) {
     state.inventory.tempCharges[itemId] = (state.inventory.tempCharges[itemId] || 0) + 1;
+    noteItemTypeGranted(state, itemTypeKey('temp', itemId));
     return { kind:'temp', tmpl };
   }
   const owned = state.inventory.permanent.find(x => x.itemId === itemId);
@@ -3056,6 +3179,7 @@ function grantItem(itemId) {
   }
   const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: 0 };
   state.inventory.permanent.push(inst);
+  noteItemTypeGranted(state, itemTypeKey('item', itemId));
   return { kind:'new', tmpl, inst };
 }
 // v3.0 §4: full items are weighted inversely by rarity ceiling (maxStar) so
@@ -3145,11 +3269,13 @@ function openBoxFree(category) {
   if (rollBoxPrimaryKind() === 'shards') {
     const amount = 3 + Math.floor(Math.random() * 6); // 3-8 shards
     state.inventory.shards[category] = (state.inventory.shards[category] || 0) + amount;
+    noteItemTypeGranted(state, itemTypeKey('shards', category));
     outcome = { kind:'shards', category, amount, result: { kind:'shards', tmpl: { name: `${catName} Shards ×${amount}`, icon: '🔹' } } };
   } else {
     const picked = pickWeightedRareOutcome(category);
     if (picked.kind === 'stone') {
       state.inventory.stones[category] = (state.inventory.stones[category] || 0) + 1;
+      noteItemTypeGranted(state, itemTypeKey('stone', category));
       outcome = { kind:'stone', category, amount: 1, rarity: picked.rarity, result: { kind:'stone', tmpl: { name: `${picked.label} ${catName} Enchantment Stone`, icon: '💠', maxStar: picked.maxStar, permanent: true } } };
     } else {
       const result = grantItem(picked.tmpl.id);
@@ -3234,6 +3360,7 @@ function craftEnchantStone(category) {
   if (have < SHARDS_PER_STONE) { showToast(`Need ${SHARDS_PER_STONE} shards`); return false; }
   state.inventory.shards[category] -= SHARDS_PER_STONE;
   state.inventory.stones[category] = (state.inventory.stones[category] || 0) + 1;
+  noteItemTypeGranted(state, itemTypeKey('stone', category));
   save();
   return true;
 }
@@ -3269,6 +3396,7 @@ function salvageItem(instanceId) {
   const amount = SALVAGE_BASE_SHARDS + inst.star * SALVAGE_PER_STAR_SHARDS;
   state.inventory.permanent.splice(idx, 1);
   state.inventory.shards[tmpl.category] = (state.inventory.shards[tmpl.category] || 0) + amount;
+  noteItemTypeGranted(state, itemTypeKey('shards', tmpl.category));
   save();
   return { category: tmpl.category, amount, name: tmpl.name };
 }
@@ -3318,6 +3446,14 @@ function toggleEquipItem(category, opts) {
   const idx = findEquippedSlot(category, opts);
   if (idx >= 0) { unequipItem(category, idx); return 'unequipped'; }
   equipItem(category, opts);
+  if (opts && opts.kind === 'permanent' && state.progression && !state.progression.equipTutorialDone) {
+    const inst = state.inventory.permanent.find(x => x.instanceId === opts.instanceId);
+    if (inst && inst.itemId === STARTER_RELIC_ID) {
+      markEquipTutorialDone(state);
+      save();
+      renderHeader();
+    }
+  }
   return 'equipped';
 }
 
@@ -3707,10 +3843,16 @@ function applySeasonRankIcon(el) {
 function setInstanceDashboardChrome(inInstance) {
   const led = document.getElementById('ledWrap');
   const todayViewActive = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
-  if (inInstance) {
+  const keepLed = !!(inInstance && window.__activeInstance && window.__activeInstance.type === 'workout');
+  if (inInstance && !keepLed) {
     if (led) led.style.display = 'none';
   } else {
     if (led) led.style.display = todayViewActive ? 'block' : 'none';
+  }
+  if (typeof resetStickyScroll === 'function') resetStickyScroll();
+  if (typeof syncHeaderHeight === 'function') {
+    syncHeaderHeight();
+    requestAnimationFrame(() => { if (typeof syncHeaderHeight === 'function') syncHeaderHeight(); });
   }
 }
 
@@ -4667,20 +4809,48 @@ function showWarmupIntro() {
       <div class="rank-perk-row"><span class="rank-perk-label">Standard</span><span class="rank-perk-value">+${standard.points} pts · +${standard.gold}g</span></div>
       <div class="rank-perk-row"><span class="rank-perk-label">Extended</span><span class="rank-perk-value">+${extended.points} pts · +${extended.gold}g</span></div>
     </div>
-    <button class="btn admin-mode" id="warmupIntroYes" style="margin-top:0;">Choose a Warm-Up</button>
+    <button class="btn admin-mode" id="warmupIntroYes" style="margin-top:0;">Let's do the warm-up</button>
     <button class="btn" id="warmupIntroSkip">Start workout anyway</button>
   </div>`;
   overlay.classList.add('show');
   document.getElementById('warmupIntroYes').addEventListener('click', () => {
-    overlay.classList.remove('show');
-    if (state.progression) state.progression.warmupIntroSeen = true;
-    window.__showWarmupDespiteFirstRun = true;
-    ensureDashCollapsed(state);
-    state.dashCollapsed.warmup = false;
-    save();
-    renderToday();
+    showWarmupTypePicker(overlay);
   });
   document.getElementById('warmupIntroSkip').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    if (state.progression) state.progression.warmupIntroSeen = true;
+    save();
+    window.__workoutStarted = true;
+    enterInstance({ type: 'workout' });
+  });
+}
+function showWarmupTypePicker(overlay) {
+  if (!overlay) overlay = document.getElementById('warmupIntroOverlay');
+  if (!overlay) return;
+  const options = (state.warmupQuests && state.warmupQuests.options) || WARMUP_QUEST_TEMPLATES;
+  overlay.innerHTML = `<div class="warmup-intro-card">
+    <h3>Choose a Warm-Up</h3>
+    <div style="font-size:14.5px; line-height:1.55; margin-bottom:12px;">Pick a length and we'll start it right away — no extra taps on the Dashboard.</div>
+    ${options.map(o => {
+      const reward = computeWarmupReward(o.difficulty);
+      return `<button type="button" class="btn admin-mode" data-warmup-intro-start="${o.id}" style="margin-top:8px;">${o.label}</button>
+        <div class="l2" style="margin:4px 0 6px;">${o.difficulty} · +${reward.points} pts · +${reward.gold}g</div>`;
+    }).join('')}
+    <button class="btn" id="warmupIntroSkip" style="margin-top:8px;">Start workout anyway</button>
+  </div>`;
+  overlay.classList.add('show');
+  overlay.querySelectorAll('[data-warmup-intro-start]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const optionId = btn.getAttribute('data-warmup-intro-start');
+      overlay.classList.remove('show');
+      if (state.progression) state.progression.warmupIntroSeen = true;
+      save();
+      startWarmupQuest(optionId);
+      enterInstance({ type: 'warmup', optionId });
+    });
+  });
+  const skip = document.getElementById('warmupIntroSkip');
+  if (skip) skip.addEventListener('click', () => {
     overlay.classList.remove('show');
     if (state.progression) state.progression.warmupIntroSeen = true;
     save();
@@ -5461,26 +5631,28 @@ function renderInventoryTab() {
     return;
   }
 
-  const boxSlots = sealedBoxes.map(box => `<div class="inv-slot unlock-pulse" data-slot-box="${box.instanceId}">
+  const boxSlots = sealedBoxes.map(box => `<div class="inv-slot${shouldFlashItemType(state, itemTypeKey('box', box.itemId || STARTER_BOX_ID)) ? ' unlock-pulse' : ''}" data-slot-box="${box.instanceId}">
       <div class="inv-slot-icon">${STARTER_BOX_TMPL.icon}</div>
     </div>`);
   const permSlots = permItems.map(inst => {
     const tmpl = itemTemplate(inst.itemId);
     const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
-    return `<div class="inv-slot${isEquipped ? ' equipped-slot' : ''}" data-slot-perm="${inst.instanceId}">
+    const flash = shouldFlashItemType(state, itemTypeKey('item', inst.itemId)) || (!!(state.progression && state.progression.nudgeEquip) && inst.itemId === STARTER_RELIC_ID);
+    return `<div class="inv-slot${isEquipped ? ' equipped-slot' : ''}${flash ? ' unlock-pulse' : ''}" data-slot-perm="${inst.instanceId}">
       <div class="inv-slot-icon">${tmpl.icon || '❔'}</div>
       ${starRowHtml(tmpl, inst.star)}
     </div>`;
   });
   const tempSlots = tempItems.map(([itemId, count]) => {
     const tmpl = itemTemplate(itemId);
-    return `<div class="inv-slot" data-slot-temp="${itemId}">
+    const flash = shouldFlashItemType(state, itemTypeKey('temp', itemId));
+    return `<div class="inv-slot${flash ? ' unlock-pulse' : ''}" data-slot-temp="${itemId}">
       <div class="inv-temp-badge">TEMP</div>
       <div class="inv-slot-icon">${tmpl.icon || '❔'}</div>
       ${count > 1 ? `<div class="inv-slot-count">x${count}</div>` : ''}
     </div>`;
   });
-  const matSlots = matEntries.map(m => `<div class="inv-slot" data-slot-mat="${m.mat}:${m.cat}">
+  const matSlots = matEntries.map(m => `<div class="inv-slot${shouldFlashItemType(state, itemTypeKey(m.mat, m.cat)) ? ' unlock-pulse' : ''}" data-slot-mat="${m.mat}:${m.cat}">
       <div class="inv-slot-icon">${m.icon}</div>
       <div class="inv-slot-count">x${m.count}</div>
     </div>`);
@@ -5539,6 +5711,8 @@ function renderItemDetailModal() {
   if (target.kind === 'box') {
     const box = (state.inventory.boxes || []).find(b => b.instanceId === target.id && !b.opened);
     if (!box) { closeItemDetailModal(); return; }
+    acknowledgeItemType(state, itemTypeKey('box', box.itemId || STARTER_BOX_ID));
+    save();
     body.innerHTML = `
       <div class="item-detail-icon">${STARTER_BOX_TMPL.icon}</div>
       <div class="inv-item-name" style="text-align:center;">${STARTER_BOX_TMPL.name}</div>
@@ -5566,8 +5740,10 @@ function renderItemDetailModal() {
     const inst = state.inventory.permanent.find(x => x.instanceId === target.id);
     if (!inst) { closeItemDetailModal(); return; }
     const tmpl = itemTemplate(inst.itemId);
+    acknowledgeItemType(state, itemTypeKey('item', inst.itemId));
+    save();
     const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
-    const maxed = inst.star >= tmpl.maxStar;
+    const nudgeEquip = !!(state.progression && state.progression.nudgeEquip && inst.itemId === STARTER_RELIC_ID && !isEquipped);
     body.innerHTML = `
       <div class="item-detail-icon">${tmpl.icon || '❔'}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
@@ -5576,18 +5752,12 @@ function renderItemDetailModal() {
       </div>
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
-        <button class="inv-btn${isEquipped ? ' equipped' : ''}" id="itemDetailEquipBtn">${isEquipped ? 'Equipped' : 'Equip'}</button>
-        <button class="inv-btn" id="itemDetailEnchantBtn" ${maxed ? 'disabled' : ''}>${maxed ? 'Max ★' : 'Enchant'}</button>
-        <button class="inv-btn" id="itemDetailSalvageBtn" ${isEquipped ? 'disabled' : ''}>Salvage</button>
+        <button class="inv-btn inv-btn-equip${isEquipped ? ' equipped' : ''}${nudgeEquip ? ' unlock-pulse' : ''}" id="itemDetailEquipBtn">${isEquipped ? 'Equipped' : 'Equip'}</button>
+        <button class="inv-btn inv-btn-salvage" id="itemDetailSalvageBtn" ${isEquipped ? 'disabled' : ''}>Salvage</button>
       </div>`;
     document.getElementById('itemDetailEquipBtn').addEventListener('click', () => {
       toggleEquipItem(tmpl.category, { kind:'permanent', instanceId: inst.instanceId });
       renderItemDetailModal(); renderInventoryTab(); renderEquippedSummary();
-    });
-    document.getElementById('itemDetailEnchantBtn').addEventListener('click', () => {
-      closeItemDetailModal();
-      openEnchantModal();
-      placeEnchantItem(inst.instanceId);
     });
     const salvageBtn = document.getElementById('itemDetailSalvageBtn');
     if (salvageBtn) salvageBtn.addEventListener('click', () => {
@@ -5602,29 +5772,24 @@ function renderItemDetailModal() {
     const name = mat === 'shards' ? catName + ' Shards' : catName + ' Enchantment Stone';
     const icon = mat === 'shards' ? '🔹' : '💠';
     const desc = mat === 'shards'
-      ? `${SHARDS_PER_STONE} shards craft into 1 ${catName.toLowerCase()} enchantment stone.`
-      : `Used to enchant ${catName.toLowerCase()} items in the Enchant window.`;
+      ? `${SHARDS_PER_STONE} shards craft into 1 ${catName.toLowerCase()} enchantment stone at the Enchanting Table.`
+      : `Used to enchant ${catName.toLowerCase()} items at the Enchanting Table.`;
+    acknowledgeItemType(state, itemTypeKey(mat, cat));
+    save();
     body.innerHTML = `
       <div class="item-detail-icon">${icon}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${name}</div>
         <div class="quest-type-tag">x${count}</div>
       </div>
-      <div class="dd" style="text-align:center; margin:8px 0 14px;">${desc}</div>
-      <div class="inv-item-actions" style="justify-content:center;">
-        ${mat === 'shards' ? `<button class="inv-btn" id="itemDetailCraftBtn"${count < SHARDS_PER_STONE ? ' disabled' : ''}>Craft Stone</button>` : `<button class="inv-btn" id="itemDetailOpenEnchantBtn">Open Enchant</button>`}
-      </div>`;
-    const craftBtn = document.getElementById('itemDetailCraftBtn');
-    if (craftBtn) craftBtn.addEventListener('click', () => {
-      if (craftEnchantStone(cat)) { showToast('Crafted 1 enchantment stone'); renderItemDetailModal(); renderInventoryTab(); }
-    });
-    const encBtn = document.getElementById('itemDetailOpenEnchantBtn');
-    if (encBtn) encBtn.addEventListener('click', () => { closeItemDetailModal(); openEnchantModal(); });
+      <div class="dd" style="text-align:center; margin:8px 0 4px;">${desc}</div>`;
   } else {
     const itemId = target.id;
     const count = (state.inventory.tempCharges || {})[itemId] || 0;
     const tmpl = itemTemplate(itemId);
     if (!tmpl || count <= 0) { closeItemDetailModal(); return; }
+    acknowledgeItemType(state, itemTypeKey('temp', itemId));
+    save();
     const isTempEquipped = findEquippedSlot(tmpl.category, { kind:'temporary', itemId: tmpl.id }) >= 0;
     body.innerHTML = `
       <div class="item-detail-icon">${tmpl.icon || '❔'}</div>
@@ -5881,11 +6046,27 @@ function renderEnchantModal() {
     </div>
     <div class="enchant-results" id="enchantResultsLayer"></div>
     <div class="section-title">Craft Stones</div>
-    <div class="card">
-      <div class="settings-row"><div>Relic Shards<div class="l2">${state.inventory.shards.relic} / ${SHARDS_PER_STONE}</div></div>
-        <button class="btn" id="craftRelicStoneBtn" style="width:auto; margin:0; padding:8px 16px;" ${state.inventory.shards.relic < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button></div>
-      <div class="settings-row" style="margin-top:10px;"><div>Boost Shards<div class="l2">${state.inventory.shards.boost} / ${SHARDS_PER_STONE}</div></div>
-        <button class="btn" id="craftBoostStoneBtn" style="width:auto; margin:0; padding:8px 16px;" ${state.inventory.shards.boost < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button></div>
+    <div class="craft-stone-grid">
+      <div class="craft-stone-card">
+        <div class="craft-stone-icon">🔹</div>
+        <div class="craft-stone-info">
+          <div class="craft-stone-name">Relic Shards</div>
+          <div class="craft-stone-count">${state.inventory.shards.relic} / ${SHARDS_PER_STONE}</div>
+          <div class="craft-stone-track"><div class="craft-stone-fill" style="width:${Math.min(100, (state.inventory.shards.relic / SHARDS_PER_STONE) * 100)}%"></div></div>
+          <div class="craft-stone-result">Crafts 💠 Relic Enchantment Stone</div>
+        </div>
+        <button class="btn craft-btn" id="craftRelicStoneBtn" ${state.inventory.shards.relic < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button>
+      </div>
+      <div class="craft-stone-card">
+        <div class="craft-stone-icon">🔹</div>
+        <div class="craft-stone-info">
+          <div class="craft-stone-name">Boost Shards</div>
+          <div class="craft-stone-count">${state.inventory.shards.boost} / ${SHARDS_PER_STONE}</div>
+          <div class="craft-stone-track"><div class="craft-stone-fill" style="width:${Math.min(100, (state.inventory.shards.boost / SHARDS_PER_STONE) * 100)}%"></div></div>
+          <div class="craft-stone-result">Crafts 💠 Boost Enchantment Stone</div>
+        </div>
+        <button class="btn craft-btn" id="craftBoostStoneBtn" ${state.inventory.shards.boost < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button>
+      </div>
     </div>`;
 
   document.getElementById('enchantItemSlot').addEventListener('click', () => {
@@ -6267,6 +6448,8 @@ function defaultProgression(unlocked) {
     nudgeInventory: false,
     nudgeEnchant: false,
     nudgeRank: false,
+    nudgeEquip: false,
+    equipTutorialDone: !!unlocked,
     grandfathered: false
   };
 }
@@ -6306,6 +6489,9 @@ function grantStarterVictoryBox(s) {
   s.progression.starterBoxGranted = true;
   s.progression.inventoryUnlocked = true;
   s.progression.nudgeInventory = true;
+  if (typeof noteItemTypeGranted === 'function' && typeof itemTypeKey === 'function') {
+    noteItemTypeGranted(s, itemTypeKey('box', STARTER_BOX_ID));
+  }
   return true;
 }
 function openStarterVictoryBox(s) {
@@ -6322,11 +6508,44 @@ function openStarterVictoryBox(s) {
     s.inventory.permanent.push({ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0 });
   }
   s.inventory.stones.relic = (s.inventory.stones.relic || 0) + 1;
+  if (typeof noteItemTypeGranted === 'function' && typeof itemTypeKey === 'function') {
+    noteItemTypeGranted(s, itemTypeKey('item', STARTER_RELIC_ID));
+    noteItemTypeGranted(s, itemTypeKey('stone', 'relic'));
+  }
   s.progression.starterBoxOpened = true;
   s.progression.nudgeInventory = false;
-  s.progression.nudgeEnchant = true;
+  if (s.progression.equipTutorialDone) {
+    s.progression.nudgeEnchant = true;
+    s.progression.nudgeEquip = false;
+  } else {
+    s.progression.nudgeEquip = true;
+    s.progression.nudgeEnchant = false;
+  }
   const relic = s.inventory.permanent.find(x => x.itemId === STARTER_RELIC_ID);
   return { relicInst: relic, stoneCategory: 'relic', stoneAmount: 1 };
+}
+function markEquipTutorialDone(s) {
+  if (!s || !s.progression || s.progression.equipTutorialDone) return false;
+  s.progression.equipTutorialDone = true;
+  s.progression.nudgeEquip = false;
+  if (s.progression.starterBoxOpened && !s.progression.enchantTutorialDone) {
+    s.progression.nudgeEnchant = true;
+  }
+  return true;
+}
+function ensureEquipTutorialFlags(s) {
+  const p = s && s.progression;
+  if (!p || typeof p !== 'object') return false;
+  let changed = false;
+  if (p.equipTutorialDone !== true && p.equipTutorialDone !== false) {
+    p.equipTutorialDone = !!(p.grandfathered || p.enchantTutorialDone || p.rankWalkthroughDone);
+    changed = true;
+  }
+  if (p.nudgeEquip !== true && p.nudgeEquip !== false) {
+    p.nudgeEquip = !!(p.starterBoxOpened && !p.equipTutorialDone && !p.enchantTutorialDone);
+    changed = true;
+  }
+  return changed;
 }
 function markEnchantTutorialDone(s) {
   if (!s || !s.progression || s.progression.enchantTutorialDone) return false;
@@ -6525,6 +6744,7 @@ function getAdHocBodyweightIds() { return AD_HOC_BODYWEIGHT_IDS; }
 /* === quick-log-lib end === */
 
 let state = load();
+window.__levelCheckAnchor = state.totalPoints;
 function load() {
   try {
     const raw = localStorage.getItem(profileStorageKey(registry.currentId));
@@ -6533,8 +6753,10 @@ function load() {
       clearTestingEconomyOnce(fresh);
       ensureProgressionUnlock(fresh);
       ensureFeatureIntroFlags(fresh);
+      ensureEquipTutorialFlags(fresh);
       ensurePendingProgressClaims(fresh);
       ensureDashCollapsed(fresh);
+      ensureSeenItemTypes(fresh);
       return fresh;
     }
     const merged = Object.assign(defaultState(), JSON.parse(raw));
@@ -6557,7 +6779,7 @@ function load() {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('progression save failed', e); }
     }
-    if (ensureFeatureIntroFlags(merged) || ensurePendingProgressClaims(merged)) {
+    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged)) {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('v42 flag save failed', e); }
     }
@@ -6958,7 +7180,8 @@ function switchView(name) {
   document.querySelector(`.tab[data-view="${name}"]`).classList.add('active');
   // v3.0 §1b: the sticky points bar hides while an instance is active, even
   // if the person tabs away and back to Dashboard mid-instance.
-  document.getElementById('ledWrap').style.display = (name === 'today' && !window.__activeInstance) ? 'block' : 'none';
+  const showLed = name === 'today' && (!window.__activeInstance || window.__activeInstance.type === 'workout');
+  document.getElementById('ledWrap').style.display = showLed ? 'block' : 'none';
   document.getElementById('rankBarWrap').style.display = name === 'today' ? 'none' : 'flex';
   if (name !== 'today') renderRankBar();
   resetStickyScroll();
@@ -7583,6 +7806,7 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
           <button class="finish-btn" data-ex="${ex.id}" data-idx="${activeIdx}">Finish Set</button>`;
       }
 
+      const pacingNote = pacingNoteForSet(ex.pacing, activeIdx);
       bodyHtml = `
         <div class="set-panel">
           <div class="set-panel-label">${setLabel}</div>
@@ -7592,7 +7816,7 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
           ${!activeIsNewSet ? `<button class="delete-set-btn" data-delete-ex="${ex.id}" data-delete-idx="${activeIdx}">Delete This Set</button>` : ''}
           <div class="gain-chip" id="gain-${ex.id}"></div>
         </div>
-        <div class="pacing-note"><span class="ic">🎯</span><span>${ex.pacing}</span></div>
+        ${pacingNote ? `<div class="pacing-note"><span class="ic">🎯</span><span>${pacingNote}</span></div>` : ''}
         <div class="ex-links">
           <button class="ex-link-btn" data-tip="${ex.id}">ℹ️ Form Tip</button>
           <button class="ex-link-btn" data-demo="${ex.id}">▶️ Watch Demo</button>
@@ -7655,7 +7879,31 @@ function leaveInstance() {
   // real progress (session.sets) is untouched, so the collapsed card will
   // correctly show "Resume" and re-enter the instance directly on next tap.
   if (inst && inst.type === 'workout') window.__workoutOpened = false;
+  resetDashboardChrome();
   renderToday();
+}
+function resetDashboardChrome() {
+  clearRestTimer();
+  document.body.classList.remove('instance-no-scroll', 'rest-focus');
+  const instView = document.getElementById('instanceView');
+  if (!window.__activeInstance) {
+    document.body.classList.remove('instance-no-scroll');
+    if (instView) {
+      instView.classList.remove('instance-fixed-scroll', 'instance-enter');
+      instView.style.top = '';
+      instView.style.display = 'none';
+      instView.innerHTML = '';
+    }
+    const dash = document.getElementById('dashboardNormalContent');
+    if (dash) dash.style.display = '';
+    setInstanceDashboardChrome(false);
+  }
+  resetStickyScroll();
+  if (typeof syncHeaderHeight === 'function') {
+    syncHeaderHeight();
+    requestAnimationFrame(() => { if (typeof syncHeaderHeight === 'function') syncHeaderHeight(); });
+  }
+  if (typeof syncQuickLogFab === 'function') syncQuickLogFab();
 }
 function renderInstanceView() {
   const inst = window.__activeInstance;
@@ -7818,11 +8066,7 @@ function renderToday() {
     return;
   }
   document.getElementById('dashboardNormalContent').style.display = '';
-  document.body.classList.remove('instance-no-scroll');
-  const instViewUnfix = document.getElementById('instanceView');
-  instViewUnfix.classList.remove('instance-fixed-scroll');
-  instViewUnfix.style.top = '';
-  setInstanceDashboardChrome(false);
+  resetDashboardChrome();
   const instView = document.getElementById('instanceView');
   instView.style.display = 'none';
   instView.classList.remove('instance-enter');
@@ -8044,6 +8288,11 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
         feedbackBoxReceived();
       }
       queueReward({ kind:'workout', title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: rewardLines });
+      if (window.__activeInstance && window.__activeInstance.type === 'workout') {
+        window.__activeInstance = null;
+        window.__workoutOpened = false;
+        clearRestTimer();
+      }
     }
   } else if (allScheduledDone && !session.scheduledWorkoutClaimed) {
     session.scheduledWorkoutClaimed = true;
@@ -8460,7 +8709,16 @@ function attachTodayListeners(dateKey) {
       const nextEx = exList.find(e => e.id !== exId && getExReps(session, e.id).length < e.suggestedSets);
       window.__expandedEx = nextEx ? nextEx.id : null;
     }
-    if (!window.__quickLogOpen) startRestTimer(ex);
+    if (!window.__quickLogOpen) {
+      const others = (window.__activeInstance && window.__activeInstance.type === 'boss')
+        ? ((state.bosses.find(b => b.id === window.__activeInstance.bossId) || {}).exIds || [])
+            .map(id => getAllExercises().find(e => e.id === id)).filter(e => e && e.id !== exId)
+            .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }))
+        : getDayExercises(getTodayDayType() || '').filter(e => e.id !== exId)
+            .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }));
+      if (hasRemainingSuggestedWork(session.sets[exId].length, ex.suggestedSets, others)) startRestTimer(ex);
+      else clearRestTimer();
+    }
     setTimeout(() => refreshAfterSetChange(), (!window.__quickLogOpen && !stillShort) ? 550 : 0);
   }
 

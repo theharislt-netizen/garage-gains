@@ -16,6 +16,8 @@ function assert(cond, msg) {
 }
 
 assert(html.includes('id="warmupIntroOverlay"'), 'warmup intro overlay missing');
+assert(html.includes("Let's do the warm-up"), 'warmup intro must go into warm-up, not dump to Dashboard');
+assert(html.includes('data-warmup-intro-start'), 'warmup type picker must start the chosen warm-up');
 assert(html.includes('Choose a Warm-Up'), 'warmup intro must offer a choice');
 assert(html.includes('Start workout anyway'), 'warmup must stay optional');
 assert(html.includes('+10% on today\'s workout') || html.includes('+10% on today\\\'s workout') || html.includes('+10% on today'), 'warmup bonus must be stated');
@@ -43,7 +45,9 @@ const {
   shouldHideDashboardExtras,
   grantStarterVictoryBox,
   openStarterVictoryBox,
+  markEquipTutorialDone,
   markEnchantTutorialDone,
+  ensureEquipTutorialFlags,
   markRankWalkthroughDone,
   itemBonusPercent,
   defaultProgression,
@@ -67,6 +71,8 @@ assert(veteran.progression.mobilityIntroSeen === false, 'grandfathered profiles 
 assert(veteran.progression.bossIntroSeen === false, 'grandfathered profiles still see Boss intro once');
 assert(veteran.progression.quickLogIntroSeen === false, 'grandfathered profiles still see Quick-Log intro once');
 assert(defaultProgression(true).warmupIntroSeen === true, 'veteran warmup intro stays skipped');
+assert(defaultProgression(true).equipTutorialDone === true, 'veteran equip tutorial stays skipped');
+assert(defaultProgression(false).equipTutorialDone === false, 'new profiles must equip their first relic');
 assert(defaultProgression(true).mobilityIntroSeen === false, 'Mobility intro is not auto-true for veterans');
 
 const admin = { __adminSandbox: true, workoutLog: {} };
@@ -101,8 +107,13 @@ assert(loot && loot.stoneAmount === 1, 'opening the box grants a stone');
 assert(mid.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID && x.star === 0), 'guaranteed 0-star relic');
 assert(mid.inventory.stones.relic === 1, 'one enchantment stone');
 assert(mid.inventory.boxes.length === 0, 'opened box leaves inventory');
-assert(mid.progression.nudgeEnchant === true, 'Enchant entry should pulse next');
+assert(mid.progression.nudgeEquip === true, 'Equip is the next onboarding pulse');
+assert(mid.progression.nudgeEnchant === false, 'Enchant waits until the first relic is equipped');
 assert(openStarterVictoryBox(mid) === null, 'cannot open the same box twice');
+
+assert(markEquipTutorialDone(mid) === true, 'equip tutorial completes only after Equip');
+assert(mid.progression.equipTutorialDone === true, 'equip flag is recorded');
+assert(mid.progression.nudgeEnchant === true, 'Enchant entry should pulse after equipping');
 
 assert(markEnchantTutorialDone(mid) === true, 'enchant tutorial completion is recorded');
 assert(isRankTabUnlocked(mid) === true, 'Rank unlocks after enchant tutorial');
@@ -116,4 +127,8 @@ const charm = { baseValue: 0.02, effectType: 'points', scope: 'session' };
 assert(itemBonusPercent(charm, 0) === 2, '0-star charm is +2%');
 assert(itemBonusPercent(charm, 1) === 3.2, '1-star charm is +3.2%');
 
-console.log('first-run unlock ok — locked tabs, starter box, enchant then rank');
+const missingEquip = { progression: { grandfathered: true } };
+assert(ensureEquipTutorialFlags(missingEquip) === true, 'missing equip flags are filled');
+assert(missingEquip.progression.equipTutorialDone === true, 'veterans skip the equip tutorial');
+
+console.log('first-run unlock ok — locked tabs, starter box, equip, enchant then rank');
