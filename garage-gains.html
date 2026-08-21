@@ -826,21 +826,34 @@
     padding: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
   }
 
-  /* --- v2.1: Shop modal --- */
+  /* --- v2.1 / v4.9: Shop storefront --- */
   .shop-section-title { font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin: 16px 0 8px; }
   .shop-balance-row { display: flex; justify-content: center; gap: 22px; padding: 4px 0 14px; }
   .shop-balance-row .bal { text-align: center; }
   .shop-balance-row .bal .n { font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; }
   .shop-balance-row .bal .l { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
-  .box-row { display: flex; gap: 10px; }
-  .box-card { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 10px; text-align: center; cursor: pointer; }
-  .box-card .bn { font-family: 'Barlow Condensed'; font-size: 14px; font-weight: 700; text-transform: uppercase; }
-  .box-card .bc { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); margin-top: 4px; }
-  .direct-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); }
-  .direct-item-row:last-child { border-bottom: none; }
-  .direct-item-row .dn { font-family: 'Barlow Condensed'; font-size: 14px; font-weight: 600; }
-  .direct-item-row .dd { font-size: 11px; color: var(--text-dim); }
-  .buy-btn { flex-shrink: 0; padding: 8px 12px; border-radius: 8px; background: linear-gradient(90deg, var(--a1), var(--a2)); border: none; color: #08070d; font-family: 'JetBrains Mono'; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shop-tile {
+    display: flex; flex-direction: column; align-items: stretch;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
+    padding: 12px 10px 10px; min-height: 0;
+  }
+  .shop-tile-boost { border-color: rgba(var(--a2-rgb), 0.45); background: linear-gradient(180deg, rgba(var(--a2-rgb),0.14), var(--bg) 42%); }
+  .shop-tile-relic { border-color: rgba(var(--a1-rgb), 0.5); background: linear-gradient(180deg, rgba(var(--a1-rgb),0.16), var(--bg) 42%); }
+  .shop-tile-art {
+    height: 84px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .shop-tile-art svg { width: 72px; height: 72px; }
+  .shop-tile-boost .shop-tile-art { color: var(--a2); }
+  .shop-tile-relic .shop-tile-art { color: var(--a1); }
+  .shop-tile-name {
+    font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.15;
+  }
+  .shop-tile-desc { font-size: 11.5px; line-height: 1.4; color: var(--text-dim); margin-top: 4px; flex: 1; }
+  .shop-tile-price { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); margin-top: 8px; }
+  .shop-tile .go-btn { width: 100%; margin-top: 8px; }
   .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
   .inv-item-row:last-child { border-bottom: none; }
   .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
@@ -1586,7 +1599,7 @@
 
   <div id="shopModal" class="modal-overlay" style="display:none;">
     <div class="modal-panel">
-      <div class="modal-head"><span>Gear &amp; Shop</span><button class="modal-close" id="shopModalClose">✕</button></div>
+      <div class="modal-head"><span>Store</span><button class="modal-close" id="shopModalClose">✕</button></div>
       <div id="shopModalBody"></div>
     </div>
   </div>
@@ -1752,7 +1765,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.4</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.5</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2473,6 +2486,67 @@ function isLedKeepingInstance(inst) {
   return !!(inst && (inst.type === 'workout' || inst.type === 'baseline'));
 }
 /* === v48-helpers-lib end === */
+
+/* === v49-helpers-lib begin === */
+const SHOP_BOX_PRICE = 80;
+const SHOP_BOX_COPY = {
+  boost: {
+    name: 'Boost Box',
+    desc: 'Session boosts, shards, and the odd enchantment stone.'
+  },
+  relic: {
+    name: 'Relic Box',
+    desc: 'Relics, shards, and stones for your loadout.'
+  }
+};
+function boxesPricedEqually(boxCost) {
+  return !!(boxCost && boxCost.boost > 0 && boxCost.boost === boxCost.relic);
+}
+function shopBoxArtSvg(kind) {
+  if (kind === 'relic') {
+    return `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <rect x="8" y="24" width="48" height="30" rx="6" fill="rgba(180,85,245,0.18)" stroke="currentColor" stroke-width="2"/>
+      <path d="M10 24h44c0-7-8-12-22-12S10 17 10 24Z" fill="rgba(255,182,72,0.16)" stroke="currentColor" stroke-width="2"/>
+      <rect x="28" y="20" width="8" height="12" rx="2" fill="currentColor"/>
+      <path d="M32 34l8 5v7c0 5-8 8-8 8s-8-3-8-8v-7l8-5Z" fill="rgba(255,182,72,0.35)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <circle cx="32" cy="42" r="2.4" fill="currentColor"/>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <rect x="10" y="26" width="44" height="28" rx="4" fill="rgba(62,198,240,0.16)" stroke="currentColor" stroke-width="2"/>
+    <rect x="8" y="18" width="48" height="12" rx="3" fill="rgba(62,198,240,0.28)" stroke="currentColor" stroke-width="2"/>
+    <path d="M32 26v28" stroke="currentColor" stroke-width="2"/>
+    <path d="M29 6l4 8h-5l6 12-4-8h5L29 6Z" fill="currentColor"/>
+    <path d="M18 40h8M38 40h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+function shopSupplyArtSvg(id) {
+  if (id === 'streakFreeze') {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1M12 6l-2 2M12 6l2 2M12 18l-2-2M12 18l2-2M6 12l2-2M6 12l2 2M18 12l-2-2M18 12l-2 2"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z"/></svg>`;
+}
+function shopStorefrontItems(boxCost, directItems) {
+  const cost = boxCost || {};
+  const boxes = ['boost', 'relic'].map(id => ({
+    id,
+    kind: 'box',
+    name: SHOP_BOX_COPY[id].name,
+    desc: SHOP_BOX_COPY[id].desc,
+    cost: cost[id],
+    art: id
+  }));
+  const supplies = (directItems || []).map(item => ({
+    id: item.id,
+    kind: 'direct',
+    name: item.name,
+    desc: item.desc,
+    cost: item.cost,
+    art: item.id
+  }));
+  return boxes.concat(supplies);
+}
+/* === v49-helpers-lib end === */
 
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
@@ -3364,7 +3438,7 @@ function pickWeightedItem(pool) {
   for (const t of pool) { r -= itemRarityWeight(t); if (r <= 0) return t; }
   return pool[pool.length - 1];
 }
-const BOX_COST = { boost: 60, relic: 90 };
+const BOX_COST = { boost: SHOP_BOX_PRICE, relic: SHOP_BOX_PRICE };
 /* === box-loot-lib begin === */
 const BOX_GEM_CHANCE = 0.2;
 // v4.3: shards stay common. Rare slice bumped 12% → 18% so a full item is
@@ -6278,37 +6352,24 @@ function renderEnchantModal() {
 function renderShopModal() {
   ensureInventoryShape();
   const body = document.getElementById('shopModalBody');
-  const boxRow = `<div class="box-row">
-    <div class="box-card" id="openBoostBox"><div class="bn">Boost Box</div><div class="bc">${BOX_COST.boost}g</div></div>
-    <div class="box-card" id="openRelicBox"><div class="bn">Relic Box</div><div class="bc">${BOX_COST.relic}g</div></div>
-  </div>`;
-  const directHtml = SHOP_DIRECT_ITEMS.map(item => `
-    <div class="direct-item-row">
-      <div><div class="dn">${item.name}</div><div class="dd">${item.desc}</div></div>
-      <button class="buy-btn" data-buy="${item.id}">${item.cost}g</button>
-    </div>`).join('');
-  const permInv = state.inventory.permanent.map(inst => {
-    const tmpl = itemTemplate(inst.itemId);
-    const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
-    const maxed = inst.star >= tmpl.maxStar;
-    return `<div class="inv-item-row">
-      <div class="inv-item-top"><div class="inv-item-name">${tmpl.name}</div>${starRowHtml(tmpl, inst.star)}</div>
-      <div class="dd">${tmpl.desc}</div>
-      <div class="inv-item-actions">
-        <button class="inv-btn${isEquipped ? ' equipped' : ''}" data-equip-perm="${inst.instanceId}">${isEquipped ? 'Equipped' : 'Equip'}</button>
-        <button class="inv-btn" data-regrade="${inst.instanceId}" ${maxed ? 'disabled' : ''}>${maxed ? 'Max ★' : 'Regrade (1 gem)'}</button>
-      </div>
-    </div>`;
+  const boxTiles = ['boost', 'relic'].map(id => {
+    const copy = SHOP_BOX_COPY[id];
+    return `<article class="shop-tile shop-tile-${id}">
+      <div class="shop-tile-art">${shopBoxArtSvg(id)}</div>
+      <div class="shop-tile-name">${copy.name}</div>
+      <div class="shop-tile-desc">${copy.desc}</div>
+      <div class="shop-tile-price">${BOX_COST[id]}g</div>
+      <button type="button" class="go-btn" id="open${id === 'boost' ? 'Boost' : 'Relic'}Box">Buy</button>
+    </article>`;
   }).join('');
-  const tempInv = Object.entries(state.inventory.tempCharges).filter(([id,n]) => n > 0).map(([itemId, count]) => {
-    const tmpl = itemTemplate(itemId);
-    const isEquipped = findEquippedSlot(tmpl.category, { kind:'temporary', itemId: tmpl.id }) >= 0;
-    return `<div class="inv-item-row">
-      <div class="inv-item-top"><div class="inv-item-name">${tmpl.name}</div><div class="dd">x${count}</div></div>
-      <div class="dd">${tmpl.desc}</div>
-      <div class="inv-item-actions"><button class="inv-btn${isEquipped ? ' equipped' : ''}" data-equip-temp="${itemId}">${isEquipped ? 'Equipped' : 'Activate'}</button></div>
-    </div>`;
-  }).join('');
+  const supplyTiles = SHOP_DIRECT_ITEMS.map(item => `
+    <article class="shop-tile">
+      <div class="shop-tile-art">${shopSupplyArtSvg(item.id)}</div>
+      <div class="shop-tile-name">${item.name}</div>
+      <div class="shop-tile-desc">${item.desc}</div>
+      <div class="shop-tile-price">${item.cost}g</div>
+      <button type="button" class="go-btn" data-buy="${item.id}">Buy</button>
+    </article>`).join('');
 
   body.innerHTML = `
     <div class="shop-balance-row">
@@ -6316,32 +6377,15 @@ function renderShopModal() {
       <div class="bal"><div class="n mono" style="color:var(--a2);">${state.gems}</div><div class="l">Gems</div></div>
       <div class="bal"><div class="n mono" style="color:var(--a1);">${state.streakFreezes || 0}</div><div class="l">Freezes</div></div>
     </div>
-    <div class="shop-section-title">Boxes</div>
-    ${boxRow}
-    <div class="shop-section-title">Direct Purchase</div>
-    ${directHtml}
-    <div class="shop-section-title">Your Items</div>
-    ${(permInv + tempInv) || '<div class="l2" style="padding:6px 0;">Nothing yet — open a box to get started.</div>'}
+    <div class="shop-section-title">Chests</div>
+    <div class="shop-grid">${boxTiles}</div>
+    <div class="shop-section-title">Supplies</div>
+    <div class="shop-grid">${supplyTiles}</div>
   `;
 
   document.getElementById('openBoostBox').addEventListener('click', () => handleOpenBox('boost'));
   document.getElementById('openRelicBox').addEventListener('click', () => handleOpenBox('relic'));
   body.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => { buyDirectItem(btn.dataset.buy); renderShopModal(); renderEquippedSummary(); }));
-  body.querySelectorAll('[data-equip-perm]').forEach(btn => btn.addEventListener('click', () => {
-    const inst = state.inventory.permanent.find(x => x.instanceId === btn.dataset.equipPerm);
-    if (inst) toggleEquipItem(itemTemplate(inst.itemId).category, { kind:'permanent', instanceId: inst.instanceId });
-    renderShopModal(); renderEquippedSummary();
-  }));
-  body.querySelectorAll('[data-equip-temp]').forEach(btn => btn.addEventListener('click', () => {
-    const tmpl = itemTemplate(btn.dataset.equipTemp);
-    toggleEquipItem(tmpl.category, { kind:'temporary', itemId: tmpl.id });
-    renderShopModal(); renderEquippedSummary();
-  }));
-  body.querySelectorAll('[data-regrade]').forEach(btn => btn.addEventListener('click', () => {
-    const outcome = attemptRegrade(btn.dataset.regrade);
-    if (outcome) showToast(outcome.success ? `Regrade success — now ${outcome.star}★` : `Regrade failed — dropped to ${outcome.star}★`);
-    renderShopModal(); renderEquippedSummary();
-  }));
 }
 function handleOpenBox(category) {
   const outcome = openBox(category);
