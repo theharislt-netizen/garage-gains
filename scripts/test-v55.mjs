@@ -118,7 +118,7 @@ assert(completeFn.includes('grantStarterVictoryBox(state)'), 'starter box still 
 assert(completeFn.includes("title:'Baseline Complete'"), 'reward title is workout-complete, not a single set');
 assert(!completeFn.includes("title:'Baseline Set'"), 'old single-set reward title is gone');
 
-assert(html.includes('3.4.21'), 'About version bumped for v5.5');
+assert(html.includes('3.4.22'), 'About version bumped for v5.5');
 
 const routine = [
   { id: 'standardPushup', day: 'push', suggestedSets: 4, equip: [] },

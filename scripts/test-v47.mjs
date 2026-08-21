@@ -91,6 +91,6 @@ assert(renderInst.includes("addEventListener('animationend'"), 'enter animation 
 assert(renderInst.includes('window.__instanceJustEntered'), 'enter class is only added on a real entry');
 assert(html.includes("instView.classList.remove('instance-enter')"), 'dashboard chrome still clears leftover enter class');
 
-assert(html.includes('3.4.21'), 'About version bumped for v4.7');
+assert(html.includes('3.4.22'), 'About version bumped for v4.7');
 
 console.log('v4.7 tests ok — no Level 1 celebration, box-only tutorial drop, dual glows, instance-enter stripped on tab change');

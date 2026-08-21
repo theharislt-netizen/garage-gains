@@ -1075,6 +1075,8 @@
   .shop-tile-desc { font-size: 11.5px; line-height: 1.4; color: var(--text-dim); margin-top: 4px; flex: 1; }
   .shop-tile-price { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); margin-top: 8px; }
   .shop-tile .go-btn { width: 100%; margin-top: 8px; }
+  .shop-buy-row { display: flex; gap: 6px; margin-top: 8px; }
+  .shop-tile .shop-buy-row .go-btn { width: auto; flex: 1; margin-top: 0; font-size: 12px; padding: 9px 6px; }
   .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
   .inv-item-row:last-child { border-bottom: none; }
   .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
@@ -1096,6 +1098,16 @@
   .inv-btn-salvage:disabled { opacity: 0.38; }
   .confirm-copy { font-size: 14px; line-height: 1.5; color: var(--text); margin: 6px 0 16px; text-align: center; }
   .confirm-payout { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--gain); text-align: center; margin-bottom: 16px; }
+  .destroy-qty-row {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    margin: 4px 0 14px;
+  }
+  .destroy-qty-step {
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); font-size: 20px; line-height: 1; cursor: pointer;
+  }
+  .destroy-qty-row input[type="range"] { flex: 1; max-width: 150px; accent-color: var(--a1); }
+  .destroy-qty-val { font-family: 'JetBrains Mono'; font-size: 13px; min-width: 56px; text-align: center; color: var(--text); }
   .confirm-actions { display: flex; gap: 8px; }
   .confirm-actions .inv-btn { flex: 1; text-align: center; }
   .craft-stone-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -1155,6 +1167,57 @@
   #boxRevealOverlay.box-prize-on #boxRevealPrize {
     opacity: 1; pointer-events: auto;
   }
+  #boxRevealOverlay.box-prize-on.box-batch-on {
+    align-items: stretch; justify-content: stretch;
+  }
+  #boxRevealOverlay.box-prize-on.box-batch-on #boxRevealContent {
+    width: 100%; height: 100%;
+  }
+  #boxRevealOverlay.box-prize-on.box-batch-on #boxRevealPrize {
+    opacity: 0; pointer-events: none;
+  }
+  #boxBatchPrize {
+    display: none;
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  #boxRevealOverlay.box-prize-on.box-batch-on #boxBatchPrize {
+    display: block; pointer-events: auto;
+  }
+  .box-batch-chip {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 68px;
+    margin-left: -34px; margin-top: -34px;
+    text-align: center;
+    animation: boxItemIn 0.28s ease-out;
+  }
+  .box-batch-chip.box-batch-center {
+    width: 128px;
+    margin-left: -64px; margin-top: -64px;
+    z-index: 3;
+  }
+  .box-batch-chip.box-batch-sat { z-index: 1; }
+  .box-batch-chip .rarity-burst {
+    width: 56px; height: 56px; margin: 0 auto; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+    background: radial-gradient(circle, rgba(var(--a1-rgb),0.35), transparent 70%);
+  }
+  .box-batch-chip.box-batch-center .rarity-burst { width: 100px; height: 100px; border-radius: 18px; }
+  .box-batch-chip .item-photo { width: 100%; height: 100%; object-fit: cover; }
+  .box-batch-chip .star-row {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    font-size: 9px; letter-spacing: 0.5px; line-height: 1;
+    padding: 6px 2px 4px;
+    background: linear-gradient(to top, rgba(0,0,0,0.92), transparent);
+  }
+  .box-batch-chip.box-batch-center .star-row { font-size: 14px; letter-spacing: 1px; padding: 10px 4px 6px; }
+  .box-batch-name {
+    font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px;
+    margin-top: 8px; line-height: 1.15;
+  }
+  .box-batch-hint { position: absolute; left: 0; right: 0; bottom: 18px; }
   @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   .box-reveal-burst-flash {
@@ -1960,6 +2023,7 @@
           <div class="box-reveal-hint">Tap to close</div>
         </div>
       </div>
+      <div id="boxBatchPrize"></div>
     </div>
   </div>
 
@@ -2124,7 +2188,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.21</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.22</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -3106,7 +3170,7 @@ function startChestShake(overlay, category) {
 }
 function coverBoxRevealOverlay(overlay, category) {
   if (!overlay) return false;
-  overlay.classList.remove('unique-reveal', 'box-prize-on', 'box-cat-boost', 'box-cat-relic', 'box-cat-starter');
+  overlay.classList.remove('unique-reveal', 'box-prize-on', 'box-batch-on', 'box-cat-boost', 'box-cat-relic', 'box-cat-starter');
   overlay.classList.add('box-reveal-on');
   if (category === 'boost' || category === 'relic' || category === 'starter') {
     overlay.classList.add('box-cat-' + category);
@@ -3126,7 +3190,25 @@ function hideBoxRevealOverlay(overlay) {
   stopChestShake();
   if (!overlay) return;
   overlay.onclick = null;
-  overlay.classList.remove('box-reveal-on', 'unique-reveal', 'box-prize-on');
+  overlay.classList.remove('box-reveal-on', 'unique-reveal', 'box-prize-on', 'box-batch-on');
+}
+function layoutBatchPrizes(count) {
+  const n = Math.max(0, Math.round(Number(count) || 0));
+  if (n <= 0) return [];
+  const spots = [{ role: 'center', left: 50, top: 46 }];
+  if (n === 1) return spots;
+  const sat = n - 1;
+  const rx = sat >= 9 ? 38 : (sat >= 6 ? 34 : 30);
+  const ry = sat >= 9 ? 36 : (sat >= 6 ? 32 : 28);
+  for (let i = 0; i < sat; i++) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / sat;
+    spots.push({
+      role: 'sat',
+      left: Math.round((50 + rx * Math.cos(angle)) * 10) / 10,
+      top: Math.round((46 + ry * Math.sin(angle)) * 10) / 10
+    });
+  }
+  return spots;
 }
 // Android WebView often paints only after JS goes idle. One rAF+timeout
 // still runs before the cover/hide frame, so loot/SVG/save hitch the tap.
@@ -4473,7 +4555,7 @@ function grantItem(itemId) {
     return convertOwnedDuplicate(tmpl, starCap);
   }
   const starCap = grantStarForTemplate(tmpl);
-  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: 0, starCap };
+  const inst = { instanceId: 'i' + Date.now() + '-' + Math.floor(Math.random() * 1e9), itemId, star: 0, starCap };
   state.inventory.permanent.push(inst);
   noteItemTypeGranted(state, itemTypeKey('item', itemId));
   return { kind:'new', tmpl, inst };
@@ -4666,31 +4748,51 @@ function craftEnchantStone(category) {
   save();
   return true;
 }
-// v3.0 §3: salvage an unwanted permanent item for shards of its own category.
-// Rate is a first-draft: 8 shards per item, +4 per star already invested (so
-// a higher-enchanted item isn't salvaged for the same trivial amount as a
-// fresh 0-star one) — flagged as adjustable, not a final balance number.
+// v6.7: salvage scales with spawn-tier (starCap) and invested enchant stars.
+// Junk / 0-cap stays near the original 8-shard floor. A 4-cap or unique 5-star
+// piece pays much more, and each filled star adds on top of that tier.
 const SALVAGE_BASE_SHARDS = 8;
-const SALVAGE_PER_STAR_SHARDS = 4;
+function salvageStarTier(tmpl, inst) {
+  if (tmpl && (tmpl.unique || (typeof isUniqueItem === 'function' && isUniqueItem(tmpl)))) {
+    return typeof UNIQUE_STAR === 'number' ? UNIQUE_STAR : 5;
+  }
+  if (inst && inst.starCap != null && inst.starCap !== '') {
+    const cap = Number(inst.starCap);
+    return Number.isFinite(cap) && cap > 0 ? cap : 0;
+  }
+  return Math.max(0, Number(inst && inst.star) || 0);
+}
+function salvagePayoutForItem(tmpl, inst) {
+  const unique = !!(tmpl && (tmpl.unique || (typeof isUniqueItem === 'function' && isUniqueItem(tmpl))));
+  const cap = salvageStarTier(tmpl, inst);
+  const filled = Math.max(0, Number(inst && inst.star) || 0);
+  const capValue = cap * cap * 6;
+  const fillValue = filled * (10 + cap * 5);
+  const uniqueValue = unique ? 50 + cap * 25 : 0;
+  return SALVAGE_BASE_SHARDS + capValue + fillValue + uniqueValue;
+}
 function salvagePayoutForStar(star) {
-  return SALVAGE_BASE_SHARDS + (Number(star) || 0) * SALVAGE_PER_STAR_SHARDS;
+  const cap = Math.max(0, Number(star) || 0);
+  return salvagePayoutForItem({ unique: false, permanent: true }, { star: 0, starCap: cap });
 }
 function convertOwnedDuplicate(tmpl, star) {
   ensureInventoryShape();
-  const amount = salvagePayoutForStar(star);
+  const amount = salvagePayoutForItem(tmpl, { star: 0, starCap: star });
   const category = tmpl.category;
   state.inventory.shards[category] = (state.inventory.shards[category] || 0) + amount;
   noteItemTypeGranted(state, itemTypeKey('shards', category));
   return { kind: 'dupe-salvage', tmpl, amount, category };
 }
-function destroyTempCharge(itemId) {
+function destroyTempCharge(itemId, count) {
   ensureInventoryShape();
   const have = state.inventory.tempCharges[itemId] || 0;
   if (have < 1) return false;
-  state.inventory.tempCharges[itemId] = have - 1;
-  if (state.inventory.tempCharges[itemId] <= 0) delete state.inventory.tempCharges[itemId];
+  const n = Math.max(1, Math.min(have, Math.round(Number(count) || 1)));
+  const left = have - n;
+  if (left <= 0) delete state.inventory.tempCharges[itemId];
+  else state.inventory.tempCharges[itemId] = left;
   save();
-  showToast('Item destroyed');
+  showToast(n === 1 ? 'Item destroyed' : `Destroyed ${n}`);
   return true;
 }
 function salvageItem(instanceId) {
@@ -4700,7 +4802,7 @@ function salvageItem(instanceId) {
   const inst = state.inventory.permanent[idx];
   const tmpl = itemTemplate(inst.itemId);
   if (findEquippedSlot(tmpl.category, { kind:'permanent', instanceId })) { showToast('Unequip it first'); return null; }
-  const amount = salvagePayoutForStar(inst.star);
+  const amount = salvagePayoutForItem(tmpl, inst);
   state.inventory.permanent.splice(idx, 1);
   state.inventory.shards[tmpl.category] = (state.inventory.shards[tmpl.category] || 0) + amount;
   noteItemTypeGranted(state, itemTypeKey('shards', tmpl.category));
@@ -4793,13 +4895,15 @@ const SHOP_DIRECT_ITEMS = [
   { id:'guaranteedBoost', name:'Guaranteed Double Down', cost:50, desc:'Directly grants one Double Down boost charge — no box needed.',
     buy: () => { grantItem('doubleDown'); } },
 ];
-function buyDirectItem(id) {
+function buyDirectItem(id, qty) {
   ensureInventoryShape();
   const item = SHOP_DIRECT_ITEMS.find(i => i.id === id);
   if (!item) return;
-  if (state.gold < item.cost) { showToast('Not enough gold'); return; }
-  state.gold -= item.cost;
-  item.buy();
+  qty = Math.max(1, Math.min(10, Math.round(Number(qty) || 1)));
+  const cost = item.cost * qty;
+  if (state.gold < cost) { showToast('Not enough gold'); return; }
+  state.gold -= cost;
+  for (let i = 0; i < qty; i++) item.buy();
   save();
   renderHeader();
   refreshHeaderCurrency();
@@ -7324,7 +7428,7 @@ function openSalvageConfirm(instanceId) {
   const tmpl = itemTemplate(inst.itemId);
   if (!tmpl) return;
   closeItemDetailModal();
-  const amount = salvagePayoutForStar(inst.star);
+  const amount = salvagePayoutForItem(tmpl, inst);
   const catLabel = tmpl.category === 'relic' ? 'Relic' : 'Boost';
   const body = document.getElementById('salvageConfirmBody');
   body.innerHTML = `
@@ -7358,20 +7462,41 @@ function openDestroyConfirm(itemId) {
   const have = (state.inventory.tempCharges || {})[itemId] || 0;
   if (!tmpl || have < 1) return;
   closeItemDetailModal();
+  let qty = 1;
   const body = document.getElementById('destroyConfirmBody');
   body.innerHTML = `
     <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
     ${itemStarsHtml(tmpl, null)}
     <div class="inv-item-name" style="text-align:center;">${tmpl.name}</div>
-    <div class="confirm-copy">Destroy 1 ${tmpl.name}? This cannot be undone.</div>
+    <div class="confirm-copy" id="destroyConfirmCopy">Destroy 1 ${tmpl.name}? This cannot be undone.</div>
+    <div class="destroy-qty-row">
+      <button type="button" class="destroy-qty-step" id="destroyQtyMinus" aria-label="Fewer">−</button>
+      <input type="range" id="destroyQtySlider" min="1" max="${have}" value="1" step="1">
+      <button type="button" class="destroy-qty-step" id="destroyQtyPlus" aria-label="More">+</button>
+      <div class="destroy-qty-val" id="destroyQtyVal">1 / ${have}</div>
+    </div>
     <div class="confirm-actions">
       <button class="inv-btn" id="destroyConfirmCancel">Cancel</button>
       <button class="inv-btn inv-btn-salvage" id="destroyConfirmDo">Destroy</button>
     </div>`;
   document.getElementById('destroyConfirmModal').style.display = 'flex';
+  const copyEl = document.getElementById('destroyConfirmCopy');
+  const slider = document.getElementById('destroyQtySlider');
+  const valEl = document.getElementById('destroyQtyVal');
+  function syncDestroyQty(next) {
+    qty = Math.max(1, Math.min(have, Math.round(Number(next) || 1)));
+    if (slider) slider.value = String(qty);
+    if (valEl) valEl.textContent = qty + ' / ' + have;
+    if (copyEl) copyEl.textContent = `Destroy ${qty} ${tmpl.name}? This cannot be undone.`;
+  }
+  if (slider) slider.addEventListener('input', () => syncDestroyQty(slider.value));
+  const minus = document.getElementById('destroyQtyMinus');
+  const plus = document.getElementById('destroyQtyPlus');
+  if (minus) minus.addEventListener('click', () => syncDestroyQty(qty - 1));
+  if (plus) plus.addEventListener('click', () => syncDestroyQty(qty + 1));
   document.getElementById('destroyConfirmCancel').onclick = closeDestroyConfirm;
   document.getElementById('destroyConfirmDo').onclick = () => {
-    const ok = destroyTempCharge(itemId);
+    const ok = destroyTempCharge(itemId, qty);
     closeDestroyConfirm();
     if (ok) {
       renderInventoryTab();
@@ -7553,9 +7678,6 @@ function showEnchantResults(info) {
       save();
       showToast('Rank unlocked');
     }
-    const table = getEnchantTable();
-    table.instanceId = null;
-    if (!table.stonePlaced) table.category = null;
     renderEnchantModal();
     renderHeader();
   });
@@ -7688,24 +7810,39 @@ function renderEnchantModal() {
 function renderShopModal() {
   ensureInventoryShape();
   const body = document.getElementById('shopModalBody');
+  const admin = isAdminSandbox(state);
   const boxTiles = ['boost', 'relic'].map(id => {
     const copy = SHOP_BOX_COPY[id];
+    const unit = BOX_COST[id];
+    const can1 = admin || state.gold >= unit;
+    const can10 = admin || state.gold >= unit * 10;
+    const openId = id === 'boost' ? 'openBoostBox' : 'openRelicBox';
     return `<article class="shop-tile shop-tile-${id}">
       <div class="shop-tile-art">${shopBoxArtSvg(id)}</div>
       <div class="shop-tile-name">${copy.name}</div>
       <div class="shop-tile-desc">${copy.desc}</div>
-      <div class="shop-tile-price">${BOX_COST[id]}g</div>
-      <button type="button" class="go-btn" id="open${id === 'boost' ? 'Boost' : 'Relic'}Box">Buy</button>
+      <div class="shop-tile-price">${unit}g</div>
+      <div class="shop-buy-row">
+        <button type="button" class="go-btn" id="${openId}" ${can1 ? '' : 'disabled'}>Buy 1</button>
+        <button type="button" class="go-btn" data-open-box="${id}" data-box-qty="10" ${can10 ? '' : 'disabled'}>Buy 10</button>
+      </div>
     </article>`;
   }).join('');
-  const supplyTiles = SHOP_DIRECT_ITEMS.map(item => `
+  const supplyTiles = SHOP_DIRECT_ITEMS.map(item => {
+    const can1 = admin || state.gold >= item.cost;
+    const can10 = admin || state.gold >= item.cost * 10;
+    return `
     <article class="shop-tile">
       <div class="shop-tile-art">${shopSupplyArtSvg(item.id)}</div>
       <div class="shop-tile-name">${item.name}</div>
       <div class="shop-tile-desc">${item.desc}</div>
       <div class="shop-tile-price">${item.cost}g</div>
-      <button type="button" class="go-btn" data-buy="${item.id}">Buy</button>
-    </article>`).join('');
+      <div class="shop-buy-row">
+        <button type="button" class="go-btn" data-buy="${item.id}" data-buy-qty="1" ${can1 ? '' : 'disabled'}>Buy 1</button>
+        <button type="button" class="go-btn" data-buy="${item.id}" data-buy-qty="10" ${can10 ? '' : 'disabled'}>Buy 10</button>
+      </div>
+    </article>`;
+  }).join('');
 
   body.innerHTML = `
     <div class="shop-balance-row">
@@ -7719,9 +7856,12 @@ function renderShopModal() {
     <div class="shop-grid">${supplyTiles}</div>
   `;
 
-  document.getElementById('openBoostBox').addEventListener('click', () => handleOpenBox('boost'));
-  document.getElementById('openRelicBox').addEventListener('click', () => handleOpenBox('relic'));
-  body.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => { buyDirectItem(btn.dataset.buy); renderShopModal(); renderEquippedSummary(); }));
+  document.getElementById('openBoostBox').addEventListener('click', () => handleOpenBox('boost', 1));
+  document.getElementById('openRelicBox').addEventListener('click', () => handleOpenBox('relic', 1));
+  body.querySelectorAll('[data-open-box]').forEach(btn => btn.addEventListener('click', () => {
+    handleOpenBox(btn.dataset.openBox, Number(btn.dataset.boxQty) || 10);
+  }));
+  body.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => { buyDirectItem(btn.dataset.buy, Number(btn.dataset.buyQty) || 1); renderShopModal(); renderEquippedSummary(); }));
 }
 function coverShopForBoxReveal(on) {
   const shop = document.getElementById('shopModal');
@@ -7739,9 +7879,10 @@ function warmBoxPrizePhotos() {
     });
   } catch (err) {}
 }
-function handleOpenBox(category) {
+function handleOpenBox(category, qty) {
   if (boxRevealIsBusy(Date.now(), window.__boxRevealOpen, window.__boxRevealGuardUntil)) return;
-  const cost = BOX_COST[category];
+  qty = Math.max(1, Math.min(10, Math.round(Number(qty) || 1)));
+  const cost = BOX_COST[category] * qty;
   if (!isAdminSandbox(state) && state.gold < cost) { showToast('Not enough gold'); return; }
   const overlay = document.getElementById('boxRevealOverlay');
   window.__boxRevealOpen = true;
@@ -7751,8 +7892,11 @@ function handleOpenBox(category) {
   coverShopForBoxReveal(true);
   queueBoxOpenWork(() => {
     if (!window.__boxRevealOpen) return;
-    const outcome = openBoxFree(category);
-    showBoxReveal(category, outcome);
+    const outcomes = [];
+    for (let i = 0; i < qty; i++) outcomes.push(openBoxFree(category));
+    const outcome = outcomes[0];
+    if (qty <= 1) showBoxReveal(category, outcome);
+    else showBoxReveal(category, outcomes);
     scheduleIdleWork(() => {
       try { refreshHeaderCurrency(); patchShopGoldChip(); } catch (err) {}
     }, 80);
@@ -7872,17 +8016,83 @@ function revealFilledBoxPrize(overlay) {
   overlay.classList.toggle('unique-reveal', tier === 'unique');
   overlay.classList.add('box-prize-on');
 }
+function boxOutcomeStarScore(outcome) {
+  if (!outcome) return 0;
+  if (outcome.kind === 'shards') return 1;
+  if (outcome.kind === 'stone') {
+    const max = (outcome.result && outcome.result.tmpl && outcome.result.tmpl.maxStar) || 0;
+    return 15 + max * 4;
+  }
+  const result = outcome.result || {};
+  const tmpl = result.tmpl;
+  const inst = result.inst || result;
+  const unique = !!(tmpl && tmpl.unique) || !!outcome.legendary;
+  const cap = Number(
+    (inst && inst.starCap != null) ? inst.starCap
+      : (result.starCap != null ? result.starCap
+        : (inst && inst.star != null ? inst.star : 0))
+  ) || 0;
+  const filled = Number(inst && inst.star != null ? inst.star : result.star) || 0;
+  return (unique ? 1000 : 0) + cap * 20 + filled;
+}
+function boxBatchChipHtml(category, outcome, spot) {
+  const tier = getBoxRevealTier(outcome);
+  const copy = boxRevealPrizeCopy(category, outcome, tier);
+  const tmpl = copy.tmpl;
+  const result = outcome && outcome.result;
+  const starred = !!(tmpl && tmpl.permanent && tmpl.id && outcome && outcome.kind === 'item'
+    && result && result.kind !== 'dupe-salvage' && result.kind !== 'dupe-gems');
+  const stars = starred ? itemStarsHtml(tmpl, result) : '';
+  let art;
+  if (outcome && (outcome.kind === 'shards' || outcome.kind === 'stone')) {
+    art = matIconHtml(outcome.kind === 'shards' ? 'shards' : 'stone', outcome.category || category);
+  } else if (tmpl && tmpl.id) {
+    art = itemIconHtml(tmpl);
+  } else {
+    const raw = tmpl.icon || copy.lootFallback;
+    art = (typeof raw === 'string' && raw.indexOf('<') >= 0) ? raw : (raw || copy.lootFallback);
+  }
+  const role = spot && spot.role === 'center' ? 'center' : 'sat';
+  const left = spot && spot.left != null ? spot.left : 50;
+  const top = spot && spot.top != null ? spot.top : 46;
+  const name = role === 'center' ? `<div class="box-batch-name">${tmpl.name || 'Loot'}</div>` : '';
+  return `<div class="box-batch-chip box-batch-${role} tier-${tier}" style="left:${left}%;top:${top}%;margin-left:0;margin-top:0;transform:translate(-50%,-50%);">
+    <div class="rarity-burst">${art}${stars}</div>
+    ${name}
+  </div>`;
+}
+function fillBoxRevealBatch(category, outcomes) {
+  const batch = document.getElementById('boxBatchPrize');
+  const list = (outcomes || []).filter(Boolean);
+  const ranked = list.map((o, i) => ({ o, i, score: boxOutcomeStarScore(o) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i);
+  const spots = layoutBatchPrizes(ranked.length);
+  const chips = ranked.map((entry, idx) => boxBatchChipHtml(category, entry.o, spots[idx] || spots[0])).join('');
+  if (batch) {
+    batch.setAttribute('data-batch-count', String(ranked.length));
+    batch.innerHTML = chips + '<div class="box-reveal-hint box-batch-hint">Tap to close</div>';
+  }
+  const best = ranked[0] && ranked[0].o;
+  const tier = getBoxRevealTier(best);
+  if (typeof window !== 'undefined') window.__boxPrizeTier = tier;
+  return tier;
+}
 function showBoxReveal(category, outcome) {
   const overlay = document.getElementById('boxRevealOverlay');
-  const tier = getBoxRevealTier(outcome);
-  const meta = BOX_TIER_META[tier] || BOX_TIER_META.common;
+  const outcomes = Array.isArray(outcome) ? outcome : [outcome];
+  const batch = outcomes.length > 1;
+  let tier = 'common';
 
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
 
   window.__boxRevealOpen = true;
   try {
-    fillBoxRevealPrize(category, outcome);
+    if (overlay) overlay.classList.toggle('box-batch-on', batch);
+    if (batch) tier = fillBoxRevealBatch(category, outcomes);
+    else tier = fillBoxRevealPrize(category, outcomes[0]);
   } catch (err) {}
+  const meta = Object.assign({}, BOX_TIER_META[tier] || BOX_TIER_META.common);
+  if (batch) meta.buildMs = Math.min(1800, (meta.buildMs || 500) + 200);
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;

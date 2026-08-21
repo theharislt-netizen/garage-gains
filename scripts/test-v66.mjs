@@ -98,7 +98,7 @@ const reloadFn = sliceFn('reloadEnchantStoneSlot', 'enchantTableReady');
 assert(reloadFn.includes('have > 0'), 'stone stays loaded while inventory still has that type');
 assert(reloadFn.includes('table.stonePlaced = true'), 'remaining stones keep stonePlaced true');
 assert(reloadFn.includes('table.stonePlaced = false'), 'stone slot clears only at zero remaining');
-assert(resultsFn.includes('table.instanceId = null'), 'item slot still resets after Continue');
+assert(!resultsFn.includes('table.instanceId = null'), 'item slot stays populated after Continue');
 assert(!resultsFn.includes('stonePlaced = false'), 'Continue does not kick a still-loaded stone');
 const placeItemFn = sliceFn('placeEnchantItem', 'selectEnchantItem');
 assert(placeItemFn.includes('tmpl.category !== table.category'),
@@ -113,9 +113,9 @@ assert(destroyBtn.includes('inv-btn-salvage'), 'Destroy button matches Salvage d
 const destroyFn = sliceFn('openDestroyConfirm', 'closeDestroyConfirm');
 assert(destroyFn.includes('inv-btn-salvage'), 'Destroy confirm action is the red Salvage style');
 assert(destroyFn.includes('closeItemDetailModal()'), 'Destroy confirm dismisses the item popup first');
-assert(destroyFn.includes('destroyTempCharge(itemId)'), 'confirming Destroy still consumes one charge');
+assert(destroyFn.includes('destroyTempCharge(itemId'), 'confirming Destroy still consumes a charge');
 assert(html.includes("getElementById('destroyConfirmClose')"), 'Destroy confirm close is wired');
 
-assert(html.includes('3.4.21'), 'About version bumped for v6.6');
+assert(html.includes('3.4.22'), 'About version bumped for v6.6');
 
 console.log('v6.6 tests ok — salvage popup close, shared stars, persistent stone slot, in-app Destroy');

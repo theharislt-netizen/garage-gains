@@ -112,6 +112,6 @@ assert(openEnchant.includes('acknowledgeTutorialEnchantTap(state.progression)'),
 assert(openEnchant.includes("classList.remove('tutorial-guidance-glow'"),
   'Enchant button class is stripped on the tap, not after a later render');
 
-assert(html.includes('3.4.21'), 'About version bumped for v6.2');
+assert(html.includes('3.4.22'), 'About version bumped for v6.2');
 
 console.log('v6.2 tests ok — no Dashboard fade ghost, workout chrome resets, tutorial nav glows clear on tap');
