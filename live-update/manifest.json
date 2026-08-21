@@ -1,9 +1,9 @@
 {
-  "version": "3.3.0-g04ecaadad3",
-  "checksum": "e199b592304c94f6f6fd9255ad0783c14a59866fa16349421efa960f2445af3c",
-  "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/android-apk-eee8/live-update/www.zip",
+  "version": "3.3.0-gc24c988156",
+  "checksum": "e1b340156ebb4baf4fc9344af501706e6ef168a58e7f83aab81d2343ce574a59",
+  "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/live-update/www.zip",
   "urls": [
-    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/live-update/www.zip",
-    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/android-apk-eee8/live-update/www.zip"
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/android-apk-eee8/live-update/www.zip",
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/live-update/www.zip"
   ]
 }

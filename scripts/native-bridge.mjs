@@ -185,9 +185,10 @@ function wireHaptics() {
 }
 
 const UPDATE_REPO = 'theharislt-netizen/garage-gains';
-const UPDATE_REFS = ['main', 'cursor/android-apk-eee8'];
+const UPDATE_REFS = ['cursor/android-apk-eee8', 'main'];
 const TOKEN_KEY = 'rigcore_githubToken';
 let updateCheckInFlight = false;
+let updatesArePublic = false;
 
 function toast(msg) {
   if (typeof window.showToast === 'function') window.showToast(msg);
@@ -228,16 +229,41 @@ function parseGithubJson(data) {
   return data;
 }
 
-async function fetchManifestFromRaw(ref) {
-  const url = `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/manifest.json?t=${Date.now()}`;
-  const res = await CapacitorHttp.get({ url, headers: { 'User-Agent': 'RIGCORE-Android' }, connectTimeout: 8000, readTimeout: 12000 });
+async function httpGetJson(url) {
+  const res = await CapacitorHttp.get({
+    url,
+    headers: { 'User-Agent': 'RIGCORE-Android' },
+    connectTimeout: 8000,
+    readTimeout: 15000,
+  });
   if (res.status !== 200 || !res.data) return null;
   const data = parseGithubJson(res.data);
-  if (!data?.version) return null;
-  return {
-    version: data.version,
-    zipUrl: `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/www.zip?v=${encodeURIComponent(data.version)}`,
-  };
+  return data && data.version ? data : null;
+}
+
+async function fetchManifestFromRaw(ref) {
+  const stamp = Date.now();
+  const github = await httpGetJson(
+    `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/manifest.json?t=${stamp}`
+  );
+  if (github) {
+    return {
+      version: github.version,
+      zipUrl: `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/live-update/www.zip?v=${encodeURIComponent(github.version)}`,
+      public: true,
+    };
+  }
+  const cdn = await httpGetJson(
+    `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/live-update/manifest.json?t=${stamp}`
+  );
+  if (cdn) {
+    return {
+      version: cdn.version,
+      zipUrl: `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/live-update/www.zip`,
+      public: true,
+    };
+  }
+  return null;
 }
 
 async function fetchManifestFromApi(ref) {
@@ -259,7 +285,7 @@ async function fetchManifestFromApi(ref) {
   const zipMeta = parseGithubJson(zipRes.data);
   const zipUrl = zipMeta?.download_url;
   if (!zipUrl) return null;
-  return { version: manifest.version, zipUrl };
+  return { version: manifest.version, zipUrl, public: !getGithubToken() };
 }
 
 async function fetchLatestManifest() {
@@ -303,6 +329,12 @@ function wireUpdateStatus(version, extra) {
     card.appendChild(tokenWrap);
   }
   const saved = getGithubToken();
+  if (updatesArePublic) {
+    tokenWrap.style.display = 'none';
+    tokenWrap.innerHTML = '';
+    return;
+  }
+  tokenWrap.style.display = '';
   tokenWrap.innerHTML = `
     <div class="l2" style="margin-bottom:6px;">If the GitHub repo is private, paste a token with Contents: Read. Leave blank if the repo is public.</div>
     <div class="log-form">
@@ -334,11 +366,13 @@ async function checkAndApplyUpdate() {
       return;
     }
     if (manifest.privateRepo) {
+      updatesArePublic = false;
       wireUpdateStatus(current, 'Repo is private — make it public or save a token below');
       return;
     }
+    if (manifest.public) updatesArePublic = true;
     if (manifest.version === current) {
-      wireUpdateStatus(current, 'You are on the latest workout app');
+      wireUpdateStatus(current, 'Auto-update is on — you are on the latest');
       return;
     }
     toast('Updating RIGCORE…');

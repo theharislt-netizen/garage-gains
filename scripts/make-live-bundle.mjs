@@ -14,7 +14,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const www = join(root, 'www');
 const outDir = join(root, 'live-update');
 const REPO = 'theharislt-netizen/garage-gains';
-const REFS = ['main', 'cursor/android-apk-eee8'];
+const REFS = ['cursor/android-apk-eee8', 'main'];
 
 async function walk(dir) {
   const out = [];
