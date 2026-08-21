@@ -56,14 +56,16 @@ assert(rankRewardsAreProgressive(table), 'each rank must pay more than the last'
 
 const warrior = getRankRewards('warrior');
 const immortal = getRankRewards('mythicalimmortal');
-assert(warrior.dailyGold >= 30, 'Warrior daily gold must be significant');
+assert(warrior.dailyGold >= 20, 'Warrior daily gold must be a real check-in');
+assert(warrior.dailyGold < 30, 'v4.3 review cut Warrior daily gold from 30');
 assert(immortal.dailyGold >= warrior.dailyGold * 10, 'Immortal daily gold must dwarf Warrior');
+assert(immortal.dailyGold <= 400, 'Immortal daily gold must not outpace training (~2–4× a session, not 600)');
 assert(immortal.sessionGoldPct === 100, 'Immortal doubles workout gold');
 assert(getRankRewards('master').weeklyBoostBoxes >= 1, 'Master unlocks weekly boxes');
 assert(getRankRewards('epic').weeklyRelicBoxes >= 1 && getRankRewards('epic').rankUpItem, 'Epic adds relic box + rank-up item');
 assert(rankGoldPerkMultiplierFromPct(8) === 1.08, '8% perk is 1.08x gold');
 assert(formatWeeklyBoxLabel(warrior) === 'None', 'Warrior has no weekly boxes');
-assert(formatRankRewardSummary(warrior).includes('30g/day'), 'summary includes daily gold');
+assert(formatRankRewardSummary(warrior).includes('20g/day'), 'summary includes daily gold');
 assert(rankRewardDetailRows(warrior).length >= 5, 'current-rank card has the full perk list');
 
 console.log('rank rewards tests ok —', immortal.dailyGold + 'g/day at Immortal, +' + immortal.sessionGoldPct + '% workout gold');

@@ -1097,10 +1097,13 @@
     100% { transform: scale(1.4); opacity: 0; }
   }
   .enchant-results {
-    position: absolute; inset: 0; display: none; z-index: 5; padding: 18px 14px;
-    background: rgba(7,6,12,0.92); overflow-y: auto;
+    position: fixed; inset: 0; display: none; z-index: 270; padding: calc(16px + var(--app-sat)) 16px calc(24px + var(--app-sab));
+    background: rgba(7,6,12,0.94); overflow: hidden; flex-direction: column;
+    max-width: 100vw; box-sizing: border-box;
   }
-  .enchant-results.show { display: block; animation: instanceEnter 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .enchant-results.show { display: flex; animation: instanceEnter 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .enchant-results-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .enchant-results .enchant-cast-btn { flex: 0 0 auto; flex-shrink: 0; margin-top: 12px; width: 100%; }
   .enchant-stat-table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; }
   .enchant-stat-table th, .enchant-stat-table td {
     text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 13px;
@@ -1163,15 +1166,17 @@
   }
   .dash-sec-toggle.is-collapsed { opacity: 0.78; margin-bottom: 4px; }
 
-  /* --- v4.1: low-key Dashboard quick-log (secondary, not a CTA) --- */
+  /* --- v4.1: Dashboard quick-log — same scroll-collapse class as .sticky-sub --- */
   .quick-log-fab {
     position: fixed; right: 16px; bottom: calc(84px + var(--app-sab));
-    z-index: 40; width: 44px; height: 44px; border-radius: 14px;
-    border: 1px solid var(--line); background: var(--panel); color: var(--text-dim);
-    font-size: 24px; line-height: 1; font-weight: 400; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.28); opacity: 0.88;
+    z-index: 40; width: 46px; height: 46px; border-radius: 16px;
+    border: none; background: linear-gradient(135deg, var(--a1), var(--a2)); color: #08070d;
+    font-size: 26px; line-height: 1; font-weight: 600; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(var(--a1-rgb),0.42);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
-  .quick-log-fab:active { color: var(--text); border-color: var(--a2); opacity: 1; }
+  .quick-log-fab:active { filter: brightness(1.08); transform: scale(0.96); }
+  .quick-log-fab.collapsed { transform: translateY(22px); opacity: 0; pointer-events: none; }
   .quick-log-overlay {
     position: fixed; inset: 0; z-index: 50; background: var(--bg);
     display: flex; flex-direction: column;
@@ -1265,6 +1270,10 @@
   .wk-title { font-family: 'Barlow Condensed'; font-size: 17px; font-weight: 700; text-transform: uppercase; }
   .wk-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; }
   .go-btn { flex-shrink: 0; padding: 10px 18px; border-radius: 10px; border: none; background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; font-family: 'Barlow Condensed'; font-weight: 700; font-size: 13px; text-transform: uppercase; cursor: pointer; }
+  .go-btn:disabled, .go-btn.claimed {
+    background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px solid var(--line);
+    filter: grayscale(0.25); opacity: 1; cursor: default; box-shadow: none;
+  }
   .workout-collapse-row { text-align: center; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); padding: 4px 0 14px; cursor: pointer; }
   .workout-info-card { cursor: pointer; }
   .wk-info-head { font-family: 'Barlow Condensed'; font-size: 17px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
@@ -1652,11 +1661,6 @@
             <span class="settings-nav-text"><span class="settings-nav-title">Sound &amp; Haptics</span><span class="settings-nav-sub">Tones and vibration</span></span>
             <span class="settings-nav-chev">›</span>
           </button>
-          <button type="button" class="settings-nav-row" data-settings-sub="shortcut">
-            <span class="settings-nav-ic svg-a2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 17h.01"/></svg></span>
-            <span class="settings-nav-text"><span class="settings-nav-title">Add to Home Screen</span><span class="settings-nav-sub">Launch RIGCORE like an app</span></span>
-            <span class="settings-nav-chev">›</span>
-          </button>
         </div>
       </div>
 
@@ -1665,7 +1669,7 @@
         <div class="card settings-nav-card">
           <button type="button" class="settings-nav-row" data-settings-sub="data">
             <span class="settings-nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg></span>
-            <span class="settings-nav-text"><span class="settings-nav-title">Backup &amp; Restore</span><span class="settings-nav-sub">Export, import, or rebuild points</span></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Backup &amp; Restore</span><span class="settings-nav-sub">Export, import, rebuild points, or reset</span></span>
             <span class="settings-nav-chev">›</span>
           </button>
         </div>
@@ -1673,15 +1677,13 @@
 
       <div class="settings-group">
         <div class="settings-group-label">About</div>
-        <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.0</div></div>
-          <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
+        <div class="card settings-nav-card">
+          <button type="button" class="settings-nav-row" data-settings-sub="about">
+            <span class="settings-nav-ic svg-a2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">About</span><span class="settings-nav-sub">Version and the split this gym is built around</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
         </div>
-      </div>
-
-      <div class="settings-group">
-        <div class="settings-group-label">Danger Zone</div>
-        <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
       </div>
     </div>
 
@@ -1713,10 +1715,10 @@
       <div data-settings-pane="sound" hidden>
         <div class="card" id="feedbackTogglesCard"></div>
       </div>
-      <div data-settings-pane="shortcut" hidden>
+      <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch RIGCORE like an app</div></div></div>
-          <button class="btn" id="addHomeBtn">Add to Home Screen</button>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.0</div></div>
+          <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
       <div data-settings-pane="data" hidden>
@@ -1728,6 +1730,8 @@
           <input type="file" id="importFile" accept=".json,application/json,text/plain,text/*,*/*" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
           <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
           <button class="btn" id="recalcPointsBtn">Recalculate Points</button>
+          <div class="settings-row" style="margin-top:18px;"><div>Reset all data<div class="l2">Deletes workouts, inventory, and points on this profile</div></div></div>
+          <button class="btn danger" id="resetBtn">Reset All Data</button>
         </div>
       </div>
     </div>
@@ -2109,17 +2113,22 @@ function getNextRank(points) {
 function getRankIndex(rankId) { return RANKS.findIndex(r => r.id === rankId) + 1; }
 
 /* === rank-rewards-lib begin === */
+// v4.3 Rank daily-goal review: daily login is gold-only (never season XP).
+// Previous dailyGold ran 30 → 600. At Immortal that was ~3–7× a typical
+// session even after the +100% workout-gold perk, so a check-in outpaced
+// training. Cut ~40% (20 → 360). Still strictly progressive; Immortal stays
+// ~2–4× a session, Warrior stays a small first-rank check-in.
 const RANK_REWARDS = {
-  warrior:          { dailyGold: 30,  sessionGoldPct: 8,  weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 120,  seasonGems: 2,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 0,   rankUpItem: false },
-  elite:            { dailyGold: 55,  sessionGoldPct: 12, weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 200,  seasonGems: 3,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 80,  rankUpItem: false },
-  master:           { dailyGold: 85,  sessionGoldPct: 18, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 320,  seasonGems: 5,  seasonBoostBoxes: 1, seasonRelicBoxes: 1, rankUpGold: 140, rankUpItem: false },
-  grandmaster:      { dailyGold: 120, sessionGoldPct: 24, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 460,  seasonGems: 7,  seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 220, rankUpItem: false },
-  epic:             { dailyGold: 165, sessionGoldPct: 32, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 640,  seasonGems: 10, seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 320, rankUpItem: true },
-  legend:           { dailyGold: 220, sessionGoldPct: 40, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 860,  seasonGems: 13, seasonBoostBoxes: 2, seasonRelicBoxes: 2, rankUpGold: 450, rankUpItem: true },
-  mythic:           { dailyGold: 290, sessionGoldPct: 50, weeklyBoostBoxes: 2, weeklyRelicBoxes: 1, seasonGold: 1150, seasonGems: 17, seasonBoostBoxes: 3, seasonRelicBoxes: 2, rankUpGold: 620, rankUpItem: true },
-  mythicalhonor:    { dailyGold: 370, sessionGoldPct: 62, weeklyBoostBoxes: 2, weeklyRelicBoxes: 2, seasonGold: 1500, seasonGems: 22, seasonBoostBoxes: 3, seasonRelicBoxes: 3, rankUpGold: 820, rankUpItem: true },
-  mythicalglory:    { dailyGold: 470, sessionGoldPct: 78, weeklyBoostBoxes: 3, weeklyRelicBoxes: 2, seasonGold: 1950, seasonGems: 28, seasonBoostBoxes: 4, seasonRelicBoxes: 3, rankUpGold: 1100, rankUpItem: true },
-  mythicalimmortal: { dailyGold: 600, sessionGoldPct: 100, weeklyBoostBoxes: 3, weeklyRelicBoxes: 3, seasonGold: 2600, seasonGems: 36, seasonBoostBoxes: 5, seasonRelicBoxes: 4, rankUpGold: 1500, rankUpItem: true },
+  warrior:          { dailyGold: 20,  sessionGoldPct: 8,  weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 120,  seasonGems: 2,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 0,   rankUpItem: false },
+  elite:            { dailyGold: 35,  sessionGoldPct: 12, weeklyBoostBoxes: 0, weeklyRelicBoxes: 0, seasonGold: 200,  seasonGems: 3,  seasonBoostBoxes: 1, seasonRelicBoxes: 0, rankUpGold: 80,  rankUpItem: false },
+  master:           { dailyGold: 55,  sessionGoldPct: 18, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 320,  seasonGems: 5,  seasonBoostBoxes: 1, seasonRelicBoxes: 1, rankUpGold: 140, rankUpItem: false },
+  grandmaster:      { dailyGold: 75,  sessionGoldPct: 24, weeklyBoostBoxes: 1, weeklyRelicBoxes: 0, seasonGold: 460,  seasonGems: 7,  seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 220, rankUpItem: false },
+  epic:             { dailyGold: 100, sessionGoldPct: 32, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 640,  seasonGems: 10, seasonBoostBoxes: 2, seasonRelicBoxes: 1, rankUpGold: 320, rankUpItem: true },
+  legend:           { dailyGold: 135, sessionGoldPct: 40, weeklyBoostBoxes: 1, weeklyRelicBoxes: 1, seasonGold: 860,  seasonGems: 13, seasonBoostBoxes: 2, seasonRelicBoxes: 2, rankUpGold: 450, rankUpItem: true },
+  mythic:           { dailyGold: 180, sessionGoldPct: 50, weeklyBoostBoxes: 2, weeklyRelicBoxes: 1, seasonGold: 1150, seasonGems: 17, seasonBoostBoxes: 3, seasonRelicBoxes: 2, rankUpGold: 620, rankUpItem: true },
+  mythicalhonor:    { dailyGold: 230, sessionGoldPct: 62, weeklyBoostBoxes: 2, weeklyRelicBoxes: 2, seasonGold: 1500, seasonGems: 22, seasonBoostBoxes: 3, seasonRelicBoxes: 3, rankUpGold: 820, rankUpItem: true },
+  mythicalglory:    { dailyGold: 290, sessionGoldPct: 78, weeklyBoostBoxes: 3, weeklyRelicBoxes: 2, seasonGold: 1950, seasonGems: 28, seasonBoostBoxes: 4, seasonRelicBoxes: 3, rankUpGold: 1100, rankUpItem: true },
+  mythicalimmortal: { dailyGold: 360, sessionGoldPct: 100, weeklyBoostBoxes: 3, weeklyRelicBoxes: 3, seasonGold: 2600, seasonGems: 36, seasonBoostBoxes: 5, seasonRelicBoxes: 4, rankUpGold: 1500, rankUpItem: true },
 };
 function getRankRewards(rankId) {
   return RANK_REWARDS[rankId] || RANK_REWARDS.warrior;
@@ -2796,9 +2805,15 @@ function renderSkillsGrid() {
   }
 }
 document.getElementById('skillModalClose').addEventListener('click', closeSkillModal);
-document.getElementById('claimRewardsBtn').addEventListener('click', () => showNextReward());
+document.getElementById('claimRewardsBtn').addEventListener('click', () => {
+  feedbackRewardClaim();
+  showNextReward();
+});
 const progressClaimContinue = document.getElementById('progressClaimContinue');
-if (progressClaimContinue) progressClaimContinue.addEventListener('click', closeProgressClaim);
+if (progressClaimContinue) progressClaimContinue.addEventListener('click', () => {
+  feedbackRewardClaim();
+  closeProgressClaim();
+});
 document.getElementById('skillTierModal').addEventListener('click', (e) => { if (e.target.id === 'skillTierModal') closeSkillModal(); });
 
 // Badges — separate from rank, these check both point totals and consistency (streaks).
@@ -3061,12 +3076,37 @@ function pickWeightedItem(pool) {
   return pool[pool.length - 1];
 }
 const BOX_COST = { boost: 60, relic: 90 };
+/* === box-loot-lib begin === */
 const BOX_GEM_CHANCE = 0.2;
-// v3.2 §4: shards stay the common outcome. Full stones share the same rare
-// 12% slice as Relics/Boosts (the old 18% stone middle-tier is gone — that
-// 18% folds into shards). Inside the rare slice, stones and items use the
-// same itemRarityWeight() curve so a Legendary stone is as rare as a 5-star item.
-const BOX_OUTCOME_WEIGHTS = { shards: 0.88, rare: 0.12 };
+// v4.3: shards stay common. Rare slice bumped 12% → 18% so a full item is
+// noticeably less punishing (~11% after sharing the slice with stones) without
+// becoming common. Regular boxes always award exactly one of shards / item /
+// stone — never a relic AND a stone together. That combo is only the one-time
+// onboarding First Victory Box (openStarterVictoryBox).
+const BOX_OUTCOME_WEIGHTS = { shards: 0.82, rare: 0.18 };
+const BOX_RARE_KIND_WEIGHTS = { item: 0.62, stone: 0.38 };
+function rollBoxPrimaryKind(rng) {
+  const roll = typeof rng === 'function' ? rng() : Math.random();
+  return roll < BOX_OUTCOME_WEIGHTS.shards ? 'shards' : 'rare';
+}
+function rollBoxRareKind(rng) {
+  const roll = typeof rng === 'function' ? rng() : Math.random();
+  return roll < BOX_RARE_KIND_WEIGHTS.item ? 'item' : 'stone';
+}
+function estimatedBoxItemRate() {
+  return BOX_OUTCOME_WEIGHTS.rare * BOX_RARE_KIND_WEIGHTS.item;
+}
+function isExclusiveBoxKind(kind) {
+  return kind === 'shards' || kind === 'item' || kind === 'stone';
+}
+function boxOutcomeGrantsItemAndStone(outcome) {
+  if (!outcome || typeof outcome !== 'object') return false;
+  if (outcome.kind === 'combo' || outcome.combo) return true;
+  if (outcome.kind === 'item' && (outcome.stone || outcome.stones || outcome.extraStone || outcome.stoneAmount)) return true;
+  if (outcome.kind === 'stone' && outcome.item) return true;
+  return false;
+}
+/* === box-loot-lib end === */
 const STONE_RARITY_DEFS = [
   { rarity: 'common',    maxStar: 2, label: 'Common' },
   { rarity: 'uncommon',  maxStar: 3, label: 'Uncommon' },
@@ -3079,24 +3119,30 @@ function maxStarToRevealTier(m) {
   if (m === 4) return 'rare';
   return 'legendary';
 }
-function pickWeightedRareOutcome(category) {
-  const items = eligibleItemPool(category).map(tmpl => ({ kind: 'item', tmpl, weight: itemRarityWeight(tmpl) }));
-  const stones = STONE_RARITY_DEFS.map(def => ({
-    kind: 'stone', rarity: def.rarity, maxStar: def.maxStar, label: def.label,
-    weight: itemRarityWeight({ permanent: true, maxStar: def.maxStar })
-  }));
-  const pool = items.concat(stones);
+function pickWeightedFrom(pool) {
   const total = pool.reduce((s, x) => s + x.weight, 0);
   let r = Math.random() * total;
   for (const entry of pool) { r -= entry.weight; if (r <= 0) return entry; }
   return pool[pool.length - 1];
 }
+function pickWeightedRareOutcome(category) {
+  // XOR: item or stone, never both. Kind is chosen first so catalog size
+  // cannot accidentally pair a relic with a stone on the same opening.
+  if (rollBoxRareKind() === 'stone') {
+    const stones = STONE_RARITY_DEFS.map(def => ({
+      kind: 'stone', rarity: def.rarity, maxStar: def.maxStar, label: def.label,
+      weight: itemRarityWeight({ permanent: true, maxStar: def.maxStar })
+    }));
+    return pickWeightedFrom(stones);
+  }
+  const items = eligibleItemPool(category).map(tmpl => ({ kind: 'item', tmpl, weight: itemRarityWeight(tmpl) }));
+  return pickWeightedFrom(items);
+}
 function openBoxFree(category) {
   ensureInventoryShape();
   const catName = category === 'relic' ? 'Relic' : 'Boost';
-  const roll = Math.random();
   let outcome;
-  if (roll < BOX_OUTCOME_WEIGHTS.shards) {
+  if (rollBoxPrimaryKind() === 'shards') {
     const amount = 3 + Math.floor(Math.random() * 6); // 3-8 shards
     state.inventory.shards[category] = (state.inventory.shards[category] || 0) + amount;
     outcome = { kind:'shards', category, amount, result: { kind:'shards', tmpl: { name: `${catName} Shards ×${amount}`, icon: '🔹' } } };
@@ -4549,7 +4595,7 @@ function renderRankTab() {
       <div class="section-title" style="margin:0 0 8px;">Daily Login</div>
       <div class="wk-row">
         <div><div class="wk-title">${claimed ? 'Claimed Today' : 'Reward Ready'}</div><div class="wk-sub">+${reward.gold}g${weeklyNote}</div></div>
-        <button class="go-btn" id="dailyLoginClaimBtn" ${claimed ? 'disabled' : ''}>${claimed ? '✓ Claimed' : 'Claim'}</button>
+        <button class="go-btn${claimed ? ' claimed' : ''}" id="dailyLoginClaimBtn" ${claimed ? 'disabled' : ''}>${claimed ? '✓ Claimed' : 'Claim'}</button>
       </div>
     </div>
     <div class="card" style="text-align:center; padding:16px;">
@@ -5702,6 +5748,7 @@ function enchantAttemptFromSlot() {
 }
 function playEnchantAnimation(success, done) {
   const fx = document.getElementById('enchantFxLayer');
+  feedbackEnchantCast();
   if (!fx) { if (done) done(); return; }
   fx.className = 'enchant-fx show ' + (success ? 'success' : 'fail');
   fx.innerHTML = '<div class="enchant-fx-ring"></div><div class="enchant-fx-burst"></div>';
@@ -5718,28 +5765,32 @@ function showEnchantResults(info) {
   const delta = Math.round((afterPct - info.beforePct) * 10) / 10;
   const deltaCls = delta > 0 ? 'up' : (delta < 0 ? 'down' : '');
   const deltaTxt = (delta > 0 ? '+' : '') + delta + '%';
-  layer.innerHTML = `<div class="card" style="margin-top:12px;">
-    <div class="enchant-table-title">${info.outcome.success ? 'Enchant Success' : 'Enchant Failed'}</div>
-    <div style="text-align:center; font-size:28px; margin:8px 0;">${info.tmpl.icon || '❔'}</div>
-    <div style="text-align:center; font-family:'Barlow Condensed'; font-size:20px;">${info.tmpl.name}</div>
-    <div style="text-align:center; margin:6px 0 10px;">${info.beforeStar}★ → ${info.outcome.star}★</div>
-    <table class="enchant-stat-table">
-      <tr><th>Stat</th><th>Before</th><th>After</th><th>Change</th></tr>
-      <tr>
-        <td>${itemBonusStatLabel(info.tmpl)}</td>
-        <td>+${info.beforePct}%</td>
-        <td>+${afterPct}%</td>
-        <td class="${deltaCls}">${deltaTxt}</td>
-      </tr>
-      <tr>
-        <td>Stars</td>
-        <td>${info.beforeStar}★</td>
-        <td>${info.outcome.star}★</td>
-        <td class="${deltaCls}">${info.outcome.success ? '+1' : '−1'}</td>
-      </tr>
-    </table>
-    <button class="enchant-cast-btn" id="enchantResultsClose">Continue</button>
-  </div>`;
+  if (info.outcome.success) feedbackEnchantSuccess();
+  else feedbackEnchantFail();
+  layer.innerHTML = `<div class="enchant-results-scroll">
+    <div class="card" style="margin-top:12px;">
+      <div class="enchant-table-title">${info.outcome.success ? 'Enchant Success' : 'Enchant Failed'}</div>
+      <div style="text-align:center; font-size:28px; margin:8px 0;">${info.tmpl.icon || '❔'}</div>
+      <div style="text-align:center; font-family:'Barlow Condensed'; font-size:20px;">${info.tmpl.name}</div>
+      <div style="text-align:center; margin:6px 0 10px;">${info.beforeStar}★ → ${info.outcome.star}★</div>
+      <table class="enchant-stat-table">
+        <tr><th>Stat</th><th>Before</th><th>After</th><th>Change</th></tr>
+        <tr>
+          <td>${itemBonusStatLabel(info.tmpl)}</td>
+          <td>+${info.beforePct}%</td>
+          <td>+${afterPct}%</td>
+          <td class="${deltaCls}">${deltaTxt}</td>
+        </tr>
+        <tr>
+          <td>Stars</td>
+          <td>${info.beforeStar}★</td>
+          <td>${info.outcome.star}★</td>
+          <td class="${deltaCls}">${info.outcome.success ? '+1' : '−1'}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <button class="enchant-cast-btn" id="enchantResultsClose">Continue</button>`;
   layer.classList.add('show');
   document.getElementById('enchantResultsClose').addEventListener('click', () => {
     layer.classList.remove('show');
@@ -5826,9 +5877,9 @@ function renderEnchantModal() {
       <button class="enchant-cast-btn${coach && table.instanceId && table.stonePlaced ? ' unlock-pulse' : ''}" id="enchantAttemptBtn" ${ready ? '' : 'disabled'}>Enchant</button>
       ${coach ? `<div class="enchant-coach">${coach}</div>` : ''}
       <div class="enchant-fx" id="enchantFxLayer"></div>
-      <div class="enchant-results" id="enchantResultsLayer"></div>
       ${pickerHtml}
     </div>
+    <div class="enchant-results" id="enchantResultsLayer"></div>
     <div class="section-title">Craft Stones</div>
     <div class="card">
       <div class="settings-row"><div>Relic Shards<div class="l2">${state.inventory.shards.relic} / ${SHARDS_PER_STONE}</div></div>
@@ -5967,6 +6018,7 @@ function showBoxReveal(category, outcome) {
   overlay.style.display = 'flex';
   overlay.onclick = null; // disabled during build-up so the suspense can't be skipped
   content.innerHTML = `<div class="box-reveal-buildup" id="boxBuildupIcon" style="color:${meta.color};">${fallbackIcon}</div>`;
+  feedbackBoxOpen(tier);
 
   window.__boxRevealTimer = setTimeout(() => {
     window.__boxRevealTimer = null;
@@ -6749,7 +6801,7 @@ function unlockAudioContext() {
 }
 document.addEventListener('pointerdown', unlockAudioContext, { once: true });
 
-function playTone(freq, durationMs, type) {
+function playTone(freq, durationMs, type, vol) {
   if (!state.soundEnabled || !__audioCtx) return;
   try {
     const ctx = __audioCtx;
@@ -6759,8 +6811,9 @@ function playTone(freq, durationMs, type) {
     osc.frequency.value = freq;
     const now = ctx.currentTime;
     const dur = durationMs / 1000;
+    const peak = Math.max(0.02, Math.min(0.32, vol == null ? 0.22 : vol));
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -6770,7 +6823,7 @@ function playTone(freq, durationMs, type) {
 }
 function playToneSequence(notes) {
   if (!state.soundEnabled || !__audioCtx) return;
-  notes.forEach(n => setTimeout(() => playTone(n.freq, n.durationMs, n.type), n.delayMs || 0));
+  notes.forEach(n => setTimeout(() => playTone(n.freq, n.durationMs, n.type, n.vol), n.delayMs || 0));
 }
 function vibrate(pattern) {
   if (!state.hapticsEnabled) return;
@@ -6789,6 +6842,90 @@ function feedbackStreakTier() { playToneSequence([{ freq:480, durationMs:100, de
 // strengthened visual transition so it's unmistakable across senses, not
 // just a screen swap. Short low-to-high tone + a firm double-tap vibration.
 function feedbackInstanceEnter() { playToneSequence([{ freq:300, durationMs:80, delayMs:0 }, { freq:700, durationMs:180, delayMs:70 }]); vibrate([0, 30, 20, 60]); }
+
+// v4.3: polished reward-moment cues. Distinct from set-complete clicks —
+// rising charge for the enchant attempt, a major arpeggio on success vs a
+// falling thud on fail, a gift chime when a box is granted, a rumble-into-
+// reveal for opening, and a bright claim fanfare. All go through playTone /
+// vibrate so Sound & Haptics toggles still mute them.
+function feedbackEnchantCast() {
+  const notes = [];
+  for (let i = 0; i < 8; i++) {
+    notes.push({ freq: 180 + i * 55, durationMs: 90, type: i % 2 ? 'triangle' : 'sawtooth', delayMs: i * 120, vol: 0.07 + i * 0.012 });
+  }
+  playToneSequence(notes);
+  vibrate([12, 40, 12, 40, 16, 40, 20, 50, 28]);
+}
+function feedbackEnchantSuccess() {
+  playToneSequence([
+    { freq: 523, durationMs: 90, type: 'triangle', delayMs: 0, vol: 0.16 },
+    { freq: 659, durationMs: 90, type: 'triangle', delayMs: 80, vol: 0.18 },
+    { freq: 784, durationMs: 110, type: 'sine', delayMs: 160, vol: 0.2 },
+    { freq: 1046, durationMs: 280, type: 'sine', delayMs: 250, vol: 0.22 }
+  ]);
+  vibrate([30, 40, 55, 35, 90]);
+}
+function feedbackEnchantFail() {
+  playToneSequence([
+    { freq: 392, durationMs: 140, type: 'sawtooth', delayMs: 0, vol: 0.12 },
+    { freq: 311, durationMs: 160, type: 'triangle', delayMs: 110, vol: 0.1 },
+    { freq: 196, durationMs: 280, type: 'sine', delayMs: 240, vol: 0.14 }
+  ]);
+  vibrate([70, 50, 40]);
+}
+function feedbackBoxReceived() {
+  playToneSequence([
+    { freq: 392, durationMs: 80, type: 'triangle', delayMs: 0, vol: 0.12 },
+    { freq: 523, durationMs: 90, type: 'triangle', delayMs: 70, vol: 0.14 },
+    { freq: 784, durationMs: 200, type: 'sine', delayMs: 150, vol: 0.18 }
+  ]);
+  vibrate([22, 32, 36]);
+}
+function feedbackBoxOpen(tier) {
+  const meta = (typeof BOX_TIER_META !== 'undefined' && BOX_TIER_META[tier]) || { buildMs: 500 };
+  const ticks = Math.max(3, Math.round(meta.buildMs / 160));
+  const notes = [];
+  const rumble = [];
+  for (let i = 0; i < ticks; i++) {
+    notes.push({ freq: 70 + i * 22, durationMs: 55, type: 'sawtooth', delayMs: Math.round(i * (meta.buildMs / ticks)), vol: 0.06 + i * 0.01 });
+    rumble.push(10 + i * 4, 40);
+  }
+  playToneSequence(notes);
+  vibrate(rumble);
+  setTimeout(() => {
+    if (tier === 'legendary') {
+      playToneSequence([
+        { freq: 523, durationMs: 90, type: 'triangle', delayMs: 0, vol: 0.18 },
+        { freq: 659, durationMs: 90, type: 'triangle', delayMs: 80, vol: 0.18 },
+        { freq: 784, durationMs: 90, type: 'sine', delayMs: 160, vol: 0.2 },
+        { freq: 1046, durationMs: 320, type: 'sine', delayMs: 240, vol: 0.24 }
+      ]);
+      vibrate([40, 40, 80]);
+    } else if (tier === 'rare') {
+      playToneSequence([
+        { freq: 440, durationMs: 100, type: 'triangle', delayMs: 0, vol: 0.16 },
+        { freq: 659, durationMs: 120, type: 'sine', delayMs: 90, vol: 0.18 },
+        { freq: 880, durationMs: 240, type: 'sine', delayMs: 200, vol: 0.2 }
+      ]);
+      vibrate([30, 35, 55]);
+    } else {
+      playToneSequence([
+        { freq: 349, durationMs: 90, type: 'triangle', delayMs: 0, vol: 0.12 },
+        { freq: 523, durationMs: 180, type: 'sine', delayMs: 80, vol: 0.16 }
+      ]);
+      vibrate([24, 30, 36]);
+    }
+  }, meta.buildMs);
+}
+function feedbackRewardClaim() {
+  playToneSequence([
+    { freq: 587, durationMs: 70, type: 'triangle', delayMs: 0, vol: 0.14 },
+    { freq: 740, durationMs: 80, type: 'triangle', delayMs: 60, vol: 0.16 },
+    { freq: 880, durationMs: 90, type: 'sine', delayMs: 130, vol: 0.18 },
+    { freq: 1174, durationMs: 260, type: 'sine', delayMs: 210, vol: 0.2 }
+  ]);
+  vibrate([18, 28, 28, 28, 70]);
+}
 
 let toastTimer;
 function showToast(msg, ms) {
@@ -7904,6 +8041,7 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
       ];
       if (firstWorkout && grantStarterVictoryBox(state)) {
         rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+        feedbackBoxReceived();
       }
       queueReward({ kind:'workout', title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: rewardLines });
     }
@@ -8222,8 +8360,8 @@ const SETTINGS_SUB = {
   problems: { title: 'Problem Areas', lead: 'Flag what mobility work should focus on.' },
   theme: { title: 'Theme', lead: 'The same palette used across the rest of the app.' },
   sound: { title: 'Sound & Haptics', lead: 'Tones and vibration for sets and rewards.' },
-  shortcut: { title: 'Add to Home Screen', lead: 'Launch RIGCORE like an app.' },
-  data: { title: 'Backup & Restore', lead: 'Export, import, or rebuild points from baselines.' }
+  about: { title: 'About', lead: 'Version and the split this gym is built around.' },
+  data: { title: 'Backup & Restore', lead: 'Export, import, rebuild points, or reset all data.' }
 };
 function renderSettingsChrome() {
   const sub = window.__settingsSub || null;
@@ -9416,48 +9554,30 @@ new MutationObserver(() => syncHeaderHeight()).observe(document.documentElement,
 // too, so rapid scroll events can't pile up and cause the class to thrash back and forth.
 let __lastScrollY = 0;
 let __scrollTicking = false;
+function setStickyCollapsed(collapsed) {
+  const sub = document.getElementById('stickySub');
+  const fab = document.getElementById('quickLogFab');
+  if (sub) sub.classList.toggle('collapsed', collapsed);
+  if (fab) fab.classList.toggle('collapsed', collapsed);
+}
 function resetStickyScroll() {
   __lastScrollY = window.scrollY || 0;
-  const sub = document.getElementById('stickySub');
-  if (sub) sub.classList.remove('collapsed');
+  setStickyCollapsed(false);
 }
 window.addEventListener('scroll', () => {
   if (__scrollTicking) return;
   __scrollTicking = true;
   requestAnimationFrame(() => {
     __scrollTicking = false;
-    const sub = document.getElementById('stickySub');
-    if (!sub) return;
     const y = Math.max(0, window.scrollY || 0);
     const delta = y - __lastScrollY;
     if (Math.abs(delta) < 10) return; // ignore tiny jitters / momentum micro-bounces
-    if (delta > 0 && y > 48) sub.classList.add('collapsed');
-    else if (delta < 0) sub.classList.remove('collapsed');
+    if (delta > 0 && y > 48) setStickyCollapsed(true);
+    else if (delta < 0) setStickyCollapsed(false);
     __lastScrollY = y;
   });
 }, { passive: true });
 
-// Captures the browser's native "install" prompt when available (only fires when
-// the page is served over https with a manifest — not from a local file). We still
-// wire it up so it works automatically the moment that's true, and fall back to
-// plain instructions otherwise.
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  window.__deferredInstallPrompt = e;
-});
-document.getElementById('addHomeBtn').addEventListener('click', async () => {
-  if (window.__deferredInstallPrompt) {
-    window.__deferredInstallPrompt.prompt();
-    await window.__deferredInstallPrompt.userChoice;
-    window.__deferredInstallPrompt = null;
-  } else {
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    showToast(isiOS
-      ? 'Safari: tap Share, then Add to Home Screen'
-      : 'Open your browser menu (⋮) and tap "Add to Home screen"');
-  }
-});
 document.getElementById('rankModalClose').addEventListener('click', closeRankModal);
 document.getElementById('rankTierModal').addEventListener('click', (e) => {
   if (e.target.id === 'rankTierModal') closeRankModal();
