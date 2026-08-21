@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, cursor/android-apk-eee8]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -34,6 +35,21 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Check Apple signing secrets
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          echo "ios_team_id=$([[ -n "$IOS_TEAM_ID" ]] && echo set || echo missing)"
+          echo "asc_key_id=$([[ -n "$APP_STORE_CONNECT_KEY_ID" ]] && echo set || echo missing)"
+          echo "asc_issuer=$([[ -n "$APP_STORE_CONNECT_ISSUER_ID" ]] && echo set || echo missing)"
+          echo "asc_api_key=$([[ -n "$APP_STORE_CONNECT_API_KEY" ]] && echo set || echo missing)"
+          if [[ -z "$IOS_TEAM_ID" || -z "$APP_STORE_CONNECT_KEY_ID" || -z "$APP_STORE_CONNECT_ISSUER_ID" || -z "$APP_STORE_CONNECT_API_KEY" ]]; then
+            echo "TestFlight signing skipped until repository Action secrets exist (not GitHub Environment secrets)."
+          fi
 
       - name: Package iPhone IPA
         env:

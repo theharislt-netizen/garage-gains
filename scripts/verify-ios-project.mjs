@@ -84,7 +84,7 @@ mustInclude('scripts/native-bridge.mjs', [
   'CapacitorUpdater.set(bundle)',
 ]);
 mustInclude('package.json', ['"@capacitor/ios"', '"build:ios"']);
-mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO', 'package-ios-ipa.sh', 'RIGCORE-iOS']);
+mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO', 'package-ios-ipa.sh', 'RIGCORE-iOS', 'APP_STORE_CONNECT_API_KEY']);
 mustInclude('.github/workflows/pages.yml', ['actions/deploy-pages@v4', 'path: docs']);
 mustInclude('scripts/package-ios-ipa.sh', ['iphoneos', 'Payload', 'RIGCORE.ipa', 'APP_STORE_CONNECT_API_KEY', 'altool']);
 mustInclude('scripts/install-page.html', ['Download Android app', 'TestFlight', 'not the iPhone app']);
