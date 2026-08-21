@@ -58,7 +58,7 @@ assert(seeded.streakFreezes === 0, 'streak freezes must reset to 0');
 assert(seeded.inventory.permanent.length === 0, 'permanent items must be removed');
 assert(Object.keys(seeded.inventory.tempCharges).length === 0, 'temp charges must be removed');
 assert(seeded.inventory.shards.boost === 0 && seeded.inventory.stones.relic === 0, 'materials must be removed');
-assert(seeded.equipped.boost.every(x => x === null) && seeded.equipped.relic.every(x => x === null), 'shop loadout must unequip');
+assert(seeded.equipped.slots && Object.keys(seeded.equipped.slots).length === 0, 'shop loadout must unequip');
 assert(!seeded.__testGoldSeededV26, 'old seed flag must be dropped');
 assert(seeded.__testingEconomyClearedV33 === true, 'clear flag must be set');
 assert(seeded.totalPoints === 180 && seeded.onboarding.name === 'Haris', 'workouts/name must be kept');

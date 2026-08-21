@@ -117,7 +117,7 @@ assert(matPopup.includes('Enchanting Table'), 'materials still explain where the
 
 // 10. Craft Stones visual rework.
 assert(html.includes('craft-stone-grid') && html.includes('craft-stone-icon'), 'Craft Stones needs icons, not a plain list');
-assert(html.includes('Crafts 💠 Relic Enchantment Stone'), 'craft cards show what they produce');
+assert(html.includes("Crafts ${matIconHtml('stone', 'relic')} Relic Enchantment Stone"), 'craft cards show what they produce');
 
 // 11. Onboarding through Equip.
 assert(html.includes('function markEquipTutorialDone'), 'equip tutorial flag missing');

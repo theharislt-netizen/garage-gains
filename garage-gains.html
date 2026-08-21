@@ -800,6 +800,28 @@
   .equipped-slot-desc { font-size: 11px; color: var(--text-dim); }
   .star-row { color: var(--gain); font-size: 11px; letter-spacing: 1px; }
 
+  /* --- v5.2: named RPG gear slots + set-bonus tracker --- */
+  .gear-loadout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gear-slot-cell {
+    display: flex; gap: 8px; align-items: flex-start; background: var(--bg);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px;
+  }
+  .gear-slot-cell.locked { opacity: 0.42; }
+  .gear-slot-cell.empty .gear-slot-name, .gear-slot-cell.empty .gear-slot-desc { color: var(--text-dim); }
+  .gear-slot-ic { width: 28px; height: 28px; flex-shrink: 0; color: var(--a2); display: flex; align-items: center; justify-content: center; }
+  .gear-slot-ic svg { width: 26px; height: 26px; display: block; }
+  .gear-slot-label { font-family: 'Barlow Condensed'; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+  .gear-slot-name { font-family: 'Barlow Condensed'; font-size: 14px; font-weight: 600; line-height: 1.15; }
+  .gear-slot-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .gear-set-list { display: flex; flex-direction: column; gap: 8px; }
+  .gear-set-card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .gear-set-head { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Barlow Condensed'; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .gear-set-bonus { font-size: 11.5px; line-height: 1.45; }
+  .gear-set-bonus.active { color: var(--gain); }
+  .gear-set-bonus.locked { color: var(--text-dim); }
+  .item-bonus-now { text-align: center; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); margin: 4px 0 8px; }
+  .item-set-line { text-align: center; font-size: 11.5px; color: var(--text-dim); margin-bottom: 8px; }
+
   /* --- v2.8: RPG-style slot-grid Inventory, replacing the list view. Empty
      slots render as clearly-dashed placeholders so "empty" reads instantly,
      not just as an absent row. Star row (>2 star items only, see
@@ -1699,6 +1721,7 @@
         <div class="inv-primary-sub" id="invGemsCount"></div>
       </div>
     </div>
+    <div class="card" id="invLoadout"></div>
     <div class="inv-filter-row" id="invFilterRow"></div>
     <div class="card" id="invItemList"></div>
   </section>
@@ -1836,7 +1859,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.9</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.10</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2567,7 +2590,7 @@ const SHOP_BOX_COPY = {
   },
   relic: {
     name: 'Relic Box',
-    desc: 'Relics, shards, and stones for your loadout.'
+    desc: 'Relics, shards, and armor stones for your loadout.'
   }
 };
 function boxesPricedEqually(boxCost) {
@@ -2688,6 +2711,24 @@ function hideBoxRevealOverlay(overlay) {
   overlay.onclick = null;
   overlay.classList.remove('box-reveal-on', 'unique-reveal');
 }
+// Android WebView often paints only after JS goes idle. One rAF+timeout
+// still runs before the cover/hide frame, so loot/SVG/save hitch the tap.
+function afterPaint(fn) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setTimeout(fn, 0);
+    });
+  });
+}
+function scheduleIdleWork(fn, delayMs) {
+  const run = () => { try { fn(); } catch (err) { console.error(err); } };
+  const wait = delayMs == null ? 48 : delayMs;
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run, { timeout: Math.max(wait, 80) });
+  } else {
+    setTimeout(run, wait);
+  }
+}
 /* === box-reveal-lib end === */
 
 /* === item-catalog-lib begin === */
@@ -2703,23 +2744,23 @@ function _glyph(d) {
 }
 function itemIconSvg(id) {
   if (id === 'doubleDown') return _glyph('<path d="M13 2 4 14h7l-1 8 10-14h-7l1-6z"/>');
-  if (id === 'secondWind') return _svg('<path d="M4 9h11a3.2 3.2 0 1 1 0 6.4H9"/><path d="M4 14.2h9.5a2.6 2.6 0 1 0 0-5.2H8"/>');
-  if (id === 'ironFocus') return _svg('<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>');
-  if (id === 'emberHalo') return _svg('<circle cx="12" cy="13.2" r="7.2"/><path d="M12 5.2c.6 2.4-1.8 3.6-1.8 5.8a3.8 3.8 0 1 0 7.6 0c0-2.2-2.4-3.4-1.8-5.8 1.1 1.6 2.8 3.2 2.8 5.8a5.6 5.6 0 1 1-11.2 0c0-2.6 1.7-4.2 2.8-5.8z" fill="currentColor" stroke="none"/>');
-  if (id === 'gildthread') return _svg('<circle cx="12" cy="12" r="8"/><path d="M8.5 12h7M12 8.5v7"/><path d="M8 16.6c2.6 1.8 5.4 1.8 8 0"/>');
-  if (id === 'hexwick') return _glyph('<path d="M11.1 3.2h1.8l.7 3.2c2.8 1.2 4.6 3.6 4.6 6.6 0 3.6-2.6 7.4-6.2 8.8-3.6-1.4-6.2-5.2-6.2-8.8 0-3 1.8-5.4 4.6-6.6l.7-3.2z"/><rect x="11.2" y="10.4" width="1.6" height="5.2" rx="0.6" fill="var(--bg)"/>');
-  if (id === 'lorequill') return _svg('<path d="M5 19.2 9.2 18 20 7.2 16.8 4 6 14.8 5 19.2z"/><path d="M14.2 6.6 17.4 9.8"/><path d="M7.2 16.2 9.4 17.2"/>');
-  if (id === 'wornCharm') return _svg('<ellipse cx="12" cy="14.2" rx="6.4" ry="5.2"/><path d="M12 4.2v5"/><path d="M9.2 6.4c1.2.9 2.4.9 2.8 0 .4-.9 1.6-.9 2.8 0"/>');
-  if (id === 'grindersChair') return _svg('<path d="M6 4.2v9"/><path d="M18 4.2v16"/><path d="M6 13.2h12"/><path d="M6 20.2v-7"/><path d="M9.2 4.2 12 2.2 14.8 4.2"/>');
-  if (id === 'oathboundBand') return _svg('<circle cx="12" cy="13.2" r="6.4"/><path d="M9.2 8.4 12 5.2 14.8 8.4"/><path d="M12 9.6v6.4"/>');
-  if (id === 'vaultSigil') return _svg('<rect x="5.5" y="10" width="13" height="10.2" rx="2"/><path d="M8.6 10V7.6a3.4 3.4 0 0 1 6.8 0V10"/><circle cx="12" cy="15.4" r="1.3" fill="currentColor"/>');
-  if (id === 'featherweightWraps') return _svg('<path d="M4.2 4.2c5.6 3.6 9.2 11.2 15.6 15.6"/><path d="M4.2 19.8c5.6-3.6 9.2-11.2 15.6-15.6"/>');
-  if (id === 'cinderAnvil') return _svg('<path d="M5 14.2h14l-1.8 5.4H6.8L5 14.2z"/><path d="M7.2 14.2V11h9.6v3.2"/><path d="M12 6.6v4.4M8.8 8 12 5.2 15.2 8"/>');
-  if (id === 'spellboundChisel') return _svg('<path d="M14.2 3.2 20.8 9.8 11.4 19.2H5.2v-6.2L14.2 3.2z"/><path d="M8.2 16.2 10.8 18.8"/>');
-  if (id === 'legendaryDumbbell') return _svg('<rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="5" y="7" width="2.5" height="10" rx="1"/><rect x="16.5" y="7" width="2.5" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/>');
-  if (id === 'firstLight') return _glyph('<circle cx="12" cy="12" r="4"/><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.9 1.9M17 17l1.9 1.9M18.9 5.1 17 7M7 17l-1.9 1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>');
-  if (id === 'crownUnbroken') return _glyph('<path d="M3.6 16.4 5.8 7.2 12 11.4 18.2 7.2 20.4 16.4H3.6z"/><rect x="4.4" y="16.4" width="15.2" height="2.4" rx="0.6"/>');
-  if (id === 'lastEmber') return _glyph('<path d="M12 21c3.4-1.8 5.2-4.8 5.2-7.8 0-4.2-5.2-6.2-5.2-9.4 0 3.2-5.2 5.2-5.2 9.4 0 3 1.8 6 5.2 7.8z"/><circle cx="12" cy="13.4" r="2" fill="var(--bg)"/>');
+  if (id === 'secondWind') return _svg('<path d="M7 5.2 12 3.4 17 5.2 18.2 20.2 12 17.4 5.8 20.2z"/><path d="M8.4 10.2h7.2M8.4 13.4h6"/>');
+  if (id === 'ironFocus') return _svg('<path d="M12 3.4v5.6"/><path d="M8.2 4.6c1.4 1 2.5 1 3.8 0 1.3 1 2.4 1 3.8 0"/><circle cx="12" cy="15" r="5.4"/><circle cx="12" cy="15" r="2.6"/><circle cx="12" cy="15" r="1" fill="currentColor"/>');
+  if (id === 'emberHalo') return _svg('<circle cx="12" cy="14" r="6.2"/><circle cx="12" cy="14" r="3.2"/><path d="M9.6 8.2 12 5.2 14.4 8.2"/><path d="M12 4.2c.4 1.6-1.4 2.4-1.4 3.8a2.6 2.6 0 1 0 5.2 0c0-1.4-1.8-2.2-1.4-3.8" fill="currentColor" stroke="none"/>');
+  if (id === 'gildthread') return _svg('<path d="M7 5.2 12 3.4 17 5.2 18.2 20.2 12 17.4 5.8 20.2z"/><path d="M8.6 11.2h6.8M12 7.2v9"/><path d="M8.2 16.2c2.4 1.4 5.2 1.4 7.6 0"/>');
+  if (id === 'hexwick') return _svg('<path d="M6.8 11.2h10.4v8H6.8z"/><path d="M8.2 11.2V7.4M10.8 11.2V6.2M13.2 11.2V6.2M15.8 11.2V7.6"/><path d="M6.8 15h10.4"/><path d="M12 3.2l.6 2.8h-1.2z" fill="currentColor" stroke="none"/><path d="M12 6v2"/>');
+  if (id === 'lorequill') return _svg('<path d="M7 5.2 12 3.4 17 5.2 18.2 20.2 12 17.4 5.8 20.2z"/><path d="M12 6.4v10"/><path d="M8.4 14.2 15.2 9.4"/>');
+  if (id === 'wornCharm') return _svg('<path d="M5.2 14.2c0-5 3.2-9 6.8-9s6.8 4 6.8 9"/><path d="M5.2 14.2h13.6v2H5.2z"/><path d="M8 16.2h8v2.4c0 .7-.8 1.3-2 1.3h-4c-1.2 0-2-.6-2-1.3z"/><ellipse cx="12" cy="11.2" rx="2.2" ry="1.8"/>');
+  if (id === 'grindersChair') return _svg('<path d="M7.2 7.4 12 5.4 16.8 7.4 16 20.2H8z"/><path d="M9 11.6h6M12 7.6v12"/><path d="M8.2 4.4v4M15.8 4.4v4"/>');
+  if (id === 'oathboundBand') return _svg('<path d="M7.6 4.2h3.4v16.2H7.6z"/><path d="M13 4.2h3.4v16.2H13z"/><path d="M7.6 10.2h3.4M13 10.2h3.4"/><circle cx="12" cy="13.6" r="2.2"/>');
+  if (id === 'vaultSigil') return _svg('<path d="M5.2 14.2c0-5 3.2-9 6.8-9s6.8 4 6.8 9"/><path d="M5.2 14.2h13.6v2H5.2z"/><path d="M8 16.2h8v2.4c0 .7-.8 1.3-2 1.3h-4c-1.2 0-2-.6-2-1.3z"/><rect x="9.4" y="9.2" width="5.2" height="4.2" rx="0.8"/><path d="M10.4 9.2V8.2a1.6 1.6 0 0 1 3.2 0v1"/>');
+  if (id === 'featherweightWraps') return _svg('<path d="M7 11h10v8.2H7z"/><path d="M8.2 11V7.2M10.7 11V6.2M13.3 11V6.2M15.8 11V7.4"/><path d="M7 14.4h10"/><path d="M8.2 17.2h7.6"/>');
+  if (id === 'cinderAnvil') return _svg('<path d="M5.6 8.4h5.4v8H4.4c-.8 0-.8-2.6 1.2-2.6V8.4z"/><path d="M13 8.4h5.4v5.6c1.8 0 1.8 2.6 1 2.6H13V8.4z"/><path d="M5.6 13.4h5.4M13 13.4h5.4"/><path d="M8.4 5.2h7.2L14.2 8"/><path d="M12 3.6v2.4"/>');
+  if (id === 'spellboundChisel') return _svg('<path d="M7.6 4.2h3.4v16.2H7.6z"/><path d="M13 4.2h3.4v16.2H13z"/><path d="M7.6 10.2h3.4M13 10.2h3.4"/><path d="M6.2 16.4 10 19.8M14 16.4 17.8 19.8"/>');
+  if (id === 'legendaryDumbbell') return _svg('<path d="M5.6 8.4h5.4v8H4.4c-.8 0-.8-2.6 1.2-2.6V8.4z"/><path d="M13 8.4h5.4v5.6c1.8 0 1.8 2.6 1 2.6H13V8.4z"/><path d="M5.6 13.4h5.4M13 13.4h5.4"/><rect x="3.2" y="4.2" width="2.2" height="4.2" rx="0.5"/><rect x="18.6" y="4.2" width="2.2" height="4.2" rx="0.5"/><path d="M5.4 6.3h13.2"/>');
+  if (id === 'firstLight') return _svg('<path d="M12 3.4v5.2"/><path d="M8.2 4.6c1.4 1 2.5 1 3.8 0 1.3 1 2.4 1 3.8 0"/><circle cx="12" cy="15" r="4.4"/><path d="M12 8.8v-2M6.2 15H4.6M19.4 15h-1.6M7.4 10.2l-1.2-1.2M16.6 10.2l1.2-1.2"/>');
+  if (id === 'crownUnbroken') return _svg('<path d="M5.2 14.6c0-5 3.2-9 6.8-9s6.8 4 6.8 9"/><path d="M5.2 14.6h13.6v1.8H5.2z"/><path d="M4.2 8.2 7.4 12 12 8.6 16.6 12 19.8 8.2 18.4 15.2H5.6z"/>');
+  if (id === 'lastEmber') return _svg('<circle cx="12" cy="14" r="6.2"/><circle cx="12" cy="14" r="3.2"/><path d="M9.6 8.2 12 5.2 14.4 8.2"/><path d="M12 9.2c2.2-1.2 3.2-2.8 3.2-4.6 0-1.8-3.2-2.8-3.2-4.4 0 1.6-3.2 2.6-3.2 4.4 0 1.8 1 3.4 3.2 4.6z"/>');
   return '';
 }
 function matIconSvg(kind, cat) {
@@ -2786,63 +2827,189 @@ function starRowHtml(tmpl, star) {
   return `<div class="star-row">${'★'.repeat(filled)}${'☆'.repeat(max - filled)}</div>`;
 }
 const ITEMS_CATALOG = [
-  { id:'doubleDown', name:'Double Down', category:'boost', permanent:false, duration:1, icon:'⚡',
+  { id:'doubleDown', name:'Double Down', category:'boost', slot:'amulet', setId:null, permanent:false, duration:1, icon:'⚡',
     effectType:'points', scope:'session', baseValue:1.0,
     desc:'Doubles points earned for your next session.' },
-  { id:'secondWind', name:'Gilded Afterburn', category:'boost', permanent:false, duration:2, icon:'💨',
+  { id:'secondWind', name:'Gilded Afterburn', category:'boost', slot:'cloak', setId:null, permanent:false, duration:2, icon:'💨',
     effectType:'gold', scope:'session', baseValue:0.5,
     desc:'+50% gold from your next 2 sessions.' },
-  { id:'ironFocus', name:'Mindforge Sigil', category:'boost', permanent:true, maxStar:4, icon:'🎯',
+  { id:'ironFocus', name:'Mindforge Sigil', category:'boost', slot:'amulet', setId:'ashenGrinder', permanent:true, maxStar:4, icon:'🎯',
     effectType:'points', scope:'exercise', target:'plank', baseValue:0.08,
-    desc:'Bonus points on Plank.' },
-  { id:'emberHalo', name:'Ember Halo', category:'boost', permanent:true, maxStar:4, icon:'🔥',
+    desc:'+8% points on Plank at 0-star. Ashen Grinder amulet.' },
+  { id:'emberHalo', name:'Ember Halo', category:'boost', slot:'ring', setId:'ashenGrinder', permanent:true, maxStar:4, icon:'🔥',
     effectType:'points', scope:'session', baseValue:0.04,
-    desc:'A ring of leftover set-fire. Bonus points on every set.' },
-  { id:'gildthread', name:'Gildthread', category:'boost', permanent:true, maxStar:4, icon:'✨',
+    desc:'+4% session points at 0-star. Ashen Grinder ring of leftover set-fire.' },
+  { id:'gildthread', name:'Gildthread', category:'boost', slot:'cloak', setId:'vaultborn', permanent:true, maxStar:4, icon:'✨',
     effectType:'gold', scope:'session', baseValue:0.05,
-    desc:'Spun gold in the wrap. Bonus gold from every session.' },
-  { id:'hexwick', name:'Hexwick', category:'boost', permanent:true, maxStar:4, icon:'🕯️',
+    desc:'+5% session gold at 0-star. Vaultborn cloak of spun gold.' },
+  { id:'hexwick', name:'Hexwick', category:'boost', slot:'gloves', setId:'cinderforge', permanent:true, maxStar:4, icon:'🕯️',
     effectType:'enchantSuccess', scope:'session', baseValue:0.05,
-    desc:'A wick that burns luck. Improves enchant success chance.' },
-  { id:'lorequill', name:'Lorequill', category:'boost', permanent:true, maxStar:4, icon:'🪶',
+    desc:'+5% enchant success at 0-star. Cinderforge gauntlets.' },
+  { id:'lorequill', name:'Lorequill', category:'boost', slot:'cloak', setId:'cinderforge', permanent:true, maxStar:4, icon:'🪶',
     effectType:'enchantXp', scope:'session', baseValue:0.12,
-    desc:'Writes the attempt into muscle-memory. Bonus enchant XP.' },
-  { id:'firstLight', name:'First Light', category:'boost', permanent:true, unique:true, maxStar:5, icon:'☀️',
+    desc:'+12% enchant XP at 0-star. Cinderforge cloak.' },
+  { id:'firstLight', name:'First Light', category:'boost', slot:'amulet', setId:'unbroken', permanent:true, unique:true, maxStar:5, icon:'☀️',
     effectType:'points', scope:'session', baseValue:0.14,
-    desc:'The hour the gym still belongs to you. Unique. Session points surge.' },
-  { id:'lastEmber', name:'The Last Ember', category:'boost', permanent:true, unique:true, maxStar:5, icon:'🔥',
+    desc:'+14% session points. Unique Unbroken amulet — the hour the gym still belongs to you.' },
+  { id:'lastEmber', name:'The Last Ember', category:'boost', slot:'ring', setId:'unbroken', permanent:true, unique:true, maxStar:5, icon:'🔥',
     effectType:'enchantSuccess', scope:'session', baseValue:0.08,
-    desc:'The coal that would not go out. Unique. Enchanting rarely fails.' },
-  { id:'legendaryDumbbell', name:'The Iron Sovereign', category:'relic', permanent:true, unique:true, maxStar:5, icon:'🏋️',
+    desc:'+8% enchant success. Unique Unbroken ring — the coal that would not go out.' },
+  { id:'legendaryDumbbell', name:'The Iron Sovereign', category:'relic', slot:'boots', setId:'unbroken', permanent:true, unique:true, maxStar:5, icon:'🏋️',
     effectType:'points', scope:'equip', target:'dumbbell', equipRequired:'dumbbell', baseValue:0.10,
-    desc:'A named bell of black iron. Unique. Bonus points on every dumbbell lift.' },
-  { id:'crownUnbroken', name:'Crown of the Unbroken', category:'relic', permanent:true, unique:true, maxStar:5, icon:'👑',
+    desc:'+10% points on every dumbbell lift. Unique Unbroken boots of black iron.' },
+  { id:'crownUnbroken', name:'Crown of the Unbroken', category:'relic', slot:'head', setId:'unbroken', permanent:true, unique:true, maxStar:5, icon:'👑',
     effectType:'points', scope:'session', baseValue:0.12,
-    desc:'Worn by anyone who refused to skip. Unique. Session-wide point surge.' },
-  { id:'grindersChair', name:'Throne of the Grind', category:'relic', permanent:true, maxStar:4, icon:'🪑',
+    desc:'+12% session points. Unique Unbroken helm — worn by anyone who refused to skip.' },
+  { id:'grindersChair', name:'Throne of the Grind', category:'relic', slot:'chest', setId:'ashenGrinder', permanent:true, maxStar:4, icon:'🪑',
     effectType:'gold', scope:'session', equipRequired:'chair', baseValue:0.05,
-    desc:'Bonus gold from every completed session. Requires a chair in your gym.' },
-  { id:'wornCharm', name:'Ashen Charm', category:'relic', permanent:true, maxStar:4, icon:'🪨', starterOnly:true,
+    desc:'+5% session gold at 0-star. Ashen Grinder chestplate. Requires a chair in your gym.' },
+  { id:'wornCharm', name:'Ashen Charm', category:'relic', slot:'head', setId:'ashenGrinder', permanent:true, maxStar:4, icon:'🪨', starterOnly:true,
     effectType:'points', scope:'session', baseValue:0.02,
-    desc:'A scuffed first relic. Tiny bonus to session points — you will find better.' },
-  { id:'oathboundBand', name:'Oathbound Band', category:'relic', permanent:true, maxStar:4, icon:'💍',
+    desc:'+2% session points at 0-star. A scuffed first helm — you will find better.' },
+  { id:'oathboundBand', name:'Oathbound Band', category:'relic', slot:'legs', setId:'vaultborn', permanent:true, maxStar:4, icon:'💍',
     effectType:'points', scope:'session', baseValue:0.035,
-    desc:'A ring that remembers missed days. Bonus points on every set.' },
-  { id:'vaultSigil', name:'Vault Sigil', category:'relic', permanent:true, maxStar:4, icon:'🔐',
+    desc:'+3.5% session points at 0-star. Vaultborn greaves that remember missed days.' },
+  { id:'vaultSigil', name:'Vault Sigil', category:'relic', slot:'head', setId:'vaultborn', permanent:true, maxStar:4, icon:'🔐',
     effectType:'gold', scope:'session', baseValue:0.06,
-    desc:'Marks the take. Bonus gold from every session.' },
-  { id:'cinderAnvil', name:'Cinder Anvil', category:'relic', permanent:true, maxStar:4, icon:'🔨',
+    desc:'+6% session gold at 0-star. Vaultborn helm that marks the take.' },
+  { id:'cinderAnvil', name:'Cinder Anvil', category:'relic', slot:'boots', setId:'cinderforge', permanent:true, maxStar:4, icon:'🔨',
     effectType:'enchantXp', scope:'session', baseValue:0.14,
-    desc:'The table runs hotter. Bonus enchant XP.' },
-  { id:'spellboundChisel', name:'Spellbound Chisel', category:'relic', permanent:true, maxStar:4, icon:'🗡️',
+    desc:'+14% enchant XP at 0-star. Cinderforge boots — the table runs hotter.' },
+  { id:'spellboundChisel', name:'Spellbound Chisel', category:'relic', slot:'legs', setId:'cinderforge', permanent:true, maxStar:4, icon:'🗡️',
     effectType:'enchantSuccess', scope:'session', baseValue:0.05,
-    desc:'Cuts a cleaner rune. Improves enchant success chance.' },
-  { id:'featherweightWraps', name:'Windrider Wraps', category:'relic', permanent:false, duration:3, icon:'🧤',
+    desc:'+5% enchant success at 0-star. Cinderforge greaves with a cleaner rune.' },
+  { id:'featherweightWraps', name:'Windrider Wraps', category:'relic', slot:'gloves', setId:null, permanent:false, duration:3, icon:'🧤',
     effectType:'points', scope:'focus', target:'arms', equipRequired:'bands', baseValue:0.15,
-    desc:'+15% points on arm exercises for 3 sessions. Requires bands.' },
+    desc:'+15% points on arm exercises for 3 sessions. Occupies Gloves. Requires bands.' },
 ];
 function itemTemplate(itemId) { return ITEMS_CATALOG.find(i => i.id === itemId); }
 /* === item-catalog-lib end === */
+
+/* === equipment-sets-lib begin === */
+const GEAR_SLOTS = [
+  { id: 'head', label: 'Head', kind: 'relic', unlockLevel: 1 },
+  { id: 'chest', label: 'Chest', kind: 'relic', unlockLevel: 1 },
+  { id: 'legs', label: 'Legs', kind: 'relic', unlockLevel: 5 },
+  { id: 'boots', label: 'Boots', kind: 'relic', unlockLevel: 10 },
+  { id: 'amulet', label: 'Amulet', kind: 'boost', unlockLevel: 1 },
+  { id: 'ring', label: 'Ring', kind: 'boost', unlockLevel: 1 },
+  { id: 'gloves', label: 'Gloves', kind: 'boost', unlockLevel: 5 },
+  { id: 'cloak', label: 'Cloak', kind: 'boost', unlockLevel: 10 },
+];
+const GEAR_SETS = {
+  ashenGrinder: {
+    id: 'ashenGrinder',
+    name: 'Ashen Grinder',
+    pieceCount: 4,
+    bonuses: [
+      { count: 2, effectType: 'points', value: 0.03, label: '+3% session points' },
+      { count: 4, effectType: 'gold', value: 0.06, label: '+6% session gold' },
+    ],
+  },
+  cinderforge: {
+    id: 'cinderforge',
+    name: 'Cinderforge',
+    pieceCount: 4,
+    bonuses: [
+      { count: 2, effectType: 'enchantSuccess', value: 0.04, label: '+4% enchant success' },
+      { count: 4, effectType: 'enchantXp', value: 0.10, label: '+10% enchant XP' },
+    ],
+  },
+  vaultborn: {
+    id: 'vaultborn',
+    name: 'Vaultborn',
+    pieceCount: 3,
+    bonuses: [
+      { count: 2, effectType: 'gold', value: 0.03, label: '+3% session gold' },
+      { count: 3, effectType: 'gold', value: 0.05, label: '+5% session gold' },
+    ],
+  },
+  unbroken: {
+    id: 'unbroken',
+    name: 'The Unbroken',
+    pieceCount: 4,
+    bonuses: [
+      { count: 2, effectType: 'points', value: 0.05, label: '+5% session points' },
+      { count: 4, effectType: 'points', value: 0.10, label: '+10% session points' },
+    ],
+  },
+};
+function gearSlotById(id) { return GEAR_SLOTS.find(s => s.id === id) || null; }
+function gearSetById(id) { return (id && GEAR_SETS[id]) || null; }
+function isGearSlotUnlockedAtLevel(slotId, level) {
+  const slot = gearSlotById(slotId);
+  return !!slot && (Number(level) || 1) >= slot.unlockLevel;
+}
+function emptyGearLoadout() { return { slots: {} }; }
+function migrateEquippedToSlots(equipped, resolveSlotFn) {
+  const slots = {};
+  if (equipped && equipped.slots && typeof equipped.slots === 'object' && !Array.isArray(equipped.slots)) {
+    Object.keys(equipped.slots).forEach(key => {
+      if (equipped.slots[key]) slots[key] = equipped.slots[key];
+    });
+    const hasLegacy = !!(equipped.boost || equipped.relic);
+    if (!hasLegacy) return { slots };
+  }
+  const legacy = [];
+  if (equipped) {
+    ['boost', 'relic'].forEach(cat => {
+      const value = equipped[cat];
+      if (!value) return;
+      if (Array.isArray(value)) value.forEach(eq => { if (eq) legacy.push(eq); });
+      else legacy.push(value);
+    });
+  }
+  legacy.forEach(eq => {
+    const slotId = typeof resolveSlotFn === 'function' ? resolveSlotFn(eq) : null;
+    if (slotId && !slots[slotId]) slots[slotId] = eq;
+  });
+  return { slots };
+}
+function equippedSetCountsFromTemplates(templates) {
+  const counts = {};
+  (templates || []).forEach(tmpl => {
+    if (!tmpl || !tmpl.setId) return;
+    counts[tmpl.setId] = (counts[tmpl.setId] || 0) + 1;
+  });
+  return counts;
+}
+function activeSetBonusesFromCounts(counts) {
+  const out = [];
+  Object.keys(GEAR_SETS).forEach(setId => {
+    const set = GEAR_SETS[setId];
+    const n = (counts && counts[setId]) || 0;
+    (set.bonuses || []).forEach(bonus => {
+      out.push({
+        setId,
+        setName: set.name,
+        pieceCount: set.pieceCount,
+        equipped: n,
+        count: bonus.count,
+        effectType: bonus.effectType,
+        value: bonus.value,
+        label: bonus.label,
+        active: n >= bonus.count,
+      });
+    });
+  });
+  return out;
+}
+function setBonusValueForEffect(counts, effectType) {
+  let value = 0;
+  activeSetBonusesFromCounts(counts).forEach(bonus => {
+    if (bonus.active && bonus.effectType === effectType) value += bonus.value;
+  });
+  return value;
+}
+function itemSetName(tmpl) {
+  const set = tmpl && gearSetById(tmpl.setId);
+  return set ? set.name : '';
+}
+function itemSlotLabel(tmpl) {
+  const slot = tmpl && gearSlotById(tmpl.slot);
+  return slot ? slot.label : '';
+}
+/* === equipment-sets-lib end === */
 
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
@@ -3553,87 +3720,101 @@ function itemAppliesToExercise(template, exId) {
   if (template.scope === 'exercise') return ex.id === template.target;
   return false;
 }
-// v3.0 §5: Relic/Boost slots now scale with Level (1 base, 2nd at Level 5,
-// 3rd at Level 10) instead of a single fixed slot each.
+// v5.2: named RPG slots replace the old 1/2/3 anonymous Boost/Relic arrays.
+// Level 1 unlocks Head, Chest, Amulet, Ring; Level 5 adds Legs and Gloves;
+// Level 10 adds Boots and Cloak.
 function getEquipSlotCapacity(category) {
   const level = getLevel(state.totalPoints);
-  if (level >= 10) return 3;
-  if (level >= 5) return 2;
-  return 1;
+  return GEAR_SLOTS.filter(slot => slot.kind === category && level >= slot.unlockLevel).length;
 }
-// Resolves what's actually active in a specific equip slot right now — either
-// a permanent instance (persists until swapped) or a live temporary activation
-// (counts down in sessions, expires on its own). Expired temporary slots read
-// as empty. category is 'boost'/'relic', slotIndex is 0-based within that
-// category's (up to 3) slots.
-function getEquippedEffect(category, slotIndex) {
-  const eq = state.equipped && state.equipped[category] && state.equipped[category][slotIndex];
+function resolveEquippedSlotId(eq) {
+  if (!eq) return null;
+  if (eq.kind === 'permanent' && eq.instanceId) {
+    const inst = (state.inventory.permanent || []).find(x => x.instanceId === eq.instanceId);
+    const tmpl = inst && itemTemplate(inst.itemId);
+    return (tmpl && tmpl.slot) || null;
+  }
+  const tmpl = eq.itemId ? itemTemplate(eq.itemId) : null;
+  return (tmpl && tmpl.slot) || null;
+}
+function getEquippedEffectForSlot(slotId) {
+  const eq = state.equipped && state.equipped.slots && state.equipped.slots[slotId];
   if (!eq) return null;
   if (eq.kind === 'permanent') {
     const inst = (state.inventory.permanent || []).find(x => x.instanceId === eq.instanceId);
     if (!inst) return null;
-    return { template: itemTemplate(inst.itemId), star: inst.star, instanceId: inst.instanceId };
+    return { template: itemTemplate(inst.itemId), star: inst.star, instanceId: inst.instanceId, slot: slotId };
   }
   if (eq.kind === 'temporary') {
     if (!eq.sessionsLeft || eq.sessionsLeft <= 0) return null;
-    return { template: itemTemplate(eq.itemId), star: 0 };
+    return { template: itemTemplate(eq.itemId), star: 0, slot: slotId };
   }
   return null;
 }
-// All active effects across every unlocked slot in a category — the multi-
-// slot equivalent of the old single-slot getEquippedEffect() return value.
-function getAllEquippedEffects(category) {
-  const cap = getEquipSlotCapacity(category);
+function getAllEquippedGearEffects() {
+  const level = typeof getLevel === 'function' ? getLevel(state.totalPoints) : 1;
   const out = [];
-  for (let i = 0; i < cap; i++) {
-    const eff = getEquippedEffect(category, i);
-    if (eff) out.push(eff);
-  }
+  GEAR_SLOTS.forEach(slot => {
+    if (!isGearSlotUnlockedAtLevel(slot.id, level)) return;
+    const eff = getEquippedEffectForSlot(slot.id);
+    if (eff && eff.template) out.push(eff);
+  });
   return out;
+}
+function equippedSetBonusFor(effectType) {
+  const counts = equippedSetCountsFromTemplates(getAllEquippedGearEffects().map(eff => eff.template));
+  return setBonusValueForEffect(counts, effectType);
+}
+// Resolves what's actually active in a specific equip slot right now — either
+// a permanent instance (persists until swapped) or a live temporary activation
+// (counts down in sessions, expires on its own). Expired temporary slots read
+// as empty. category is 'boost'/'relic', slotIndex is ignored; named slots win.
+function getEquippedEffect(category, slotIndex) {
+  const list = getAllEquippedEffects(category);
+  return list[slotIndex] || null;
+}
+function getAllEquippedEffects(category) {
+  return getAllEquippedGearEffects().filter(eff => !category || (eff.template && eff.template.category === category));
 }
 function itemPointMultiplier(exId) {
   let mult = 1;
-  ['boost', 'relic'].forEach(category => {
-    getAllEquippedEffects(category).forEach(eff => {
-      if (!eff.template || eff.template.effectType !== 'points') return;
-      if (itemAppliesToExercise(eff.template, exId)) mult += effectiveItemValue(eff.template, eff.star);
-    });
+  getAllEquippedGearEffects().forEach(eff => {
+    if (!eff.template || eff.template.effectType !== 'points') return;
+    if (itemAppliesToExercise(eff.template, exId)) mult += effectiveItemValue(eff.template, eff.star);
   });
+  mult += equippedSetBonusFor('points');
   return mult;
 }
 function goldItemMultiplier() {
   let mult = 1;
-  ['boost', 'relic'].forEach(category => {
-    getAllEquippedEffects(category).forEach(eff => {
-      if (!eff.template || eff.template.effectType !== 'gold') return;
-      mult += effectiveItemValue(eff.template, eff.star);
-    });
+  getAllEquippedGearEffects().forEach(eff => {
+    if (!eff.template || eff.template.effectType !== 'gold') return;
+    mult += effectiveItemValue(eff.template, eff.star);
   });
+  mult += equippedSetBonusFor('gold');
   return mult;
 }
 function equippedBonusFor(effectType) {
   let bonus = 0;
-  ['boost', 'relic'].forEach(category => {
-    getAllEquippedEffects(category).forEach(eff => {
-      if (!eff.template || eff.template.effectType !== effectType) return;
-      bonus += effectiveItemValue(eff.template, eff.star);
-    });
+  getAllEquippedGearEffects().forEach(eff => {
+    if (!eff.template || eff.template.effectType !== effectType) return;
+    bonus += effectiveItemValue(eff.template, eff.star);
   });
+  bonus += equippedSetBonusFor(effectType);
   return bonus;
 }
 // Ticks down any active temporary equip slots by one session, clearing them once
 // they expire. Called once per completed session, never per set.
 function tickTemporaryEquips() {
-  ['boost', 'relic'].forEach(category => {
-    const cap = getEquipSlotCapacity(category);
-    for (let i = 0; i < cap; i++) {
-      const eq = state.equipped[category][i];
-      if (eq && eq.kind === 'temporary') {
-        eq.sessionsLeft -= 1;
-        if (eq.sessionsLeft <= 0) {
-          state.equipped[category][i] = null;
-          showToast(itemTemplate(eq.itemId).name + ' has worn off');
-        }
+  ensureInventoryShape();
+  GEAR_SLOTS.forEach(slot => {
+    const eq = state.equipped.slots[slot.id];
+    if (eq && eq.kind === 'temporary') {
+      eq.sessionsLeft -= 1;
+      if (eq.sessionsLeft <= 0) {
+        state.equipped.slots[slot.id] = null;
+        const tmpl = itemTemplate(eq.itemId);
+        showToast((tmpl && tmpl.name ? tmpl.name : 'Boost') + ' has worn off');
       }
     }
   });
@@ -3654,14 +3835,10 @@ function ensureInventoryShape() {
     if (t.unique) inst.star = UNIQUE_STAR;
     else inst.star = Math.min(Number(inst.star) || 0, REGULAR_MAX_STAR);
   });
-  // v3.0 §5: equip slots are now arrays (up to 3 per category), capacity
-  // gated by Level (see getEquipSlotCapacity). Migrates any old single-object
-  // equipped state into slot 0 so nobody's current gear silently vanishes.
-  if (!state.equipped || !Array.isArray(state.equipped.boost)) {
-    const oldBoost = state.equipped && state.equipped.boost && !Array.isArray(state.equipped.boost) ? state.equipped.boost : null;
-    const oldRelic = state.equipped && state.equipped.relic && !Array.isArray(state.equipped.relic) ? state.equipped.relic : null;
-    state.equipped = { boost: [oldBoost, null, null], relic: [oldRelic, null, null] };
-  }
+  // v5.2: named body slots replace the old 1/2/3 Boost/Relic arrays.
+  // Migrates any leftover array (or even older single-object) loadout so
+  // equipped gear is not silently dropped.
+  state.equipped = migrateEquippedToSlots(state.equipped, resolveEquippedSlotId);
   state.streakFreezes = state.streakFreezes || 0;
 }
 function grantItem(itemId) {
@@ -3893,13 +4070,7 @@ function salvageItem(instanceId) {
   if (idx === -1) return null;
   const inst = state.inventory.permanent[idx];
   const tmpl = itemTemplate(inst.itemId);
-  // Can't salvage something currently equipped — unequip first to avoid a
-  // silently-broken equip slot pointing at a deleted instance.
-  const cap = getEquipSlotCapacity(tmpl.category);
-  for (let i = 0; i < cap; i++) {
-    const eq = state.equipped[tmpl.category][i];
-    if (eq && eq.kind === 'permanent' && eq.instanceId === instanceId) { showToast('Unequip it first'); return null; }
-  }
+  if (findEquippedSlot(tmpl.category, { kind:'permanent', instanceId })) { showToast('Unequip it first'); return null; }
   const amount = SALVAGE_BASE_SHARDS + inst.star * SALVAGE_PER_STAR_SHARDS;
   state.inventory.permanent.splice(idx, 1);
   state.inventory.shards[tmpl.category] = (state.inventory.shards[tmpl.category] || 0) + amount;
@@ -3907,51 +4078,59 @@ function salvageItem(instanceId) {
   save();
   return { category: tmpl.category, amount, name: tmpl.name };
 }
-// v3.0 §5: equip now targets a specific slot within a category's (up to 3)
-// unlocked slots — auto-picks the first empty unlocked slot, or re-uses the
-// slot this exact instance is already in (so re-tapping Equip on an already-
-// equipped item is a no-op rather than duplicating it into a second slot),
-// or overwrites the last slot if every unlocked slot is already full.
+// v5.2: equip writes the piece into its named body slot, replacing whatever
+// was there. Locked slots refuse the equip and keep the item in inventory.
 function equipItem(category, opts) {
   ensureInventoryShape();
-  const cap = getEquipSlotCapacity(category);
-  let targetIdx = -1;
-  if (opts.kind === 'permanent') {
-    for (let i = 0; i < cap; i++) {
-      const eq = state.equipped[category][i];
-      if (eq && eq.kind === 'permanent' && eq.instanceId === opts.instanceId) { targetIdx = i; break; }
-    }
-  }
-  if (targetIdx === -1) { for (let i = 0; i < cap; i++) { if (!state.equipped[category][i]) { targetIdx = i; break; } } }
-  if (targetIdx === -1) targetIdx = cap - 1;
+  let tmpl;
+  let eq;
   if (opts.kind === 'permanent') {
     const inst = state.inventory.permanent.find(x => x.instanceId === opts.instanceId);
-    if (!inst || itemTemplate(inst.itemId).category !== category) return;
-    state.equipped[category][targetIdx] = { kind:'permanent', instanceId: opts.instanceId };
+    if (!inst) return;
+    tmpl = itemTemplate(inst.itemId);
+    if (!tmpl || tmpl.category !== category) return;
+    eq = { kind:'permanent', instanceId: opts.instanceId };
   } else if (opts.kind === 'temporary') {
     const have = state.inventory.tempCharges[opts.itemId] || 0;
-    const tmpl = itemTemplate(opts.itemId);
-    if (have < 1 || tmpl.category !== category) return;
-    state.inventory.tempCharges[opts.itemId] = have - 1;
-    state.equipped[category][targetIdx] = { kind:'temporary', itemId: opts.itemId, sessionsLeft: tmpl.duration };
+    tmpl = itemTemplate(opts.itemId);
+    if (have < 1 || !tmpl || tmpl.category !== category) return;
+    eq = { kind:'temporary', itemId: opts.itemId, sessionsLeft: tmpl.duration };
+  } else return;
+  const slotId = tmpl.slot;
+  if (!slotId) return;
+  const level = getLevel(state.totalPoints);
+  if (!isGearSlotUnlockedAtLevel(slotId, level)) {
+    const slot = gearSlotById(slotId);
+    showToast((slot ? slot.label : 'Slot') + ' unlocks at Level ' + (slot ? slot.unlockLevel : '?'));
+    return;
   }
+  if (opts.kind === 'temporary') {
+    state.inventory.tempCharges[opts.itemId] = (state.inventory.tempCharges[opts.itemId] || 0) - 1;
+    if (state.inventory.tempCharges[opts.itemId] <= 0) delete state.inventory.tempCharges[opts.itemId];
+  }
+  state.equipped.slots[slotId] = eq;
   save();
 }
-function unequipItem(category, slotIndex) { ensureInventoryShape(); state.equipped[category][slotIndex] = null; save(); }
+function unequipItem(category, slotId) {
+  ensureInventoryShape();
+  if (slotId && state.equipped.slots) state.equipped.slots[slotId] = null;
+  save();
+}
 function findEquippedSlot(category, opts) {
   ensureInventoryShape();
-  const slots = state.equipped[category] || [];
-  for (let i = 0; i < slots.length; i++) {
-    const eq = slots[i];
+  const slots = (state.equipped && state.equipped.slots) || {};
+  const ids = Object.keys(slots);
+  for (let i = 0; i < ids.length; i++) {
+    const eq = slots[ids[i]];
     if (!eq) continue;
-    if (opts.kind === 'permanent' && eq.kind === 'permanent' && eq.instanceId === opts.instanceId) return i;
-    if (opts.kind === 'temporary' && eq.kind === 'temporary' && eq.itemId === opts.itemId) return i;
+    if (opts.kind === 'permanent' && eq.kind === 'permanent' && eq.instanceId === opts.instanceId) return ids[i];
+    if (opts.kind === 'temporary' && eq.kind === 'temporary' && eq.itemId === opts.itemId) return ids[i];
   }
-  return -1;
+  return null;
 }
 function toggleEquipItem(category, opts) {
-  const idx = findEquippedSlot(category, opts);
-  if (idx >= 0) { unequipItem(category, idx); return 'unequipped'; }
+  const slotId = findEquippedSlot(category, opts);
+  if (slotId) { unequipItem(category, slotId); return 'unequipped'; }
   equipItem(category, opts);
   if (opts && opts.kind === 'permanent' && state.progression && !state.progression.equipTutorialDone) {
     const inst = state.inventory.permanent.find(x => x.instanceId === opts.instanceId);
@@ -6075,24 +6254,52 @@ function attachMorningStretchActiveListeners(s) {
 // SHOP / INVENTORY UI (v2.1)
 // =========================================================
 function renderEquippedSummary() {
-  const card = document.getElementById('equippedSummaryCard');
+  const card = document.getElementById('invLoadout') || document.getElementById('equippedSummaryCard');
   const goldGems = document.getElementById('goldGemsSummary');
-  if (!card) return;
   if (goldGems) goldGems.textContent = `${state.gold}g · ${state.gems} gems`;
-  const slotHtml = (category) => {
-    const effs = getAllEquippedEffects(category);
-    if (!effs.length) return `<div class="equipped-slot-row"><div><div class="equipped-slot-label">${category === 'boost' ? 'Boost' : 'Relic'}</div><div class="equipped-slot-desc">Nothing equipped</div></div></div>`;
-    return effs.map(eff => {
-      const val = Math.round(effectiveItemValue(eff.template, eff.star) * 100);
-      return `<div class="equipped-slot-row"><div>
-        <div class="equipped-slot-label">${category === 'boost' ? 'Boost' : 'Relic'}</div>
-        <div class="equipped-slot-name">${eff.template.name}</div>
-        <div class="equipped-slot-desc">+${val}% ${itemBonusStatLabel(eff.template)} — ${eff.template.desc}</div>
+  if (!card) return;
+  ensureInventoryShape();
+  const level = getLevel(state.totalPoints);
+  const slotCells = GEAR_SLOTS.map(slot => {
+    const unlocked = isGearSlotUnlockedAtLevel(slot.id, level);
+    if (!unlocked) {
+      return `<div class="gear-slot-cell locked"><div class="gear-slot-ic"></div><div>
+        <div class="gear-slot-label">${slot.label}</div>
+        <div class="gear-slot-desc">Unlocks at Level ${slot.unlockLevel}</div>
       </div></div>`;
+    }
+    const eff = getEquippedEffectForSlot(slot.id);
+    if (!eff || !eff.template) {
+      return `<div class="gear-slot-cell empty"><div class="gear-slot-ic"></div><div>
+        <div class="gear-slot-label">${slot.label}</div>
+        <div class="gear-slot-name">Empty</div>
+      </div></div>`;
+    }
+    const setName = itemSetName(eff.template);
+    const pct = itemBonusPercent(eff.template, eff.star);
+    return `<div class="gear-slot-cell filled"><div class="gear-slot-ic">${itemIconHtml(eff.template)}</div><div>
+      <div class="gear-slot-label">${slot.label}${setName ? ' · ' + setName : ''}</div>
+      <div class="gear-slot-name">${eff.template.name}</div>
+      <div class="gear-slot-desc">+${pct}% ${itemBonusStatLabel(eff.template)}</div>
+    </div></div>`;
+  }).join('');
+  const counts = equippedSetCountsFromTemplates(getAllEquippedGearEffects().map(eff => eff.template));
+  const setHtml = Object.keys(GEAR_SETS).map(setId => {
+    const set = GEAR_SETS[setId];
+    const n = counts[setId] || 0;
+    const bonuses = (set.bonuses || []).map(bonus => {
+      const on = n >= bonus.count;
+      return `<div class="gear-set-bonus ${on ? 'active' : 'locked'}">${on ? '●' : '○'} ${bonus.count}pc ${bonus.label}${on ? ' · Active' : ' · Locked'}</div>`;
     }).join('');
-  };
-  card.innerHTML = slotHtml('boost') + slotHtml('relic');
-  card.onclick = openShopModal;
+    return `<div class="gear-set-card">
+      <div class="gear-set-head"><span>${set.name}</span><span class="mono">${n}/${set.pieceCount}</span></div>
+      ${bonuses}
+    </div>`;
+  }).join('');
+  card.innerHTML = `<div class="section-title" style="margin-top:0;">Loadout</div>
+    <div class="gear-loadout">${slotCells}</div>
+    <div class="section-title">Set bonuses</div>
+    <div class="gear-set-list">${setHtml}</div>`;
 }
 
 // =========================================================
@@ -6113,6 +6320,7 @@ function renderEquippedSummary() {
 const INV_GRID_COLUMNS = 4;
 function renderInventoryTab() {
   ensureInventoryShape();
+  renderEquippedSummary();
   const adminBanner = document.getElementById('adminInvBanner');
   if (adminBanner) adminBanner.style.display = isOwnerAdminSandbox() ? 'block' : 'none';
   const filterRow = document.getElementById('invFilterRow');
@@ -6162,7 +6370,7 @@ function renderInventoryTab() {
   });
   const permSlots = permItems.map(inst => {
     const tmpl = itemTemplate(inst.itemId);
-    const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
+    const isEquipped = !!findEquippedSlot(tmpl.category, { kind:'permanent', instanceId: inst.instanceId });
     const flash = shouldFlashItemType(state, itemTypeKey('item', inst.itemId)) || (!!(state.progression && state.progression.nudgeEquip) && inst.itemId === STARTER_RELIC_ID);
     const unique = isUniqueItem(tmpl);
     const glow = unique ? 'star-glow-5' : (flash ? 'unlock-pulse' : starGlowClass(inst.star, false));
@@ -6254,13 +6462,12 @@ function renderItemDetailModal() {
       const content = document.getElementById('boxRevealContent');
       window.__boxRevealOpen = true;
       coverBoxRevealOverlay(overlay);
-      afterPaint(() => {
+        afterPaint(() => {
         const loot = openStarterVictoryBox(state);
         if (!loot) {
           hideBoxRevealOverlay(overlay);
           window.__boxRevealOpen = false;
-          save();
-          renderInventoryTab();
+          scheduleIdleWork(() => { save(); renderInventoryTab(); });
           return;
         }
         paintBoxRevealOverlay(overlay, content, 'starter', null);
@@ -6270,7 +6477,7 @@ function renderItemDetailModal() {
           result: { kind: 'new', tmpl: relicTmpl },
           extraLine: '+1 Relic Enchantment Stone'
         });
-        afterPaint(() => save());
+        scheduleIdleWork(() => save());
       });
     });
     return;
@@ -6281,15 +6488,22 @@ function renderItemDetailModal() {
     const tmpl = itemTemplate(inst.itemId);
     acknowledgeItemType(state, itemTypeKey('item', inst.itemId));
     save();
-    const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
+    const isEquipped = !!findEquippedSlot(tmpl.category, { kind:'permanent', instanceId: inst.instanceId });
     const nudgeEquip = !!(state.progression && state.progression.nudgeEquip && inst.itemId === STARTER_RELIC_ID && !isEquipped);
+    const setObj = gearSetById(tmpl.setId);
+    const setCounts = equippedSetCountsFromTemplates(getAllEquippedGearEffects().map(e => e.template));
+    const setHave = setObj ? (setCounts[setObj.id] || 0) : 0;
+    const slotLabel = itemSlotLabel(tmpl);
     body.innerHTML = `
       <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
-        <div class="inv-item-name">${tmpl.name} <span class="mono" style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">${tmpl.category}</span></div>
+        <div class="inv-item-name">${tmpl.name}</div>
+        <div class="l2" style="text-transform:uppercase; letter-spacing:0.08em;">${[itemSetName(tmpl), slotLabel || tmpl.category].filter(Boolean).join(' · ')}</div>
         ${starRowHtml(tmpl, inst.star)}
         ${isUniqueItem(tmpl) ? '<div class="l2" style="color:#f4f1ea; letter-spacing:0.14em; text-transform:uppercase; margin-top:4px;">Unique</div>' : ''}
       </div>
+      <div class="item-bonus-now">+${itemBonusPercent(tmpl, inst.star)}% ${itemBonusStatLabel(tmpl)}</div>
+      ${setObj ? `<div class="item-set-line">${setHave}/${setObj.pieceCount} equipped · ${(setObj.bonuses || []).map(b => b.count + 'pc ' + b.label).join(' · ')}</div>` : ''}
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
         <button class="inv-btn inv-btn-equip${isEquipped ? ' equipped' : ''}${nudgeEquip ? ' unlock-pulse' : ''}" id="itemDetailEquipBtn">${isEquipped ? 'Equipped' : 'Equip'}</button>
@@ -6330,13 +6544,16 @@ function renderItemDetailModal() {
     if (!tmpl || count <= 0) { closeItemDetailModal(); return; }
     acknowledgeItemType(state, itemTypeKey('temp', itemId));
     save();
-    const isTempEquipped = findEquippedSlot(tmpl.category, { kind:'temporary', itemId: tmpl.id }) >= 0;
+    const isTempEquipped = !!findEquippedSlot(tmpl.category, { kind:'temporary', itemId: tmpl.id });
+    const slotLabel = itemSlotLabel(tmpl);
     body.innerHTML = `
       <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
-        <div class="inv-item-name">${tmpl.name} <span class="mono" style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">${tmpl.category}</span></div>
+        <div class="inv-item-name">${tmpl.name}</div>
+        <div class="l2" style="text-transform:uppercase; letter-spacing:0.08em;">${slotLabel || tmpl.category} · Temp</div>
         <div class="quest-type-tag warmup-tag">TEMP · x${count}</div>
       </div>
+      <div class="item-bonus-now">+${itemBonusPercent(tmpl, 0)}% ${itemBonusStatLabel(tmpl)}</div>
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center; flex-wrap:wrap;">
         <button class="inv-btn${isTempEquipped ? ' equipped' : ''}" id="itemDetailActivateBtn">${isTempEquipped ? 'Equipped' : 'Activate'}</button>
@@ -6697,14 +6914,17 @@ function dismissBoxReveal() {
   if (window.__boxRevealTimer) { clearTimeout(window.__boxRevealTimer); window.__boxRevealTimer = null; }
   const overlay = document.getElementById('boxRevealOverlay');
   hideBoxRevealOverlay(overlay);
+  const shopOpen = !!(document.getElementById('shopModal') && document.getElementById('shopModal').style.display !== 'none');
+  const invView = document.getElementById('view-inventory');
+  const invOpen = !!(invView && invView.classList.contains('active'));
   afterPaint(() => {
-    save();
     refreshHeaderCurrency();
-    if (document.getElementById('shopModal') && document.getElementById('shopModal').style.display !== 'none') {
-      renderShopModal();
-      renderEquippedSummary();
-    }
-    renderInventoryTab();
+  });
+  scheduleIdleWork(() => {
+    save();
+    if (shopOpen) renderShopModal();
+    else if (invOpen) renderInventoryTab();
+    renderEquippedSummary();
   });
 }
 // v3.0 §6: box opening excitement pass — resolves a rarity tier for the
@@ -6812,7 +7032,7 @@ function defaultState() {
     gold: 0,
     gems: 0,
     inventory: { permanent: [], tempCharges: {} },
-    equipped: { boost: null, relic: null },
+    equipped: { slots: {} },
     streakFreezes: 0,
     unlockedTitles: [],
     selectedTitle: null,
@@ -6909,7 +7129,7 @@ function emptyShopInventory() {
   };
 }
 function emptyShopLoadout() {
-  return { boost: [null, null, null], relic: [null, null, null] };
+  return { slots: {} };
 }
 function normalizeTesterName(n) {
   return String(n || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -7732,9 +7952,6 @@ function showToast(msg, ms) {
   toastTimer = setTimeout(()=> t.classList.remove('show'), ms || 2200);
 }
 
-function afterPaint(fn) {
-  requestAnimationFrame(() => setTimeout(fn, 0));
-}
 function refreshHeaderCurrency() {
   const gold = document.getElementById('nbGoldVal');
   if (gold) gold.textContent = state.gold;

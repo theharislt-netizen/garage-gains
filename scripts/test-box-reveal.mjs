@@ -71,6 +71,6 @@ assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('@keyframes boxItemIn
   'item-in must not scale');
 
 assert(html.includes("showBoxReveal('starter'"), 'starter box uses the starter build-up, not a shop chest');
-assert(html.includes('3.4.9'), 'About version bumped for the box-open fix');
+assert(html.includes('3.4.10'), 'About version bumped for the box-open fix');
 
 console.log('box-reveal tests ok — chest art on open, prize stays visible, Buy guarded after dismiss');
