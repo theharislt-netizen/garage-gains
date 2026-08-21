@@ -817,9 +817,19 @@
   .equipped-slot-name { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 600; }
   .equipped-slot-desc { font-size: 11px; color: var(--text-dim); }
   .star-row { font-size: 11px; letter-spacing: 1px; line-height: 1; }
-  .star-on { color: var(--gain); }
-  .star-off { color: var(--text-dim); opacity: 0.55; }
-  .item-visual { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+  .star-on { color: #ffd36a; }
+  .star-off { color: rgba(255,255,255,0.38); opacity: 1; }
+  .item-visual { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 0; }
+  .item-visual .item-detail-icon { margin-bottom: 0; }
+  .item-visual .item-detail-icon + .star-row { font-size: 14px; letter-spacing: 2px; margin-top: -14px; }
+  .item-visual .star-row,
+  .loadout-frame .star-row,
+  .enchant-drop .star-row,
+  .item-detail-icon + .star-row,
+  #boxPrizeStars .star-row {
+    position: relative; z-index: 2; margin-top: -11px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(0,0,0,0.8);
+  }
 
   /* --- v5.2: named RPG gear slots + set-bonus tracker --- */
   .gear-loadout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -926,7 +936,7 @@
     font-family: 'Barlow Condensed'; font-size: 12.5px; font-weight: 600; line-height: 1.2;
     text-align: center; max-width: 100%;
   }
-  .loadout-frame .star-row { font-size: 8px; letter-spacing: 0.4px; margin-top: 2px; }
+  .loadout-frame .star-row { font-size: 9px; letter-spacing: 0.6px; margin-top: -10px; }
   .loadout-frame.empty .loadout-frame-name { color: var(--text-dim); }
 
   /* --- v2.8: RPG-style slot-grid Inventory, replacing the list view. Empty
@@ -1007,9 +1017,9 @@
     0%, 100% { box-shadow: 0 0 12px 3px rgba(255,255,255,0.48), 0 0 22px 6px rgba(255,255,255,0.22); }
     50% { box-shadow: 0 0 22px 7px rgba(255,255,255,0.78), 0 0 34px 11px rgba(255,255,255,0.34); }
   }
-  .inv-slot .star-row { font-size: 8px; letter-spacing: 0.5px; }
-  .inv-slot .item-visual { gap: 2px; height: 100%; }
-  .enchant-drop .star-row { font-size: 8px; letter-spacing: 0.4px; }
+  .inv-slot .star-row { font-size: 9px; letter-spacing: 0.6px; margin-top: -10px; }
+  .inv-slot .item-visual { gap: 0; height: 100%; }
+  .enchant-drop .star-row { font-size: 9px; letter-spacing: 0.5px; margin-top: -8px; }
   .inv-slot-count { position: absolute; bottom: 3px; right: 5px; font-family: 'JetBrains Mono'; font-size: 9px; color: var(--text-dim); }
   .inv-temp-badge {
     position: absolute; top: -5px; right: -5px; background: var(--a2); color: #08070d;
@@ -1099,11 +1109,12 @@
   .craft-stone-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #b455f5, var(--a2)); }
   .craft-stone-card .craft-btn { width: auto; margin: 0; padding: 10px 16px; }
   .box-reveal-card { padding: 30px 20px; }
-  .box-reveal-card .rarity-burst { width: 100px; height: 100px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; background: radial-gradient(circle, rgba(var(--a1-rgb),0.35), transparent 70%); animation: boxItemIn 0.28s ease-out; }
-  .box-reveal-card .rn { font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 700; }
-  #boxPrizeStars { min-height: 22px; margin: 8px 0 2px; text-align: center; }
+  .box-reveal-card .rarity-burst { width: 100px; height: 100px; margin: 0 auto 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; background: radial-gradient(circle, rgba(var(--a1-rgb),0.35), transparent 70%); animation: boxItemIn 0.28s ease-out; }
+  .box-reveal-card .rn { font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 700; margin-top: 10px; }
+  #boxPrizeStars { min-height: 22px; margin: -16px 0 0; text-align: center; position: relative; z-index: 2; }
   #boxPrizeStars .star-row, .box-reveal-card .star-row {
-    font-size: 20px; letter-spacing: 4px; line-height: 1; display: block;
+    font-size: 22px; letter-spacing: 3px; line-height: 1; display: block;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.8);
   }
   .box-reveal-card .rd { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
   .box-reveal-hint { color: var(--text-dim); font-size: 12px; margin-top: 14px; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Barlow Condensed'; }
@@ -1935,8 +1946,8 @@
             <img class="item-photo" id="boxPrizePhoto" alt="" width="64" height="64" decoding="async" hidden>
             <span id="boxPrizeMat"></span>
           </div>
-          <div class="rn" id="boxPrizeName"></div>
           <div id="boxPrizeStars"></div>
+          <div class="rn" id="boxPrizeName"></div>
           <div class="rd" id="boxPrizeBody"></div>
           <div class="box-reveal-hint">Tap to close</div>
         </div>
@@ -6924,9 +6935,9 @@ function loadoutFrameHtml(slot, level) {
   const stars = filled ? itemStarsHtml(eff.template, { star: eff.star, starCap: eff.starCap }) : '';
   return `<button type="button" class="loadout-frame ${filled ? 'filled' : 'empty'}${glow ? ' ' + glow : ''}${unlocked ? '' : ' locked'}" data-loadout-slot="${slot.id}"${filled ? ` data-loadout-kind="${kindAttr}" data-loadout-id="${idAttr}"` : ''} ${filled ? '' : 'disabled'}>
     <div class="loadout-frame-ring">${icon}</div>
+    ${stars}
     <div class="loadout-frame-label">${slot.label}</div>
     <div class="loadout-frame-name">${unlocked ? name : 'Locked'}</div>
-    ${stars}
   </button>`;
 }
 function renderEquippedSummary() {
@@ -7166,11 +7177,10 @@ function renderItemDetailModal() {
       ? `<div class="item-unequip-warn">Gear shouldn't be removed — this piece is holding an active set bonus.</div>`
       : '';
     body.innerHTML = `
-      <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
+      ${itemVisualHtml(tmpl, inst, 'item-detail-icon')}
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${tmpl.name}</div>
         <div class="l2" style="text-transform:uppercase; letter-spacing:0.08em;">${[itemSetName(tmpl), slotLabel || tmpl.category].filter(Boolean).join(' · ')}</div>
-        ${itemStarsHtml(tmpl, inst)}
         ${isUniqueItem(tmpl) ? '<div class="l2" style="color:#f4f1ea; letter-spacing:0.14em; text-transform:uppercase; margin-top:4px;">Unique</div>' : ''}
       </div>
       <div class="item-bonus-now">+${itemBonusPercent(tmpl, inst.star)}% ${itemBonusStatLabel(tmpl)}</div>
@@ -7220,7 +7230,7 @@ function renderItemDetailModal() {
     save();
     const slotLabel = itemSlotLabel(tmpl);
     body.innerHTML = `
-      <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
+      ${itemVisualHtml(tmpl, { star: 0, starCap: 0 }, 'item-detail-icon')}
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${tmpl.name}</div>
         <div class="l2" style="text-transform:uppercase; letter-spacing:0.08em;">${slotLabel || tmpl.category} · Temp</div>

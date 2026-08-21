@@ -66,15 +66,22 @@ const prizeFn = sliceFn('fillBoxRevealPrize', 'revealFilledBoxPrize');
 assert(prizeFn.includes('itemStarsHtml'), 'box-open prize uses the shared star helper');
 assert(!prizeFn.includes('starRowHtml(tmpl, inst && inst.star'), 'prize fill is not an ad-hoc starRowHtml path');
 assert(html.includes('id="boxPrizeStars"'), 'prize card has a star mount');
-assert(html.includes('#boxPrizeStars .star-row') && html.includes('font-size: 20px'),
+assert(html.indexOf('id="boxPrizeStars"') > html.indexOf('id="boxPrizeIcon"'), 'prize stars sit with the item art');
+assert(html.indexOf('id="boxPrizeStars"') < html.indexOf('id="boxPrizeName"'),
+  'prize stars sit just below the icon, not under the item name');
+assert(html.includes('#boxPrizeStars .star-row') && html.includes('font-size: 22px'),
   'prize-card stars are large enough to read');
+assert(html.includes('margin-top: -11px') || html.includes('margin-top: -14px'),
+  'stars pull up onto the item portrait');
 
 const invFn = sliceFn('renderInventoryTab', 'positionItemDetailPopup');
 assert(invFn.includes('itemVisualHtml(tmpl, inst'), 'Inventory grid uses the shared item visual');
 const loadoutFn = sliceFn('loadoutFrameHtml', 'renderEquippedSummary');
 assert(loadoutFn.includes('itemStarsHtml'), 'Loadout frames use the shared star helper');
+assert(loadoutFn.indexOf('${stars}') < loadoutFn.indexOf('loadout-frame-label'),
+  'Loadout stars sit on the portrait, not under the slot name');
 const detailFn = sliceFn('renderItemDetailModal', 'openInventoryBox');
-assert(detailFn.includes('itemStarsHtml(tmpl, inst)'), 'item detail popup uses the shared star helper');
+assert(detailFn.includes('itemVisualHtml(tmpl, inst'), 'item detail popup uses the shared item visual');
 const enchantRender = sliceFn('renderEnchantModal', 'renderShopModal');
 assert(enchantRender.includes('itemStarsHtml(tmpl, inst)'), 'enchant item slot shows stars');
 assert(enchantRender.includes('itemVisualHtml(t, p'), 'enchant picker uses the shared item visual');
