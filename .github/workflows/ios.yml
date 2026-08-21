@@ -38,6 +38,9 @@ jobs:
       - name: Package iPhone IPA
         env:
           IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           chmod +x scripts/package-ios-ipa.sh
           SKIP_PREPARE=1 bash scripts/package-ios-ipa.sh

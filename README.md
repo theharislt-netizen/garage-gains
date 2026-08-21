@@ -19,9 +19,13 @@ RIGCORE’s iPhone app is a native Capacitor shell (`ios/`, bundle id `com.rigco
 Friends can install that native app only through **TestFlight**, which needs an Apple Developer account ($99/year) so the IPA can be signed:
 
 1. Enroll at [developer.apple.com/programs](https://developer.apple.com/programs).
-2. In the GitHub repo, add Action secret `IOS_TEAM_ID` (your 10-character Team ID).
-3. Re-run the **iOS** workflow. It writes a signed IPA and uploads it as the `RIGCORE-iOS` artifact.
-4. Upload that IPA to App Store Connect → TestFlight and send your friends the TestFlight invite.
+2. In GitHub → Settings → Secrets and variables → Actions, add:
+   - `IOS_TEAM_ID` (Team ID from https://developer.apple.com/account)
+   - `APP_STORE_CONNECT_KEY_ID`
+   - `APP_STORE_CONNECT_ISSUER_ID`
+   - `APP_STORE_CONNECT_API_KEY` (contents of the `.p8` key from App Store Connect → Users and Access → Integrations → App Store Connect API)
+3. In App Store Connect, create an iOS app with bundle id `com.rigcore.app`.
+4. Re-run the **iOS** workflow. It signs the IPA and uploads it to TestFlight.
 
 On a Mac you can also run:
 
