@@ -816,9 +816,9 @@
   .equipped-slot-label { font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   .equipped-slot-name { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 600; }
   .equipped-slot-desc { font-size: 11px; color: var(--text-dim); }
-  .star-row { font-size: 11px; letter-spacing: 1px; line-height: 1; }
+  .star-row { font-size: 11px; letter-spacing: 1px; line-height: 1; text-align: center; }
   .star-on { color: #ffd36a; }
-  .star-off { color: rgba(255,255,255,0.38); opacity: 1; }
+  .star-off { color: rgba(255,211,106,0.42); opacity: 1; }
   .item-visual { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 0; }
   .item-visual .item-detail-icon { margin-bottom: 0; }
   .item-visual .item-detail-icon + .star-row { font-size: 14px; letter-spacing: 2px; margin-top: -14px; }
@@ -7321,8 +7321,7 @@ function openSalvageConfirm(instanceId) {
   const catLabel = tmpl.category === 'relic' ? 'Relic' : 'Boost';
   const body = document.getElementById('salvageConfirmBody');
   body.innerHTML = `
-    <div class="item-detail-icon">${itemIconHtml(tmpl)}</div>
-    ${itemStarsHtml(tmpl, inst)}
+    ${itemVisualHtml(tmpl, inst, 'item-detail-icon')}
     <div class="inv-item-name" style="text-align:center;">${tmpl.name}</div>
     <div class="confirm-copy">Salvage this item? It is permanently destroyed.</div>
     <div class="confirm-payout">You'll receive +${amount} ${catLabel} shards</div>
