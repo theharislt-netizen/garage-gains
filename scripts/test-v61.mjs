@@ -141,6 +141,6 @@ assert(payout.relicShards === 8 && inv.shards.relic === 8,
 assert(payout.boostShards === 16 && inv.shards.boost === 16,
   'two unknown temps convert to boost shards');
 
-assert(html.includes('3.4.20'), 'About version bumped for v6.1');
+assert(html.includes('3.4.21'), 'About version bumped for v6.1');
 
 console.log('v6.1 tests ok — relic/boost counts from Loadout slots, Boots leftovers remapped or salvaged');

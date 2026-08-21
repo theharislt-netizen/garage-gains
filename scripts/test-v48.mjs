@@ -151,6 +151,6 @@ const glowRule = html.slice(glowAt, html.indexOf('}', glowAt) + 1);
 assert(glowRule.includes('animation: tutorial-guidance-glow-pulse'), 'glow pulses with box-shadow');
 assert(!/transform|scale\s*\(/i.test(glowRule), 'guidance glow must not use transform/scale');
 assert(html.includes("source: 'forecast'") && html.includes("source: 'tested'"), 'baselines record tested vs forecast origin');
-assert(html.includes('3.4.20'), 'About version bumped for v4.8');
+assert(html.includes('3.4.21'), 'About version bumped for v4.8');
 
 console.log('v4.8 tests ok — baseline quest, signal forecasts, silent refine, intro, Dashboard default, glow');

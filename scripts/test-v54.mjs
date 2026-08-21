@@ -137,7 +137,7 @@ assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yiel
 assert(starterOpen.includes('coverBoxRevealOverlay'), 'starter cover starts the shake via the shared helper');
 assert(html.includes('openInventoryBox(box)'), 'Inventory Open Box button routes through the shared opener');
 
-assert(html.includes('3.4.20'), 'About version bumped for v5.4');
+assert(html.includes('3.4.21'), 'About version bumped for v5.4');
 
 const matIconHtml = vm.runInContext('matIconHtml', ctx);
 const shardSvg = matIconHtml('shards', 'boost');

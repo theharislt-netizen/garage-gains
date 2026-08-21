@@ -94,10 +94,11 @@ assert(html.includes('Open Box'), 'Open Box label is still present');
 const activateBtn = html.slice(html.indexOf('id="itemDetailActivateBtn"') - 90, html.indexOf('id="itemDetailActivateBtn"') + 40);
 assert(activateBtn.includes('inv-btn-equip'), 'Activate was a missed primary and now matches Equip');
 
-const destroyBtn = html.slice(html.indexOf('id="itemDetailDestroyBtn"') - 50, html.indexOf('id="itemDetailDestroyBtn"') + 40);
-assert(!destroyBtn.includes('inv-btn-equip'), 'Destroy stays a secondary action');
+const destroyBtn = html.slice(html.indexOf('id="itemDetailDestroyBtn"') - 80, html.indexOf('id="itemDetailDestroyBtn"') + 40);
+assert(destroyBtn.includes('inv-btn-salvage'), 'Destroy uses the same danger style as Salvage');
+assert(!destroyBtn.includes('inv-btn-equip'), 'Destroy is not the primary Equip style');
 assert(html.includes('class="inv-btn" id="salvageConfirmCancel"'), 'Cancel stays a secondary bordered button');
 
-assert(html.includes('3.4.20'), 'About version bumped for v6.4');
+assert(html.includes('3.4.21'), 'About version bumped for v6.4');
 
 console.log('v6.4 tests ok — earned boxes stay sealed, shop still opens on Buy, Open/Activate match Equip');

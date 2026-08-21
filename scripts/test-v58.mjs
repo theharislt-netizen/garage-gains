@@ -128,6 +128,6 @@ const enchantRule = html.slice(enchantCssAt, html.indexOf('}', enchantCssAt) + 1
 assert(enchantRule.includes('display: flex') && enchantRule.includes('align-items: center') && enchantRule.includes('justify-content: center'),
   'ITEM and STONE placeholders share a centered icon box');
 
-assert(html.includes('3.4.20'), 'About version bumped for v5.8');
+assert(html.includes('3.4.21'), 'About version bumped for v5.8');
 
 console.log('v5.8 tests ok — 3+3 loadout, inventory move, set bonuses on items, shard card, enchant centering');
