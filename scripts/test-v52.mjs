@@ -82,16 +82,16 @@ coverBoxRevealOverlay(overlay);
 hideBoxRevealOverlay(overlay);
 assert(!overlay.classList.contains('box-reveal-on'), 'hide still idles the overlay');
 
-assert(Array.isArray(GEAR_SLOTS) && GEAR_SLOTS.length === 8, 'eight named body slots');
-['head', 'chest', 'legs', 'boots', 'amulet', 'ring', 'gloves', 'cloak'].forEach(id => {
+assert(Array.isArray(GEAR_SLOTS) && GEAR_SLOTS.length === 6, 'six loadout slots');
+['amulet', 'ring', 'cloak', 'boost1', 'boost2', 'boost3'].forEach(id => {
   assert(GEAR_SLOTS.some(s => s.id === id), id + ' slot exists');
 });
-assert(isGearSlotUnlockedAtLevel('head', 1) && isGearSlotUnlockedAtLevel('amulet', 1),
-  'level 1 unlocks starter armor and accessory slots');
-assert(!isGearSlotUnlockedAtLevel('legs', 4) && isGearSlotUnlockedAtLevel('gloves', 5),
-  'level 5 unlocks legs and gloves');
-assert(!isGearSlotUnlockedAtLevel('boots', 9) && isGearSlotUnlockedAtLevel('cloak', 10),
-  'level 10 unlocks boots and cloak');
+assert(!GEAR_SLOTS.some(s => s.id === 'boots' || s.id === 'head' || s.id === 'gloves'),
+  'Boots / Head / Gloves are not loadout slots');
+assert(isGearSlotUnlockedAtLevel('amulet', 1) && isGearSlotUnlockedAtLevel('boost1', 1),
+  'relic and boost slots are available at level 1');
+assert(isGearSlotUnlockedAtLevel('cloak', 1) && isGearSlotUnlockedAtLevel('boost3', 1),
+  'cloak and third boost slot are not level-gated');
 
 assert(GEAR_SETS.ashenGrinder && GEAR_SETS.cinderforge && GEAR_SETS.vaultborn && GEAR_SETS.unbroken,
   'four named gear sets');
@@ -111,26 +111,33 @@ assert(closeTo(setBonusValueForEffect({ cinderforge: 4 }, 'enchantXp'), 0.10), '
 
 const migrated = migrateEquippedToSlots(
   { boost: [{ kind: 'permanent', instanceId: 'i1' }, null, null], relic: [{ kind: 'permanent', instanceId: 'i2' }, null, null] },
-  eq => eq.instanceId === 'i1' ? 'amulet' : 'head'
+  eq => eq.instanceId === 'i1' ? 'boost' : 'cloak'
 );
-assert(migrated.slots.amulet.instanceId === 'i1' && migrated.slots.head.instanceId === 'i2',
-  'legacy boost/relic arrays migrate onto named slots');
+assert(migrated.slots.boost1.instanceId === 'i1' && migrated.slots.cloak.instanceId === 'i2',
+  'legacy boost/relic arrays migrate onto Relic type slots and Boost I–III');
 assert(!migrated.boost && !migrated.relic, 'migrated loadout is slot-only');
-const already = migrateEquippedToSlots({ slots: { chest: { kind: 'permanent', instanceId: 'x' } } }, () => 'head');
-assert(already.slots.chest.instanceId === 'x', 'already-migrated loadouts are kept');
+assert(!migrated.slots.head && !migrated.slots.boots, 'old body slots are not kept');
+const already = migrateEquippedToSlots({ slots: { cloak: { kind: 'permanent', instanceId: 'x' } } }, () => 'cloak');
+assert(already.slots.cloak.instanceId === 'x', 'already-migrated loadouts are kept');
 
 const catalog = ITEMS_CATALOG;
 const setPieces = { ashenGrinder: 0, cinderforge: 0, vaultborn: 0, unbroken: 0 };
 const seenSlots = {};
 catalog.forEach(t => {
   assert(t.slot, t.id + ' must declare a gear slot');
-  assert(GEAR_SLOTS.some(s => s.id === t.slot), t.id + ' slot must be a known body slot');
+  if (t.category === 'relic') {
+    assert(['amulet', 'ring', 'cloak'].includes(t.slot), t.id + ' relic must be Amulet, Ring, or Cloak');
+  } else {
+    assert(t.slot === 'boost', t.id + ' boosts occupy generic boost slots');
+  }
   if (t.permanent) {
     assert(t.setId && GEAR_SETS[t.setId], t.id + ' permanent gear belongs to a named set');
     setPieces[t.setId] += 1;
-    const key = t.setId + ':' + t.slot;
-    assert(!seenSlots[key], t.id + ' collides with another piece of the same set in ' + t.slot);
-    seenSlots[key] = t.id;
+    if (t.category === 'relic') {
+      const key = t.setId + ':' + t.slot;
+      assert(!seenSlots[key], t.id + ' collides with another relic of the same set in ' + t.slot);
+      seenSlots[key] = t.id;
+    }
   } else {
     assert(!t.setId, t.id + ' temp items stay off sets');
   }
@@ -138,13 +145,13 @@ catalog.forEach(t => {
 assert(setPieces.ashenGrinder === 4 && setPieces.cinderforge === 4, 'Ashen Grinder and Cinderforge are 4-piece');
 assert(setPieces.vaultborn === 3, 'Vaultborn is 3-piece');
 assert(setPieces.unbroken === 4, 'The Unbroken is 4 unique pieces');
-assert(itemTemplate('wornCharm').slot === 'head' && itemTemplate('wornCharm').setId === 'ashenGrinder',
-  'starter charm is the Ashen Grinder helm');
-assert(itemTemplate('grindersChair').slot === 'chest', 'Throne is a chest piece');
-assert(itemTemplate('legendaryDumbbell').slot === 'boots', 'Iron Sovereign is boots');
-assert(itemTemplate('ironFocus').slot === 'amulet', 'Mindforge Sigil is an amulet');
-assert(itemTemplate('featherweightWraps').slot === 'gloves' && !itemTemplate('featherweightWraps').setId,
-  'wraps occupy gloves and stay off sets');
+assert(itemTemplate('wornCharm').slot === 'amulet' && itemTemplate('wornCharm').setId === 'ashenGrinder',
+  'starter charm is the Ashen Grinder amulet');
+assert(itemTemplate('grindersChair').slot === 'cloak', 'Throne is a cloak piece');
+assert(itemTemplate('legendaryDumbbell').slot === 'cloak', 'Iron Sovereign occupies Cloak');
+assert(itemTemplate('ironFocus').slot === 'boost', 'Mindforge Sigil is a boost');
+assert(itemTemplate('featherweightWraps').slot === 'cloak' && !itemTemplate('featherweightWraps').setId,
+  'wraps occupy Cloak and stay off sets');
 
 const counts = equippedSetCountsFromTemplates([
   itemTemplate('wornCharm'),
@@ -156,8 +163,8 @@ assert(counts.ashenGrinder === 3, 'set counter tallies equipped templates');
 assert(html.includes('id="invLoadoutEntry"') && html.includes('id="loadoutModal"'),
   'loadout is a button that opens a gear window');
 assert(!html.includes('id="invLoadout"'), 'inventory no longer keeps the loadout panel open');
-assert(html.includes('Set bonuses') && html.includes('gear-set-bonus'), 'set tracker is in the UI');
-assert(html.includes('Unlocks at Level'), 'locked slots explain the unlock');
+assert(html.includes('gear-set-bonus') && html.includes('itemSetBonusHtml'), 'set bonuses live on item detail');
+assert(!html.includes("Set bonuses"), 'loadout no longer has a set-bonus section heading');
 assert(html.includes("equippedSetBonusFor('points')"), 'session points include set bonuses');
 assert(html.includes("equippedSetBonusFor('gold')"), 'session gold includes set bonuses');
 
@@ -191,6 +198,6 @@ assert(icons.lorequill.includes('M7 5.2 12 3.4 17 5.2') && icons.gildthread.incl
   'cloaks are cloak silhouettes');
 assert(icons.wornCharm !== icons.grindersChair, 'set pieces still look distinct');
 
-assert(html.includes('3.4.14'), 'About version bumped for v5.2');
+assert(html.includes('3.4.15'), 'About version bumped for v5.2');
 
 console.log('v5.2 tests ok — committed-paint box lag fix, equipment sets, gear icons, materials unchanged');

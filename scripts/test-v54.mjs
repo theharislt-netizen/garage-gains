@@ -78,6 +78,6 @@ assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yiel
 assert(starterOpen.indexOf('coverBoxRevealOverlay') < starterOpen.indexOf('openStarterVictoryBox'),
   'starter loot waits until the overlay is on');
 
-assert(html.includes('3.4.14'), 'About version bumped for v5.4');
+assert(html.includes('3.4.15'), 'About version bumped for v5.4');
 
 console.log('v5.4 tests ok — box open yields a frame, no mid-shake recast, premounted prize');
