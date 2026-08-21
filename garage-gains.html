@@ -1201,7 +1201,7 @@
     margin-left: -64px; margin-top: -64px;
     z-index: 3;
   }
-  .box-batch-chip.box-batch-sat { z-index: 1; }
+  .box-batch-chip.box-batch-sat { z-index: 1; width: 86px; }
   .box-batch-chip .rarity-burst {
     width: 56px; height: 56px; margin: 0 auto; border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
@@ -1226,7 +1226,9 @@
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px;
     margin-top: 8px; line-height: 1.15;
   }
-  .box-batch-chip.box-batch-sat .box-batch-name { font-size: 12px; margin-top: 4px; }
+  .box-batch-chip.box-batch-sat .box-batch-name {
+    font-size: 11px; margin-top: 4px; white-space: nowrap;
+  }
   .box-batch-hint { position: absolute; left: 0; right: 0; bottom: 18px; }
   @keyframes boxShake { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
   @keyframes boxItemIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -3212,17 +3214,23 @@ function hideBoxRevealOverlay(overlay) {
 function layoutBatchPrizes(count) {
   const n = Math.max(0, Math.round(Number(count) || 0));
   if (n <= 0) return [];
-  const spots = [{ role: 'center', left: 50, top: 44 }];
-  if (n === 1) return spots;
+  if (n === 1) return [{ role: 'center', left: 50, top: 46 }];
+  const spots = [{ role: 'center', left: 50, top: 40 }];
   const sat = n - 1;
-  const rx = sat >= 9 ? 34 : (sat >= 6 ? 30 : 26);
-  const ry = sat >= 9 ? 14 : (sat >= 6 ? 12 : 10);
+  const cols = Math.min(sat, sat <= 4 ? sat : 5);
+  const rowTop = 58;
+  const rowGap = 12;
+  const span = sat >= 6 ? 72 : (sat >= 4 ? 58 : 46);
   for (let i = 0; i < sat; i++) {
-    const angle = (Math.PI * 2 * i) / sat;
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const inRow = Math.min(cols, sat - row * cols);
+    const step = inRow <= 1 ? 0 : span / (inRow - 1);
+    const start = 50 - span / 2;
     spots.push({
       role: 'sat',
-      left: Math.round((50 + rx * Math.cos(angle)) * 10) / 10,
-      top: Math.round((44 + ry * Math.sin(angle)) * 10) / 10
+      left: Math.round((start + col * step) * 10) / 10,
+      top: Math.round((rowTop + row * rowGap) * 10) / 10
     });
   }
   return spots;

@@ -40,7 +40,10 @@ const sats = ten.filter(s => s.role === 'sat');
 const vSpan = Math.max(...sats.map(s => Math.abs(s.top - center.top)));
 const hSpan = Math.max(...sats.map(s => Math.abs(s.left - 50)));
 assert(hSpan > vSpan, 'multi-item reveal is wider than it is tall, got h=' + hSpan + ' v=' + vSpan);
-assert(vSpan <= 16, 'satellites stay in a tight band, vSpan=' + vSpan);
+assert(vSpan <= 36, 'satellites stay in a tight band under the featured item, vSpan=' + vSpan);
+const three = layout(3);
+assert(three.filter(s => s.role === 'sat').every(s => Math.abs(s.top - three[0].top) > 8),
+  'side items sit on a row below the featured prize');
 
 const merged = vm.runInContext('consolidateBoxOutcomes', ctx)([
   { kind: 'stone', category: 'relic', amount: 1, rarity: 'common', result: { kind: 'stone', tmpl: { name: 'Common Relic Enchantment Stone', maxStar: 2 } } },
