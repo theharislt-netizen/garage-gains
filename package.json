@@ -5,6 +5,7 @@
   "description": "RIGCORE — garage gym tracker for Android and iPhone",
   "scripts": {
     "test:backup": "node scripts/test-backup-restore.mjs",
+    "test:economy": "node scripts/test-testing-economy.mjs",
     "test:ios": "node scripts/verify-ios-project.mjs",
     "test:layout": "node scripts/test-safe-area.mjs",
     "verify:update": "node scripts/verify-live-update.mjs",

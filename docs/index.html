@@ -235,15 +235,8 @@
   .add-set-btn:active { border-color: var(--a2); color: var(--a2); }
   .baseline-tag { font-family: 'JetBrains Mono'; font-size: 9.5px; letter-spacing: 0.05em; color: var(--a2); border: 1px solid var(--a2); border-radius: 4px; padding: 1px 5px; }
 
-  /* --- streak / weekly strip --- */
+  /* --- streak chip (Stats page) --- */
   .streak-chip { display: inline-flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--gain); margin-top: 8px; }
-  .weekly-strip { padding: 10px 18px 2px; display: flex; justify-content: space-between; align-items: center; }
-  .weekly-strip .lbl { font-family: 'Barlow Condensed'; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
-  .weekly-strip .val { font-family: 'JetBrains Mono'; font-size: 12.5px; color: var(--text); }
-  .week-dots { display: flex; gap: 5px; }
-  .week-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
-  .week-dot.done { background: linear-gradient(135deg, var(--a1), var(--a2)); }
-  .week-dot.today { box-shadow: 0 0 0 2px rgba(var(--a2-rgb),0.4); }
 
   /* --- rank tiers (visually escalate as points climb) --- */
   .rank-f1 .n.grad { background: linear-gradient(90deg, #8d859f, #b8b0c8); -webkit-background-clip: text; background-clip: text; }
@@ -400,10 +393,7 @@
   .nb-currency.freeze { color: var(--a2); background: rgba(var(--a2-rgb),0.1); border-color: rgba(var(--a2-rgb),0.3); }
   .nb-cur-ic { width: 13px; height: 13px; flex-shrink: 0; display: flex; }
   .nb-cur-ic svg { width: 100%; height: 100%; }
-  /* --- v2.2: daily-login notification dot — shown in two places (Rank tab
-     bar + here on the sticky banner) per spec; a small pulsing dot rather
-     than a number, since it's a single binary claim, not a count. --- */
-  .nb-daily-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gain); margin-left: 4px; flex-shrink: 0; cursor: pointer; box-shadow: 0 0 6px rgba(255,182,72,0.7); animation: ledPulse 1.6s ease-in-out infinite; }
+  /* --- v2.2: daily-login notification lives only on the Rank tab button --- */
   .tab-badge-dot { position: absolute; top: 4px; right: calc(50% - 16px); width: 8px; height: 8px; border-radius: 50%; background: var(--gain); box-shadow: 0 0 5px rgba(255,182,72,0.7); }
   .nb-popup {
     position: absolute; z-index: 45; right: 14px; top: calc(var(--app-sat) + 52px); width: 220px;
@@ -536,7 +526,6 @@
 
   /* --- Rest-timer full-focus mode --- */
   body.rest-focus main { display: none !important; }
-  body.rest-focus .weekly-strip { display: none !important; }
   body.rest-focus #restTimerSlot .rest-timer { margin-top: 18px; padding: 34px 20px; }
   body.rest-focus #restTimerSlot .rt-clock { font-size: 52px; }
 
@@ -1069,7 +1058,6 @@
       <div class="nb-streak" id="nbStreak">🔥<span id="nbStreakVal">0</span></div>
       <div class="nb-currency gold" id="nbGold"><span class="nb-cur-ic" id="nbGoldIcon"></span><span id="nbGoldVal">0</span></div>
       <div class="nb-currency freeze" id="nbFreeze"><span class="nb-cur-ic" id="nbFreezeIcon"></span><span id="nbFreezeVal">0</span></div>
-      <div class="nb-daily-dot" id="nbDailyDot" style="display:none;" title="Daily login reward ready"></div>
     </div>
   </div>
   <div class="nb-popup" id="nbFreezePopup"></div>
@@ -1123,10 +1111,6 @@
     </div>
     <button class="cr-claim-btn" id="claimRewardsBtn">Claim Rewards</button>
   </div>
-</div>
-<div class="weekly-strip" id="weeklyStrip">
-  <div><div class="lbl">This week</div><div class="val" id="weeklyPts">0 pts</div></div>
-  <div class="week-dots" id="weekDots"></div>
 </div>
 <div id="streakTierModal" class="modal-overlay" style="display:none;">
   <div class="modal-panel">
@@ -3098,14 +3082,11 @@ function applySeasonRankIcon(el) {
 }
 
 function setInstanceDashboardChrome(inInstance) {
-  const weekly = document.getElementById('weeklyStrip');
   const led = document.getElementById('ledWrap');
   const todayViewActive = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
   if (inInstance) {
-    if (weekly) weekly.style.display = 'none';
     if (led) led.style.display = 'none';
   } else {
-    if (weekly) weekly.style.display = todayViewActive ? 'flex' : 'none';
     if (led) led.style.display = todayViewActive ? 'block' : 'none';
   }
 }
@@ -3850,15 +3831,11 @@ function updateRankCountdownDisplay() {
   const secs = Math.floor(diff / 1000);
   el.textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
 }
-// Toggles the notification dot in both of its two locations (Rank tab bar +
-// Dashboard sticky banner) — explicitly a first-pass placement per spec,
-// flagged as something to revisit if it doesn't feel right in practice.
+// Daily-login notification lives on the Rank tab button only — not the hero banner.
 function updateRankTabBadge() {
   const show = hasUnclaimedDailyLogin();
   const tabDot = document.getElementById('rankTabBadge');
   if (tabDot) tabDot.style.display = show ? 'block' : 'none';
-  const bannerDot = document.getElementById('nbDailyDot');
-  if (bannerDot) bannerDot.style.display = show ? 'block' : 'none';
 }
 function renderRankTab() {
   ensureSeason();
@@ -5156,11 +5133,44 @@ function saveRegistry() { localStorage.setItem(REGISTRY_KEY, JSON.stringify(regi
 let registry = loadRegistry();
 function getCurrentProfileMeta() { return registry.profiles.find(p => p.id === registry.currentId) || registry.profiles[0]; }
 
+/* === testing-economy-lib begin === */
+// The v2.6 +1000 gold grant was a temporary shop-test seed, not a real starting
+// balance. New profiles already start at 0. Anyone who received that seed (or
+// still has leftover test gold/items) is wiped back to an empty shop once.
+function emptyShopInventory() {
+  return {
+    permanent: [],
+    tempCharges: {},
+    shards: { boost: 0, relic: 0 },
+    stones: { boost: 0, relic: 0 },
+  };
+}
+function emptyShopLoadout() {
+  return { boost: [null, null, null], relic: [null, null, null] };
+}
+function clearTestingEconomyOnce(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (s.__testingEconomyClearedV33) return false;
+  s.gold = 0;
+  s.gems = 0;
+  s.streakFreezes = 0;
+  s.inventory = emptyShopInventory();
+  s.equipped = emptyShopLoadout();
+  delete s.__testGoldSeededV26;
+  s.__testingEconomyClearedV33 = true;
+  return true;
+}
+/* === testing-economy-lib end === */
+
 let state = load();
 function load() {
   try {
     const raw = localStorage.getItem(profileStorageKey(registry.currentId));
-    if (!raw) return defaultState();
+    if (!raw) {
+      const fresh = defaultState();
+      clearTestingEconomyOnce(fresh);
+      return fresh;
+    }
     const merged = Object.assign(defaultState(), JSON.parse(raw));
     // Older versions stored fixed-length arrays with null gaps for unfinished sets;
     // strip those so every session's set list is just the sets actually logged.
@@ -5169,12 +5179,29 @@ function load() {
         session.sets[exId] = (session.sets[exId] || []).filter(r => r !== null && r !== undefined);
       });
     });
+    if (clearTestingEconomyOnce(merged)) {
+      try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
+      catch (e) { console.error('test-economy save failed', e); }
+    }
     return merged;
   } catch(e) { console.error('load failed', e); return defaultState(); }
 }
 function save() {
   try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(state)); }
   catch(e) { console.error('save failed', e); showToast('Save failed — storage may be full'); }
+}
+function clearTestingEconomyOnAllProfiles() {
+  if (clearTestingEconomyOnce(state)) save();
+  (registry.profiles || []).forEach(p => {
+    if (!p || p.id === registry.currentId) return;
+    const key = profileStorageKey(p.id);
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (clearTestingEconomyOnce(s)) localStorage.setItem(key, JSON.stringify(s));
+    } catch (e) { console.error('test-economy clear failed', e); }
+  });
 }
 
 function switchProfile(id) {
@@ -5315,7 +5342,6 @@ function switchView(name) {
   document.getElementById('ledWrap').style.display = (name === 'today' && !window.__activeInstance) ? 'block' : 'none';
   document.getElementById('rankBarWrap').style.display = name === 'today' ? 'none' : 'flex';
   if (name !== 'today') renderRankBar();
-  document.getElementById('weeklyStrip').style.display = (name === 'today' && !window.__activeInstance) ? 'flex' : 'none';
   resetStickyScroll();
   // Stats builds its own non-sticky profile block + rank bar directly in the page
   // content, so the fixed overlay header would just be redundant there — hide it
@@ -5593,13 +5619,6 @@ function getExReps(session, exId) { return session.sets[exId] || []; }
 
 function dateFromStr(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
 function addDays(dateKey, n) { const dt = dateFromStr(dateKey); dt.setDate(dt.getDate()+n); return todayStr(dt); }
-function startOfWeek(dateKey) {
-  const dt = dateFromStr(dateKey);
-  const dow = dt.getDay(); // 0 = Sunday
-  const back = dow === 0 ? 6 : dow - 1; // days back to Monday
-  dt.setDate(dt.getDate() - back);
-  return todayStr(dt);
-}
 
 // Comparison basis is same-day-last-week (apples to apples on a repeating weekly split),
 // not "last session", which could have been a different exercise mix.
@@ -5640,8 +5659,6 @@ function renderHeader() {
   document.getElementById('nbFreeze').onclick = toggleFreezePopup;
   ensureSeason();
   updateRankTabBadge();
-  const nbDailyDot = document.getElementById('nbDailyDot');
-  if (nbDailyDot) nbDailyDot.onclick = () => switchView('rank');
 
   // v2.2: primary badge now shows Level (indefinite, always-visible), not
   // seasonal Rank. Same visual-tier system, just addressed via LEVEL_TIERS.
@@ -5681,7 +5698,6 @@ function renderHeader() {
   }
 
   renderRankBar();
-  renderWeeklyStrip();
   syncHeaderHeight();
 }
 
@@ -5814,23 +5830,6 @@ function renderStreakBar() {
     fill.style.width = '100%';
     text.textContent = `Day ${days} — max streak buff reached (+${Math.round((curTier ? curTier.bonus : 0)*100)}%)`;
   }
-}
-
-function renderWeeklyStrip() {
-  const dateKey = todayStr();
-  const weekStart = startOfWeek(dateKey);
-  let weekPts = 0;
-  const dayCells = [];
-  for (let i = 0; i < 7; i++) {
-    const d = addDays(weekStart, i);
-    const s = state.workoutLog[d];
-    if (s && s.completed) weekPts += s.points || 0;
-    const dayType = getDaySchedule()[dateFromStr(d).getDay()];
-    if (dayType) dayCells.push({ done: !!(s && s.completed), isToday: d === dateKey });
-  }
-  document.getElementById('weeklyPts').textContent = weekPts + ' pts';
-  document.getElementById('weekDots').innerHTML = dayCells.map(c =>
-    `<div class="week-dot${c.done ? ' done' : ''}${c.isToday ? ' today' : ''}"></div>`).join('');
 }
 
 // v2.5: shared exercise-card builder — used by both the workout instance
@@ -7094,6 +7093,7 @@ function applyImportedBackupText(text) {
   state = restored;
   ensureProfileShape();
   ensureInventoryShape();
+  clearTestingEconomyOnce(state);
 
   const meta = getCurrentProfileMeta();
   if (meta) {
@@ -7619,22 +7619,9 @@ function renderWorkoutEditor() {
 }
 document.getElementById('newProfileBtn').addEventListener('click', createProfile);
 
-// TEMPORARY (v2.6) — one-time testing seed, NOT a permanent starting balance.
-// Deliberately not baked into defaultState() (that would silently change the
-// real starting gold for every future profile forever); instead this adds
-// 1,000 gold exactly once per save, guarded by its own flag, so shop/equip
-// flows can be tested by hand. To strip this back out later: delete this
-// function and its one call site in init() below.
-function seedTestingGoldOnce() {
-  if (state.__testGoldSeededV26) return;
-  state.gold = (state.gold || 0) + 1000;
-  state.__testGoldSeededV26 = true;
-  save();
-}
-
 function init() {
   document.body.setAttribute('data-theme', state.theme || 'rig');
-  seedTestingGoldOnce();
+  clearTestingEconomyOnAllProfiles();
   renderThemeGrid();
   renderToday();
   renderProfilesList();
