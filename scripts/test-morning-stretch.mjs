@@ -15,8 +15,8 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-assert(/MOBILITY_MORNING_REWARD_PCT = 0\.40/.test(html), 'morning bonus must be 40% of workout basis, not 62%');
-assert(!html.includes('MOBILITY_MORNING_REWARD_PCT = 0.62'), 'old 62% morning bonus must be gone');
+assert(/MOBILITY_MORNING_REWARD_PCT = 0\.62/.test(html), 'morning bonus stays 62% of workout basis as a health nudge');
+assert(!html.includes('MOBILITY_MORNING_REWARD_PCT = 0.40'), 'must not use the temporary 40% morning bonus');
 assert(!html.includes("const tmpl = pickMobilityTemplate(issueTargets[0]);"), 'morning stretch must not reuse 2-move mobility templates');
 
 const begin = html.indexOf('/* === morning-stretch-lib begin === */');

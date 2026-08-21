@@ -31,7 +31,7 @@ const ctx = { console };
 vm.createContext(ctx);
 vm.runInContext(html.slice(begin, end), ctx);
 
-const { clearTestingEconomyOnce } = ctx;
+const { clearTestingEconomyOnce, isOwnerTesterIdentity, refillAdminEconomy } = ctx;
 
 const seeded = {
   gold: 740,
@@ -70,5 +70,14 @@ assert(seeded.gold === 15, 'later earned gold must remain 15');
 const fresh = { gold: 0, gems: 0, inventory: { permanent: [] } };
 assert(clearTestingEconomyOnce(fresh) === true, 'new profile should mark economy as cleared');
 assert(fresh.gold === 0 && fresh.__testingEconomyClearedV33, 'new profile stays at 0 gold');
+
+assert(isOwnerTesterIdentity(['Haris']) && isOwnerTesterIdentity(['HARIS']) && isOwnerTesterIdentity(['H. Uz']), 'owner names must unlock');
+assert(!isOwnerTesterIdentity(['John']) && !isOwnerTesterIdentity(['Adventurer']) && !isOwnerTesterIdentity(['']), 'friends must not unlock');
+
+const admin = { __adminSandbox: true, gold: 40, gems: 2, inventory: { permanent: [{ itemId: 'x' }] } };
+assert(clearTestingEconomyOnce(admin) === false, 'admin sandbox must not be wiped');
+assert(admin.gold === 999999 && admin.gems === 9999, 'admin gold/gems stay unlimited');
+assert(admin.inventory.permanent.length === 1, 'admin test items must stay');
+assert(refillAdminEconomy({ gold: 1 }) === false, 'non-admin must not refill');
 
 console.log('testing-economy ok — no starter gold, test items wiped once, hero weekly/notify chrome removed');
