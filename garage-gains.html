@@ -1156,6 +1156,14 @@
   .warmup-intro-card h3 {
     font-family: 'Barlow Condensed'; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 8px;
   }
+  @keyframes tutorial-guidance-glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--a1-rgb), 0.50), 0 0 16px 3px rgba(var(--a1-rgb), 0.28); }
+    50% { box-shadow: 0 0 0 6px rgba(var(--a1-rgb), 0.10), 0 0 26px 8px rgba(var(--a1-rgb), 0.42); }
+  }
+  .tutorial-guidance-glow {
+    animation: tutorial-guidance-glow-pulse 1.8s ease-in-out infinite;
+    border-color: rgba(var(--a1-rgb), 0.55);
+  }
   .instance-title { font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
   .instance-subtitle { font-size: 11.5px; color: var(--text-dim); margin-top: -10px; margin-bottom: 12px; padding-left: 2px; }
   .warmup-btn { border-color: var(--a2); background: rgba(var(--a2-rgb),0.1); color: var(--a2); }
@@ -1621,6 +1629,7 @@
 
   <div id="warmupIntroOverlay" class="warmup-intro-overlay"></div>
   <div id="featureIntroOverlay" class="warmup-intro-overlay"></div>
+  <div id="baselineIntroOverlay" class="warmup-intro-overlay"></div>
 
   <div id="profileModal" class="modal-overlay" style="display:none;">
     <div class="modal-panel">
@@ -1743,7 +1752,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.3</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.4</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2338,6 +2347,132 @@ function repsFromLog(log, exId) {
   return Array.isArray(log[exId]) ? log[exId] : [];
 }
 /* === v45-helpers-lib end === */
+
+/* === v48-helpers-lib begin === */
+const SIGNAL_EQUIP_FAMILIES = ['dumbbell', 'pullupbar', 'table', 'bench', 'chair', 'bands'];
+const SIGNAL_PREFERENCE = {
+  dumbbell: ['dbRow', 'ohPress', 'dbCurl', 'weightedCrunch'],
+  timed: ['plank', 'hollowHold'],
+  chair: ['chairDips', 'handsElevatedPushup', 'declineSitup'],
+  table: ['tableRow'],
+  pullupbar: [],
+  bench: [],
+  bands: [],
+  'bodyweight:push': ['standardPushup', 'pikePushup'],
+  'bodyweight:pull': ['rearDelt'],
+  'bodyweight:core': ['legRaise']
+};
+const BASELINE_QUEST_PACING = 'One max-effort test set. Push as far as you can with good form — this sets your starting target.';
+function signalFamilyKey(ex) {
+  if (!ex) return 'unknown';
+  if (ex.isTime) return 'timed';
+  const equip = Array.isArray(ex.equip) ? ex.equip : [];
+  for (let i = 0; i < SIGNAL_EQUIP_FAMILIES.length; i++) {
+    if (equip.includes(SIGNAL_EQUIP_FAMILIES[i])) return SIGNAL_EQUIP_FAMILIES[i];
+  }
+  return 'bodyweight:' + (ex.day || 'other');
+}
+function pickSignalExercises(exercises) {
+  const list = Array.isArray(exercises) ? exercises.filter(Boolean) : [];
+  const byFamily = {};
+  list.forEach(ex => {
+    const fam = signalFamilyKey(ex);
+    if (!byFamily[fam]) byFamily[fam] = [];
+    byFamily[fam].push(ex);
+  });
+  const signals = Object.keys(byFamily).map(fam => {
+    const members = byFamily[fam];
+    const pref = SIGNAL_PREFERENCE[fam] || [];
+    for (let i = 0; i < pref.length; i++) {
+      const hit = members.find(e => e.id === pref[i]);
+      if (hit) return hit;
+    }
+    return members[0];
+  }).filter(Boolean);
+  const dayOrder = { push: 0, pull: 1, core: 2 };
+  signals.sort((a, b) => {
+    if (!!a.isTime !== !!b.isTime) return a.isTime ? 1 : -1;
+    return (dayOrder[a.day] || 9) - (dayOrder[b.day] || 9);
+  });
+  return signals;
+}
+function forecastPerSetAvg(target, signals) {
+  const fallback = target && target.isTime ? 30 : 8;
+  const list = Array.isArray(signals) ? signals.filter(s => s && s.perSetAvg > 0) : [];
+  if (!target) return fallback;
+  if (!list.length) return fallback;
+  const same = list.find(s => s.id === target.id);
+  if (same) return same.perSetAvg;
+  const fam = list.find(s => s.family === target.family);
+  if (fam) return fam.perSetAvg * 0.9;
+  const sameMode = list.find(s => !!s.isTime === !!target.isTime);
+  if (sameMode) return sameMode.perSetAvg * 0.7;
+  return fallback;
+}
+function observedPerformanceFromSets(sets) {
+  const nums = (Array.isArray(sets) ? sets : []).filter(n => typeof n === 'number' && n > 0);
+  if (!nums.length) return null;
+  const totalReps = nums.reduce((a, b) => a + b, 0);
+  return { totalReps, perSetAvg: totalReps / nums.length, setCount: nums.length };
+}
+function silentlyRefineForecastedBaseline(bl, observed) {
+  if (!bl || bl.source !== 'forecast' || !observed || !(observed.perSetAvg > 0)) return bl;
+  const alpha = 0.3;
+  const perSetAvg = (Number(bl.perSetAvg) || 0) * (1 - alpha) + observed.perSetAvg * alpha;
+  const setCount = Math.max(Number(bl.setCount) || 1, observed.setCount || 1);
+  const refineCount = (Number(bl.refineCount) || 0) + 1;
+  const next = {
+    totalReps: Math.round(perSetAvg * setCount),
+    perSetAvg,
+    setCount,
+    date: bl.date,
+    source: 'forecast',
+    refineCount
+  };
+  if (bl.forecastFrom) next.forecastFrom = bl.forecastFrom;
+  if (refineCount >= 3) {
+    next.source = 'tested';
+    delete next.forecastFrom;
+  }
+  return next;
+}
+function ensureBaselineQuestRecord(s) {
+  if (!s || typeof s !== 'object') return { signalIds: [], sets: {} };
+  if (!s.baselineQuest || typeof s.baselineQuest !== 'object' || Array.isArray(s.baselineQuest)) {
+    s.baselineQuest = { signalIds: [], sets: {} };
+  }
+  if (!Array.isArray(s.baselineQuest.signalIds)) s.baselineQuest.signalIds = [];
+  if (!s.baselineQuest.sets || typeof s.baselineQuest.sets !== 'object' || Array.isArray(s.baselineQuest.sets)) {
+    s.baselineQuest.sets = {};
+  }
+  return s.baselineQuest;
+}
+function applyForecastedBaselines(baselines, routineExercises, signalResults, dateKey) {
+  const out = baselines && typeof baselines === 'object' ? baselines : {};
+  const signals = Array.isArray(signalResults) ? signalResults : [];
+  (routineExercises || []).forEach(ex => {
+    if (!ex || !ex.id || out[ex.id]) return;
+    const perSetAvg = forecastPerSetAvg({
+      id: ex.id,
+      family: signalFamilyKey(ex),
+      isTime: !!ex.isTime
+    }, signals);
+    const setCount = ex.suggestedSets || 3;
+    out[ex.id] = {
+      totalReps: Math.round(perSetAvg * setCount),
+      perSetAvg,
+      setCount,
+      date: dateKey,
+      source: 'forecast',
+      forecastFrom: signals.map(s => s.id)
+    };
+  });
+  return out;
+}
+function isLedKeepingInstance(inst) {
+  return !!(inst && (inst.type === 'workout' || inst.type === 'baseline'));
+}
+/* === v48-helpers-lib end === */
 
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
@@ -3873,7 +4008,7 @@ function applySeasonRankIcon(el) {
 function setInstanceDashboardChrome(inInstance) {
   const led = document.getElementById('ledWrap');
   const todayViewActive = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
-  const keepLed = !!(inInstance && window.__activeInstance && window.__activeInstance.type === 'workout');
+  const keepLed = !!(inInstance && isLedKeepingInstance(window.__activeInstance));
   if (inInstance && !keepLed) {
     if (led) led.style.display = 'none';
   } else {
@@ -6507,6 +6642,8 @@ function defaultProgression(unlocked) {
     nudgeRank: false,
     nudgeEquip: false,
     equipTutorialDone: !!unlocked,
+    baselineQuestDone: !!unlocked,
+    baselineIntroSeen: !!unlocked,
     grandfathered: false
   };
 }
@@ -6535,6 +6672,26 @@ function isRankTabUnlocked(s) {
 }
 function shouldHideDashboardExtras(s) {
   return countCompletedWorkouts(s) === 0 && !(s && s.__adminSandbox);
+}
+function needsBaselineQuest(s) {
+  if (!s || s.__adminSandbox) return false;
+  const p = s.progression;
+  if (!p) return true;
+  return p.baselineQuestDone !== true;
+}
+function ensureBaselineQuestFlags(s) {
+  const p = s && s.progression;
+  if (!p || typeof p !== 'object') return false;
+  let changed = false;
+  if (p.baselineQuestDone !== true && p.baselineQuestDone !== false) {
+    p.baselineQuestDone = !!(p.grandfathered || p.inventoryUnlocked || countCompletedWorkouts(s) > 0);
+    changed = true;
+  }
+  if (p.baselineIntroSeen !== true && p.baselineIntroSeen !== false) {
+    p.baselineIntroSeen = p.baselineQuestDone === true;
+    changed = true;
+  }
+  return changed;
 }
 function grantStarterVictoryBox(s) {
   if (!s || !s.progression || s.progression.starterBoxGranted) return false;
@@ -6811,6 +6968,7 @@ function load() {
       ensureProgressionUnlock(fresh);
       ensureFeatureIntroFlags(fresh);
       ensureEquipTutorialFlags(fresh);
+      ensureBaselineQuestFlags(fresh);
       ensurePendingProgressClaims(fresh);
       ensureDashCollapsed(fresh);
       ensureSeenItemTypes(fresh);
@@ -6836,7 +6994,7 @@ function load() {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('progression save failed', e); }
     }
-    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged)) {
+    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensureBaselineQuestFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged)) {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('v42 flag save failed', e); }
     }
@@ -7008,9 +7166,11 @@ function switchProfile(id, opts) {
   renderThemeGrid();
   renderToday();
   renderProfilesList();
+  const meta = getCurrentProfileMeta();
+  if (meta && !meta.onboarded) switchView('today');
   maybeShowOnboarding();
   const toast = opts && opts.toast;
-  showToast(toast || ('Switched to ' + getCurrentProfileMeta().name));
+  showToast(toast || ('Switched to ' + ((meta && meta.name) || 'profile')));
 }
 function createProfile() {
   const n = registry.profiles.length + 1;
@@ -7243,7 +7403,7 @@ function switchView(name) {
   document.querySelector(`.tab[data-view="${name}"]`).classList.add('active');
   // v3.0 §1b: the sticky points bar hides while an instance is active, even
   // if the person tabs away and back to Dashboard mid-instance.
-  const showLed = name === 'today' && (!window.__activeInstance || window.__activeInstance.type === 'workout');
+  const showLed = name === 'today' && (!window.__activeInstance || isLedKeepingInstance(window.__activeInstance));
   document.getElementById('ledWrap').style.display = showLed ? 'block' : 'none';
   document.getElementById('rankBarWrap').style.display = name === 'today' ? 'none' : 'flex';
   if (name !== 'today') renderRankBar();
@@ -7551,9 +7711,13 @@ function activeBoss() {
   if (!window.__activeInstance || window.__activeInstance.type !== 'boss') return null;
   return (state.bosses || []).find(b => b.id === window.__activeInstance.bossId) || null;
 }
+function activeBaseline() {
+  return !!(window.__activeInstance && window.__activeInstance.type === 'baseline');
+}
 function getActiveRepsMap(dateKey) {
   const boss = activeBoss();
   if (boss) return ensureBossFightSets(boss);
+  if (activeBaseline()) return ensureBaselineQuestRecord(state).sets;
   const session = getSessionData(dateKey);
   if (!session.sets) session.sets = {};
   return session.sets;
@@ -7882,7 +8046,9 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
           <button class="finish-btn" data-ex="${ex.id}" data-idx="${activeIdx}">Finish Set</button>`;
       }
 
-      const pacingNote = boss ? bossPacingNoteForSet(activeIdx) : pacingNoteForSet(ex.pacing, activeIdx);
+      const pacingNote = boss ? bossPacingNoteForSet(activeIdx)
+        : activeBaseline() ? BASELINE_QUEST_PACING
+        : pacingNoteForSet(ex.pacing, activeIdx);
       bodyHtml = `
         <div class="set-panel">
           <div class="set-panel-label">${setLabel}</div>
@@ -7936,12 +8102,125 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
 // This is purely presentational — commitSet/applyBossDamage/warm-up move
 // commits are all completely unchanged; only where their UI mounts differs.
 // =========================================================
+function getRoutineExerciseList(s) {
+  const custom = (s && s.customExercises) || {};
+  const ids = [...new Set([...(custom.push || []), ...(custom.pull || []), ...(custom.core || [])])];
+  const catalog = typeof getAllExercises === 'function' ? getAllExercises() : [];
+  return ids.map(id => catalog.find(e => e.id === id)).filter(e => e && !e.archived);
+}
+function buildBaselineQuestExercises(s) {
+  const rec = ensureBaselineQuestRecord(s);
+  const routine = getRoutineExerciseList(s);
+  if (!rec.signalIds.length) rec.signalIds = pickSignalExercises(routine).map(e => e.id);
+  const catalog = typeof getAllExercises === 'function' ? getAllExercises() : [];
+  return rec.signalIds.map(id => {
+    const e = catalog.find(x => x.id === id);
+    if (!e) return null;
+    return { ...e, suggestedSets: 1, pacing: BASELINE_QUEST_PACING };
+  }).filter(Boolean);
+}
+function showBaselineIntro() {
+  const overlay = document.getElementById('baselineIntroOverlay');
+  if (!overlay) { beginBaselineInstance(false); return; }
+  overlay.innerHTML = `<div class="warmup-intro-card" role="dialog" aria-labelledby="baselineIntroTitle">
+    <h3 id="baselineIntroTitle">Day One: Setting Your Baseline.</h3>
+    <div style="font-size:14.5px; line-height:1.55; margin-bottom:16px;">You'll max out a few signal lifts. We'll estimate the rest of your routine from those, so every exercise has a real starting target today — not after a week of guesswork.</div>
+    <button class="btn admin-mode" id="baselineIntroGo" style="margin-top:0;">Let's go</button>
+  </div>`;
+  overlay.classList.add('show');
+  const btn = document.getElementById('baselineIntroGo');
+  if (btn) btn.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    if (state.progression) state.progression.baselineIntroSeen = true;
+    save();
+    beginBaselineInstance(false);
+  });
+}
+function startBaselineQuest(isResume) {
+  if (!needsBaselineQuest(state)) return;
+  if (!isResume && state.progression && !state.progression.baselineIntroSeen) {
+    showBaselineIntro();
+    return;
+  }
+  beginBaselineInstance(!!isResume);
+}
+function beginBaselineInstance(isResume) {
+  ensureBaselineQuestRecord(state);
+  const exercises = buildBaselineQuestExercises(state);
+  if (!exercises.length) {
+    showToast('Add exercises to your routine first');
+    return;
+  }
+  enterInstance({ type: 'baseline', title: 'Set Your Baseline', exercises }, isResume);
+}
+function completeBaselineQuest() {
+  if (!needsBaselineQuest(state)) {
+    if (activeBaseline()) leaveInstance();
+    return;
+  }
+  const dateKey = todayStr();
+  const rec = ensureBaselineQuestRecord(state);
+  const catalog = getAllExercises();
+  rec.signalIds.forEach(id => {
+    const reps = repsFromLog(rec.sets, id);
+    if (!reps.length) return;
+    const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
+    state.baselines[id] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey, source: 'tested' };
+  });
+  const signalResults = rec.signalIds.map(id => {
+    const ex = catalog.find(e => e.id === id);
+    const bl = state.baselines[id];
+    if (!ex || !bl) return null;
+    return { id, family: signalFamilyKey(ex), isTime: !!ex.isTime, perSetAvg: bl.perSetAvg };
+  }).filter(Boolean);
+  state.baselines = applyForecastedBaselines(state.baselines || {}, getRoutineExerciseList(state), signalResults, dateKey);
+
+  const session = getSessionData(dateKey);
+  session.sets = session.sets || {};
+  Object.entries(rec.sets || {}).forEach(([id, reps]) => {
+    if (!session.sets[id] || !session.sets[id].length) session.sets[id] = (reps || []).slice();
+  });
+  rec.signalIds.forEach(id => recomputeBestForExercise(id));
+  const finalDayPoints = computeSessionPointsFromSets({ sets: rec.sets }, unitPoints);
+  session.points = computeSessionPointsFromSets(session, unitPoints);
+  session.completed = true;
+  session.completedAt = Date.now();
+  session.baselineQuest = true;
+
+  if (state.streak.lastCompletedDate !== dateKey) {
+    state.streak.current = state.streak.lastCompletedDate ? state.streak.current + 1 : 1;
+    state.streak.lastCompletedDate = dateKey;
+    state.streak.longest = Math.max(state.streak.longest, state.streak.current);
+  }
+
+  const sessionGold = awardGold(Math.round(finalDayPoints * GOLD_SESSION_RATE), 'session');
+  state.progression.baselineQuestDone = true;
+  state.progression.baselineIntroSeen = true;
+
+  const firstWorkout = countCompletedWorkouts(state) === 1;
+  const rewardLines = [
+    { icon:'⭐', label:'Points', value: '+' + finalDayPoints },
+    { icon:'🪙', label:'Gold', value: '+' + sessionGold },
+    { icon:'🔥', label:'Day Streak', value: state.streak.current },
+  ];
+  if (firstWorkout && grantStarterVictoryBox(state)) {
+    rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+    feedbackBoxReceived();
+  }
+  queueReward({ kind:'workout', title:'Baseline Set', subtitle: rec.signalIds.length + ' test lifts logged', lines: rewardLines });
+  window.__activeInstance = null;
+  resetDashboardChrome();
+  save();
+  renderToday();
+}
+
 function enterInstance(instanceObj, isResume) {
   if (window.__quickLogOpen) closeQuickLog(true);
   if (instanceObj && instanceObj.type === 'boss') {
     const boss = (state.bosses || []).find(b => b.id === instanceObj.bossId);
     if (boss) ensureBossFightSets(boss);
   }
+  if (instanceObj && instanceObj.type === 'baseline') ensureBaselineQuestRecord(state);
   window.__activeInstance = instanceObj;
   window.__instanceJustEntered = !isResume;
   window.__autoCommitFirst = !isResume;
@@ -8000,7 +8279,8 @@ function renderInstanceView() {
   // own heading/tag internally (reused as-is from the existing sections
   // below), so the instance header stays to just the Leave action for those,
   // avoiding a redundant duplicate title.
-  const title = inst.type === 'workout' ? (() => { const dt = getTodayDayType(); return DAY_NAMES[dt] ? DAY_NAMES[dt] + ' Day' : 'Workout'; })() : '';
+  const title = inst.type === 'baseline' ? 'Set Your Baseline'
+    : inst.type === 'workout' ? (() => { const dt = getTodayDayType(); return DAY_NAMES[dt] ? DAY_NAMES[dt] + ' Day' : 'Workout'; })() : '';
 
   view.innerHTML = `
     <div class="instance-header">
@@ -8015,6 +8295,11 @@ function renderInstanceView() {
   if (inst.type === 'workout') {
     const dayType = getTodayDayType();
     const exList = getDayExercises(dayType);
+    renderExerciseCardsInto(body, exList, dateKey);
+    attachTodayListeners(dateKey);
+  } else if (inst.type === 'baseline') {
+    const exList = buildBaselineQuestExercises(state);
+    if (!exList.length) { leaveInstance(); return; }
     renderExerciseCardsInto(body, exList, dateKey);
     attachTodayListeners(dateKey);
   } else if (inst.type === 'warmup') {
@@ -8074,12 +8359,14 @@ function maybeAutoCommitFirstLoop(inst, dateKey) {
     s.progress = s.progress || {};
     const currentMove = (s.moves || []).find(m => s.progress[m.id] === undefined);
     if (currentMove && currentMove.isTime && !window.__morningTimerState) startMorningTimer(currentMove.id, currentMove.target);
-  } else if (inst.type === 'workout' || inst.type === 'boss') {
+  } else if (inst.type === 'workout' || inst.type === 'boss' || inst.type === 'baseline') {
     if (window.__exTimerState) return;
     let exList;
     if (inst.type === 'boss') {
       const boss = state.bosses.find(b => b.id === inst.bossId);
       exList = boss ? boss.exIds.map(exId => getAllExercises().find(e => e.id === exId)).filter(Boolean) : [];
+    } else if (inst.type === 'baseline') {
+      exList = buildBaselineQuestExercises(state);
     } else {
       exList = getDayExercises(getTodayDayType());
     }
@@ -8168,6 +8455,26 @@ function renderToday() {
   }
   const container = document.getElementById('exerciseList');
   const workoutHead = document.getElementById('workoutSectionHead');
+  if (needsBaselineQuest(state)) {
+    if (workoutHead) workoutHead.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px; margin-top:18px;"><span class="dash-sec-ic">${DASH_WORKOUT_ICON}</span>First Session</div>`;
+    const rec = ensureBaselineQuestRecord(state);
+    const started = Object.values(rec.sets || {}).some(reps => Array.isArray(reps) && reps.length);
+    container.innerHTML = `
+      <div class="card workout-summary-card tutorial-guidance-glow" id="baselineQuestCard">
+        <div class="wk-row">
+          <div>
+            <div class="wk-title">Set Your Baseline</div>
+            <div class="wk-sub">${started ? 'Resume your test sets' : 'A few max-effort sets so every lift starts with a real target'}</div>
+          </div>
+          <button class="go-btn" id="baselineQuestGoBtn">${started ? 'Resume' : 'Begin'}</button>
+        </div>
+      </div>`;
+    const openFn = (e) => { if (e) e.stopPropagation(); startBaselineQuest(started); };
+    document.getElementById('baselineQuestCard').addEventListener('click', openFn);
+    document.getElementById('baselineQuestGoBtn').addEventListener('click', openFn);
+    syncQuickLogFab();
+    return;
+  }
   if (workoutHead) workoutHead.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px; margin-top:18px;"><span class="dash-sec-ic">${DASH_WORKOUT_ICON}</span>Workout</div>`;
 
   if (!dayType) {
@@ -8283,7 +8590,7 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
         const totalReps = reps.reduce((a,b)=>a+b,0);
         const provisionalRate = provisionalPointsPerUnit(ex.id);
         const provisionalEarned = reps.reduce((a,b)=>a+Math.round(b*provisionalRate), 0);
-        state.baselines[ex.id] = { totalReps, perSetAvg: totalReps / setCount, setCount, date: dateKey };
+        state.baselines[ex.id] = { totalReps, perSetAvg: totalReps / setCount, setCount, date: dateKey, source: 'tested' };
         const realEarned = reps.reduce((a,b)=>a+unitPoints(ex.id, b), 0);
         const adjust = realEarned - provisionalEarned;
         if (adjust !== 0) {
@@ -8582,7 +8889,7 @@ function syncQuickLogFab() {
   const fab = document.getElementById('quickLogFab');
   if (!fab) return;
   const onDash = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
-  fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen);
+  fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen && !needsBaselineQuest(state));
 }
 function closeQuickLog(silent) {
   const earned = window.__quickLogSessionPoints || 0;
@@ -8739,6 +9046,21 @@ function attachTodayListeners(dateKey) {
       });
       checkMilestones(exId, val);
       applyBossDamage(exId, val);
+      if (!boss && activeBaseline()) {
+        const reps = sets[exId];
+        const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
+        const provisionalEarned = earned;
+        state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey, source: 'tested' };
+        const realEarned = unitPoints(exId, val);
+        const adjust = realEarned - provisionalEarned;
+        if (adjust !== 0) creditPoints(adjust);
+      } else if (!boss) {
+        const bl = getBaseline(exId);
+        if (bl && bl.source === 'forecast') {
+          const observed = observedPerformanceFromSets(sets[exId]);
+          if (observed) state.baselines[exId] = silentlyRefineForecastedBaseline(bl, observed);
+        }
+      }
     } else {
       // v2.3.1: editing an already-logged set. Adjust points by the delta
       // between old and new value, never by re-adding the new value outright
@@ -8753,10 +9075,13 @@ function attachTodayListeners(dateKey) {
       if (delta !== 0) creditPoints(delta);
       if (!boss) {
         const bl = getBaseline(exId);
-        if (bl && bl.date === dateKey) {
+        if (bl && bl.source === 'forecast') {
+          const observed = observedPerformanceFromSets(sets[exId]);
+          if (observed) state.baselines[exId] = silentlyRefineForecastedBaseline(bl, observed);
+        } else if (bl && bl.date === dateKey) {
           const reps = sets[exId];
           const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
-          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey, source: bl.source || 'tested' };
         }
       }
       awardBadges(); // an upward edit could newly cross a points/streak badge threshold
@@ -8764,10 +9089,10 @@ function attachTodayListeners(dateKey) {
     // PB fix (v2.1.1): recompute this exercise's best immediately, independent
     // of whether the rest of today's session gets finished. Boss-fight copies
     // are a separate instance — they must not count as gym PBs.
-    if (!boss && recomputeBestForExercise(exId)) feedbackPersonalBest();
+    if (!boss && !activeBaseline() && recomputeBestForExercise(exId)) feedbackPersonalBest();
     save();
 
-    if (!boss) {
+    if (!boss && !activeBaseline()) {
       const lastWk = sameDayLastWeek(exId, dateKey);
       const lastR = lastWk ? lastWk.reps[idx] : null;
       if (lastR !== null && lastR !== undefined && val > lastR) {
@@ -8778,7 +9103,10 @@ function attachTodayListeners(dateKey) {
 
     if (isNewSet && earned > 0) { showPointsPop(earned); feedbackSetFinished(); }
 
-    const stillShort = sets[exId].length < ex.suggestedSets;
+    const suggestedSets = activeBaseline()
+      ? ((buildBaselineQuestExercises(state).find(e => e.id === exId) || ex).suggestedSets)
+      : ex.suggestedSets;
+    const stillShort = sets[exId].length < suggestedSets;
     uiActiveSetIdx[exId] = null; // next tap continues onto a new set
     window.__tipOpen = null;
     if (window.__quickLogOpen) {
@@ -8789,6 +9117,10 @@ function attachTodayListeners(dateKey) {
           .map(id => getAllExercises().find(e => e.id === id))
           .find(e => e && e.id !== exId && repsFromLog(sets, e.id).length < e.suggestedSets);
         window.__expandedEx = nextEx ? nextEx.id : null;
+      } else if (activeBaseline()) {
+        const exList = buildBaselineQuestExercises(state);
+        const nextEx = exList.find(e => e.id !== exId && repsFromLog(sets, e.id).length < e.suggestedSets);
+        window.__expandedEx = nextEx ? nextEx.id : null;
       } else {
         const dt = getTodayDayType();
         const exList = getDayExercises(dt);
@@ -8797,14 +9129,29 @@ function attachTodayListeners(dateKey) {
       }
     }
     if (!window.__quickLogOpen) {
-      const others = boss
-        ? (boss.exIds || [])
-            .map(id => getAllExercises().find(e => e.id === id)).filter(e => e && e.id !== exId)
-            .map(e => ({ loggedCount: repsFromLog(sets, e.id).length, suggestedSets: e.suggestedSets }))
-        : getDayExercises(getTodayDayType() || '').filter(e => e.id !== exId)
-            .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }));
-      if (hasRemainingSuggestedWork(sets[exId].length, ex.suggestedSets, others)) startRestTimer(ex);
+      let others;
+      if (boss) {
+        others = (boss.exIds || [])
+          .map(id => getAllExercises().find(e => e.id === id)).filter(e => e && e.id !== exId)
+          .map(e => ({ loggedCount: repsFromLog(sets, e.id).length, suggestedSets: e.suggestedSets }));
+      } else if (activeBaseline()) {
+        others = buildBaselineQuestExercises(state).filter(e => e.id !== exId)
+          .map(e => ({ loggedCount: repsFromLog(sets, e.id).length, suggestedSets: e.suggestedSets }));
+      } else {
+        others = getDayExercises(getTodayDayType() || '').filter(e => e.id !== exId)
+          .map(e => ({ loggedCount: getExReps(session, e.id).length, suggestedSets: e.suggestedSets }));
+      }
+      if (hasRemainingSuggestedWork(sets[exId].length, suggestedSets, others)) startRestTimer(ex);
       else clearRestTimer();
+    }
+    if (activeBaseline() && isNewSet) {
+      const questList = buildBaselineQuestExercises(state);
+      const allTested = questList.length > 0 && questList.every(e => repsFromLog(sets, e.id).length >= 1);
+      if (allTested) {
+        clearRestTimer();
+        setTimeout(() => completeBaselineQuest(), 550);
+        return;
+      }
     }
     setTimeout(() => refreshAfterSetChange(), (!window.__quickLogOpen && !stillShort) ? 550 : 0);
   }
@@ -8829,10 +9176,13 @@ function attachTodayListeners(dateKey) {
 
     if (!boss) {
       const bl = getBaseline(exId);
-      if (bl && bl.date === dateKey) {
+      if (bl && bl.source === 'forecast') {
+        const observed = observedPerformanceFromSets(reps);
+        if (observed) state.baselines[exId] = silentlyRefineForecastedBaseline(bl, observed);
+      } else if (bl && bl.date === dateKey) {
         if (reps.length > 0) {
           const totalReps = reps.reduce((a, b) => a + (b || 0), 0);
-          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey };
+          state.baselines[exId] = { totalReps, perSetAvg: totalReps / reps.length, setCount: reps.length, date: dateKey, source: bl.source || 'tested' };
         }
         // If every set for this exercise on its baseline-locking day gets
         // deleted, the baseline is intentionally left as-is (last known good
@@ -8840,7 +9190,7 @@ function attachTodayListeners(dateKey) {
         // baseline and zero remaining sets logged for it is an edge case with
         // no clean "correct" rate to fall back to.
       }
-      recomputeBestForExercise(exId);
+      if (!activeBaseline()) recomputeBestForExercise(exId);
     }
     uiActiveSetIdx[exId] = null;
     save();
@@ -9351,6 +9701,7 @@ function maybeShowOnboarding() {
   const meta = getCurrentProfileMeta();
   const overlay = document.getElementById('onboardingOverlay');
   if (meta && !meta.onboarded) {
+    switchView('today');
     window.__ob = { step: 0, data: { name:'', weightKg:null, freq:5, equipment:[], dumbbellMin:5, dumbbellMax:20, goal:null, bodyType:null, focus:'full' } };
     overlay.style.display = 'flex';
     renderOnboarding();
@@ -9493,6 +9844,7 @@ function finishOnboarding() {
   save();
 
   document.getElementById('onboardingOverlay').style.display = 'none';
+  switchView('today');
   renderHeader();
   renderToday();
   renderProfilesList();

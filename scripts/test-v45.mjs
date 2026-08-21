@@ -99,8 +99,10 @@ const deleteSlice = html.slice(html.indexOf('function deleteSet(exId, idx)'), ht
 assert(deleteSlice.includes('getActiveRepsMap(dateKey)'), 'deleteSet splices the active instance log');
 
 // 6. Boss pacing is boss-framed, not recycled workout copy.
-assert(html.includes('boss ? bossPacingNoteForSet(activeIdx) : pacingNoteForSet(ex.pacing, activeIdx)'),
+assert(html.includes('boss ? bossPacingNoteForSet(activeIdx)'),
   'boss cards use boss pacing; workouts keep set-gated workout tips');
+assert(html.includes('pacingNoteForSet(ex.pacing, activeIdx)'),
+  'workout cards still gate pacing by the active set');
 const opening = bossPacingNoteForSet(0);
 const later = bossPacingNoteForSet(1);
 assert(opening.length > 10 && later.length > 10, 'boss pacing copy exists for set 1 and later sets');
@@ -109,6 +111,6 @@ assert(!/max effort on set (one|1)/i.test(opening + later), 'boss copy must not 
 assert(!opening.includes(String(ctx.pacingNoteForSet && ctx.pacingNoteForSet('Max effort on set one, this tends to be a stronger lift', 0))),
   'boss pacing is not the workout pacing helper output');
 
-assert(html.includes('3.4.3'), 'About version bumped for v4.5');
+assert(html.includes('3.4.4'), 'About version bumped for v4.5');
 
 console.log('v4.5 tests ok — Level bar, Rank tab season icons, Daily Login order, independent boss logs');
