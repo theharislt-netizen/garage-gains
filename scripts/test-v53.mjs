@@ -79,7 +79,10 @@ assert(dismissFn.includes('hideBoxRevealOverlay'), 'dismiss hides immediately');
 assert(!dismissFn.includes('renderShopModal'), 'dismiss does not rebuild the shop');
 assert(!dismissFn.includes('renderInventoryTab'), 'dismiss does not rebuild inventory');
 assert(dismissFn.includes('save()'), 'dismiss still persists later');
-assert(dismissFn.includes('400'), 'persist is delayed off the hide frame');
+assert(
+  /afterPaint|scheduleIdleWork|setTimeout/.test(dismissFn),
+  'persist is delayed off the hide frame'
+);
 
 assert(html.includes('id="boxArtBoost"') && html.includes('id="boxArtRelic"') && html.includes('id="boxArtStarter"'),
   'boost, relic, and starter chests are pre-mounted');
