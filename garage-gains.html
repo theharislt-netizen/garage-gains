@@ -1947,7 +1947,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.13</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.14</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2557,7 +2557,7 @@ const SIGNAL_PREFERENCE = {
   'bodyweight:pull': ['rearDelt'],
   'bodyweight:core': ['legRaise']
 };
-const BASELINE_QUEST_PACING = 'One max-effort test set. Push as far as you can with good form — this sets your starting target.';
+const BASELINE_QUEST_PACING = 'Max-effort work. Push as far as you can with good form — this sets your starting target.';
 function signalFamilyKey(ex) {
   if (!ex) return 'unknown';
   if (ex.isTime) return 'timed';
@@ -2666,6 +2666,25 @@ function applyForecastedBaselines(baselines, routineExercises, signalResults, da
 }
 function isLedKeepingInstance(inst) {
   return !!(inst && (inst.type === 'workout' || inst.type === 'baseline'));
+}
+function hasFinishedSuggestedSets(loggedCount, suggestedSets) {
+  const logged = Number(loggedCount);
+  const target = Number(suggestedSets);
+  const need = Number.isFinite(target) && target > 0 ? Math.floor(target) : 1;
+  return Number.isFinite(logged) && logged >= need;
+}
+function baselineQuestLoggedCount(sets, id) {
+  if (!sets || typeof sets !== 'object') return 0;
+  const reps = sets[id];
+  return Array.isArray(reps) ? reps.length : 0;
+}
+function baselineQuestIsFinished(questExercises, sets, getLoggedCount) {
+  const countOf = typeof getLoggedCount === 'function' ? getLoggedCount : baselineQuestLoggedCount;
+  const list = Array.isArray(questExercises) ? questExercises.filter(e => e && e.id) : [];
+  if (!list.length) return false;
+  return list.every(function (e) {
+    return hasFinishedSuggestedSets(countOf(sets, e.id), e.suggestedSets);
+  });
 }
 /* === v48-helpers-lib end === */
 
@@ -8884,7 +8903,7 @@ function buildBaselineQuestExercises(s) {
   return rec.signalIds.map(id => {
     const e = catalog.find(x => x.id === id);
     if (!e) return null;
-    return { ...e, suggestedSets: 1, pacing: BASELINE_QUEST_PACING };
+    return { ...e, pacing: BASELINE_QUEST_PACING };
   }).filter(Boolean);
 }
 function showBaselineIntro() {
@@ -8926,8 +8945,10 @@ function completeBaselineQuest() {
     if (activeBaseline()) leaveInstance();
     return;
   }
-  const dateKey = todayStr();
   const rec = ensureBaselineQuestRecord(state);
+  const questList = buildBaselineQuestExercises(state);
+  if (!baselineQuestIsFinished(questList, rec.sets)) return;
+  const dateKey = todayStr();
   const catalog = getAllExercises();
   rec.signalIds.forEach(id => {
     const reps = repsFromLog(rec.sets, id);
@@ -8975,7 +8996,7 @@ function completeBaselineQuest() {
     rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
     feedbackBoxReceived();
   }
-  queueReward({ kind:'workout', title:'Baseline Set', subtitle: rec.signalIds.length + ' test lifts logged', lines: rewardLines });
+  queueReward({ kind:'workout', title:'Baseline Complete', subtitle: rec.signalIds.length + ' test lifts logged', lines: rewardLines });
   window.__activeInstance = null;
   resetDashboardChrome();
   save();
@@ -9920,8 +9941,7 @@ function attachTodayListeners(dateKey) {
     }
     if (activeBaseline() && isNewSet) {
       const questList = buildBaselineQuestExercises(state);
-      const allTested = questList.length > 0 && questList.every(e => repsFromLog(sets, e.id).length >= 1);
-      if (allTested) {
+      if (baselineQuestIsFinished(questList, sets)) {
         clearRestTimer();
         setTimeout(() => completeBaselineQuest(), 550);
         return;
