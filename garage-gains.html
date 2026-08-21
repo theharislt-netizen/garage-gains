@@ -3405,11 +3405,11 @@ function getFlaggedIssueIds() {
 const MOBILITY_MORNING_WINDOW_START_HOUR = 5;
 const MOBILITY_MORNING_WINDOW_END_HOUR = 11;
 const MOBILITY_SLOT_UNLOCK_HOURS = [7, 12, 17]; // 3 regular slots, ~5hrs apart
-// v2.7.1 rebalance, unchanged by v2.9's restructure — the math already
-// assumed 3 regular slots (100% combined, ~33% each) plus a separate ~62%
-// Morning Stretch, which is exactly what v2.9 makes structurally explicit.
-// Stacking all of them (~126-131% total) remains intentional, not capped.
-const MOBILITY_MORNING_REWARD_PCT = 0.62;
+// Regular mobility stays 3 slots at ~33% each. Morning Stretch used to pay
+// ~62% of a lifting day for two 20–30s moves; it is now an 8-move full-body
+// flow, and the bonus sits a bit above one mobility slot — still worth doing,
+// no longer a cheap jackpot.
+const MOBILITY_MORNING_REWARD_PCT = 0.40;
 const MOBILITY_REGULAR_REWARD_PCT = 1 / 3;
 
 // Each entry: 2 short moves, matching the "quick habit" framing. Multiple
@@ -3666,12 +3666,87 @@ function tickMobilityTimerDisplay() {
 
 // =========================================================
 // MORNING STRETCH (v2.9) — extracted from Mobility Quests into its own
-// standalone category (was Mobility's slot 0, isMorning:true). Mechanics
-// carry over unchanged from v2.7/v2.7.1: time-windowed (5:00-11:00 by
-// default), ~62% of a full workout day's value when completed in-window,
-// same guided move-by-move flow. Structurally it's now a single object, not
-// an array slot, and lives entirely separately from state.mobilityQuests.
+// standalone category (was Mobility's slot 0, isMorning:true). Time-windowed
+// (5:00-11:00). v3.3.3: real 8-move full-body flow instead of a 2-move
+// mobility snippet, with a 40% workout-basis bonus (was 62% for ~1 minute).
 // =========================================================
+/* === morning-stretch-lib begin === */
+const MORNING_STRETCH_VERSION = 2;
+const MORNING_STRETCH_MIN_MOVES = 8;
+const MORNING_STRETCH_MIN_HOLD_SECONDS = 45;
+const MORNING_STRETCH_TEMPLATES = [
+  { id:'msRiseOpen', label:'Rise & Open', moves:[
+    { id:'msANeck', name:'Slow Neck Rolls', muscle:'Neck', isTime:true, target:50 },
+    { id:'msAShoulder', name:'Shoulder Rolls + Arm Circles', muscle:'Shoulders', isTime:true, target:55 },
+    { id:'msAChest', name:'Standing Chest Opener', muscle:'Chest', isTime:true, target:60 },
+    { id:'msACatCow', name:'Cat-Cow Stretch', muscle:'Spine', isTime:true, target:70 },
+    { id:'msAHipFlex', name:'Kneeling Hip Flexor Stretch (each side)', muscle:'Hips', isTime:true, target:70 },
+    { id:'msAHam', name:'Standing Hamstring Stretch (each side)', muscle:'Hamstrings', isTime:true, target:60 },
+    { id:'msAFig4', name:'Figure-Four Stretch (each side)', muscle:'Hips', isTime:true, target:60 },
+    { id:'msAFold', name:'Forward Fold + Slow Breath', muscle:'Full Body', isTime:true, target:55 },
+  ] },
+  { id:'msFullWake', label:'Full-Body Wake Flow', moves:[
+    { id:'msBMarch', name:'Easy March in Place', muscle:'Full Body', isTime:true, target:45 },
+    { id:'msBThor', name:'Thoracic Rotations (each side)', muscle:'Upper Back', isTime:true, target:55 },
+    { id:'msBCatCow', name:'Cat-Cow Stretch', muscle:'Spine', isTime:true, target:60 },
+    { id:'msBChild', name:"Child's Pose", muscle:'Back', isTime:true, target:50 },
+    { id:'msBLunge', name:'Kneeling Hip Flexor Stretch (each side)', muscle:'Hips', isTime:true, target:70 },
+    { id:'msBHam', name:'Seated or Standing Hamstring Stretch (each side)', muscle:'Hamstrings', isTime:true, target:60 },
+    { id:'msBCalf', name:'Wall Calf Stretch (each side)', muscle:'Calves', isTime:true, target:50 },
+    { id:'msBQuad', name:'Standing Quad Stretch (each side)', muscle:'Quads', isTime:true, target:50 },
+  ] },
+  { id:'msAthleticOpen', label:'Athletic Morning Open', moves:[
+    { id:'msCArm', name:'Big Arm Circles', muscle:'Shoulders', isTime:true, target:50 },
+    { id:'msCHip', name:'Standing Hip Circles', muscle:'Hips', isTime:true, target:50 },
+    { id:'msCSwingF', name:'Forward Leg Swings (each side)', muscle:'Hamstrings', isTime:true, target:50 },
+    { id:'msCSwingS', name:'Side Leg Swings (each side)', muscle:'Hips', isTime:true, target:50 },
+    { id:'msCWorld', name:"World's Greatest Stretch (each side)", muscle:'Full Body', isTime:true, target:70 },
+    { id:'msCHam', name:'Standing Hamstring Stretch (each side)', muscle:'Hamstrings', isTime:true, target:55 },
+    { id:'msCDoor', name:'Doorway Chest / Shoulder Stretch', muscle:'Chest', isTime:true, target:55 },
+    { id:'msCPike', name:'Downward Dog or Pike Hold', muscle:'Full Body', isTime:true, target:60 },
+  ] },
+];
+function morningStretchHoldSeconds(moves) {
+  return (moves || []).reduce((sum, m) => sum + (m.isTime ? Number(m.target) || 0 : 0), 0);
+}
+function pickMorningStretchTemplateFrom(templates, lastId) {
+  const pool = templates || [];
+  if (!pool.length) return null;
+  const candidates = pool.length > 1 ? pool.filter(t => t.id !== lastId) : pool;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+function shouldRebuildMorningStretch(session) {
+  if (!session || session.status !== 'available') return false;
+  return session.stretchVersion !== MORNING_STRETCH_VERSION
+    || !Array.isArray(session.moves)
+    || session.moves.length < MORNING_STRETCH_MIN_MOVES;
+}
+function getMorningStretchLib() {
+  return {
+    version: MORNING_STRETCH_VERSION,
+    minMoves: MORNING_STRETCH_MIN_MOVES,
+    minHoldSeconds: MORNING_STRETCH_MIN_HOLD_SECONDS,
+    templates: MORNING_STRETCH_TEMPLATES
+  };
+}
+/* === morning-stretch-lib end === */
+function pickMorningStretchTemplate() {
+  const chosen = pickMorningStretchTemplateFrom(MORNING_STRETCH_TEMPLATES, state.morningStretchLastTemplateId);
+  if (chosen) state.morningStretchLastTemplateId = chosen.id;
+  return chosen;
+}
+function buildTodayMorningStretch() {
+  const tmpl = pickMorningStretchTemplate();
+  return {
+    date: todayStr(),
+    templateId: tmpl.id,
+    label: tmpl.label,
+    moves: tmpl.moves,
+    progress: {},
+    status: 'available',
+    stretchVersion: MORNING_STRETCH_VERSION
+  };
+}
 function ensureMorningStretch() {
   const today = todayStr();
   if (getTodayDayType() === null) { state.morningStretch = null; return; }
@@ -3683,15 +3758,15 @@ function ensureMorningStretch() {
       if (window.__morningTimerState) { clearMorningTimerInterval(); window.__morningTimerState = null; }
       state.morningStretch.status = 'expired';
       save();
+      return;
+    }
+    if (shouldRebuildMorningStretch(state.morningStretch)) {
+      state.morningStretch = buildTodayMorningStretch();
+      save();
     }
     return;
   }
-  const issueTargets = getMobilitySlotIssueTargets();
-  const tmpl = pickMobilityTemplate(issueTargets[0]);
-  state.morningStretch = {
-    date: today, templateId: tmpl.id, label: 'Morning Stretch', moves: tmpl.moves,
-    progress: {}, status: 'available'
-  };
+  state.morningStretch = buildTodayMorningStretch();
   save();
 }
 function startMorningStretch() {
@@ -4197,7 +4272,7 @@ function renderMorningStretchSection() {
           <div class="blp-row"><span>🪙 Gold</span><b>+${reward.gold}</b></div>
         </div>` : ''}
       </div>
-      <div class="quest-note">Big payout, but only inside its morning window — miss it and it's gone for the day, no carryover.</div>
+      <div class="quest-note">Full-body morning flow — every hold, then the bonus. Miss the morning window and it's gone for the day.</div>
     </div>`;
   slot.querySelectorAll('[data-morning-toggle]').forEach(el => el.addEventListener('click', () => {
     window.__expandedMorningStretch = !expanded;
@@ -5093,7 +5168,8 @@ function defaultState() {
     // --- v2.7: Problem-Area Profile + Mobility/Recovery Quests ---
     problemProfile: {},      // regionId -> [issueId, ...]; empty/missing region = not flagged
     mobilityQuests: null,    // {date, slots:[...]} — see ensureMobilityQuests(); 3 REGULAR slots as of v2.9
-    morningStretch: null     // {date, status, templateId, label, moves, progress} — v2.9: extracted from Mobility into its own standalone category
+    morningStretch: null,    // {date, status, templateId, label, moves, progress, stretchVersion}
+    morningStretchLastTemplateId: null
   };
 }
 function todayStr(d) {
