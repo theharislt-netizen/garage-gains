@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
  * Copies garage-gains.html into www/index.html, swaps Google Fonts for
- * locally bundled woff2 files, injects the native Android bridge, and
- * bundles Capacitor plugins with esbuild.
+ * locally bundled woff2 files, injects the native bridge, copies www to
+ * docs/ for GitHub Pages, and writes live-update/ for Android + iPhone.
  */
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile, writeFile, copyFile, access } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, copyFile, access, cp, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
@@ -15,6 +15,7 @@ import { makeLiveBundle } from './make-live-bundle.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const www = join(root, 'www');
+const docs = join(root, 'docs');
 const fontsDir = join(www, 'fonts');
 
 const FONT_CSS_URL =
@@ -150,4 +151,7 @@ if (await exists(iconSrc)) {
 }
 
 await makeLiveBundle();
-console.log('www/ prepared');
+
+await rm(docs, { recursive: true, force: true });
+await cp(www, docs, { recursive: true });
+console.log('www/ prepared (docs/ updated for GitHub Pages)');
