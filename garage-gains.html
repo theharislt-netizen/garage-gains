@@ -2203,7 +2203,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.24</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.25</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -4801,7 +4801,7 @@ const REGRADE_SAFE_CEILING = 3;
 const ENCHANT_XP_SAFE = 80;
 const ENCHANT_XP_RISKY = 150;
 /* === enchant-regrade-lib begin === */
-const ENCHANT_SUCCESS_RATES = [0.70, 0.55, 0.40, 0.28, 0.20];
+const ENCHANT_SUCCESS_RATES = [0.65, 0.50, 0.35, 0.23, 0.15];
 function enchantAttemptSuccessRate(currentStar, bonus) {
   const idx = Math.max(0, Math.min(ENCHANT_SUCCESS_RATES.length - 1, Math.round(Number(currentStar) || 0)));
   const success = ENCHANT_SUCCESS_RATES[idx] + (Number(bonus) || 0);

@@ -103,6 +103,6 @@ assert(itemIconSvg('doubleDown').includes('fill="currentColor"'),
   'Double Down stays a filled bolt like the previous set');
 assert(itemIconSvg('firstLight') !== itemIconSvg('ironFocus'), 'new items still have distinct icons');
 
-assert(html.includes('3.4.24'), 'About version bumped for v5.1');
+assert(html.includes('3.4.25'), 'About version bumped for v5.1');
 
 console.log('v5.1 tests ok — overlay paints first, item icons match previous language, materials unchanged');

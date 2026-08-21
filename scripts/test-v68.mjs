@@ -106,6 +106,6 @@ const shopFn = sliceFn('renderShopModal', 'coverShopForBoxReveal');
 assert(shopFn.includes('shopBoxGoldCost(10)'), 'shop Buy 10 uses the discounted total');
 assert(shopFn.includes('700g') || shopFn.includes('${bulk}g'), 'Buy 10 shows the discounted gold');
 
-assert(html.includes('3.4.24'), 'About version bumped for v6.8');
+assert(html.includes('3.4.25'), 'About version bumped for v6.8');
 
 console.log('v6.8 tests ok — relic equip keep, stacked rewards, stars, unique 10x flash, Buy 10 = 700g');

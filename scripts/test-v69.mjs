@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * v6.9: enchant success rates fall with each next star (70/55/40/28/20).
+ * v6.9: enchant success rates fall with each next star (65/50/35/23/15).
  * A miss does not strip stars, gold, or the item. Stone/item slot flow stays.
  */
 import { readFile } from 'node:fs/promises';
@@ -39,15 +39,15 @@ const apply = vm.runInContext('applyEnchantAttempt', ctx);
 const rates = vm.runInContext('ENCHANT_SUCCESS_RATES', ctx);
 
 assert(rates.length === 5, 'five enchant steps');
-assert(rate(0) === 0.70 && pct(0) === 70, '1st enchant is 70%');
-assert(rate(1) === 0.55 && pct(1) === 55, '2nd enchant is 55%');
-assert(rate(2) === 0.40 && pct(2) === 40, '3rd enchant is 40%');
-assert(rate(3) === 0.28 && pct(3) === 28, '4th enchant is 28%');
-assert(rate(4) === 0.20 && pct(4) === 20, '5th enchant is 20%');
+assert(rate(0) === 0.65 && pct(0) === 65, '1st enchant is 65%');
+assert(rate(1) === 0.50 && pct(1) === 50, '2nd enchant is 50%');
+assert(rate(2) === 0.35 && pct(2) === 35, '3rd enchant is 35%');
+assert(rate(3) === 0.23 && pct(3) === 23, '4th enchant is 23%');
+assert(rate(4) === 0.15 && pct(4) === 15, '5th enchant is 15%');
 assert(rate(0) > rate(1) && rate(1) > rate(2) && rate(2) > rate(3) && rate(3) > rate(4),
   'each next enchant is harder');
-assert(pct(0, 0.04) === 74, 'enchant-success gear still adds on top of the table');
-assert(pct(4, 0.08) === 28, 'late-star gear bonus cannot flatten the curve back to easy');
+assert(pct(0, 0.04) === 69, 'enchant-success gear still adds on top of the table');
+assert(pct(4, 0.08) === 23, 'late-star gear bonus cannot flatten the curve back to easy');
 
 const kept = { star: 3 };
 assert(apply(kept, false) === 3 && kept.star === 3, 'a miss does not downgrade stars');
@@ -80,6 +80,6 @@ const renderFn = sliceFn('renderEnchantModal', 'renderShopModal');
 assert(renderFn.includes('enchantAttemptChancePct(inst, tmpl)'), 'table still prints this-attempt %');
 assert(renderFn.includes('tutorial-guidance-glow'), 'enchant tutorial glow is unchanged');
 
-assert(html.includes('3.4.24'), 'About version bumped for v6.9');
+assert(html.includes('3.4.25'), 'About version bumped for v6.9');
 
-console.log('v6.9 tests ok — 70/55/40/28/20 enchant curve, miss keeps stars, slots persist');
+console.log('v6.9 tests ok — 65/50/35/23/15 enchant curve, miss keeps stars, slots persist');
