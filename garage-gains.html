@@ -805,6 +805,12 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(180,85,245,0.0); }
     50% { box-shadow: 0 0 14px 3px rgba(180,85,245,0.55); }
   }
+  /* Guided-step glow is a separate, stronger pulse than the one-time new-item
+     unlock-pulse. Must win on inventory slots when both classes are possible. */
+  .inv-slot.tutorial-guidance-glow {
+    animation: tutorial-guidance-glow-pulse 1.8s ease-in-out infinite;
+    border-color: rgba(var(--a1-rgb), 0.75);
+  }
   .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
   .inv-slot-icon { font-size: 26px; line-height: 1; }
   .inv-slot .star-row { font-size: 8px; letter-spacing: 0.5px; }
@@ -1765,7 +1771,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.5</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.6</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2548,6 +2554,40 @@ function shopStorefrontItems(boxCost, directItems) {
 }
 /* === v49-helpers-lib end === */
 
+/* === v47-helpers-lib begin === */
+// Level 1 is the default starting level (0 points). Celebrations are only for
+// genuine climbs, Level 2 and up. Coerce a 0-indexed getLevel (old 0-at-0-pts
+// formula) up to 1 so a fake "reached Level 1" can never fire.
+function shouldCelebrateLevel(prevPoints, newPoints, getLevelFn) {
+  const toLevel = typeof getLevelFn === 'function'
+    ? getLevelFn
+    : (typeof getLevel === 'function' ? getLevel : function () { return 1; });
+  const prevLevel = Math.max(1, Number(toLevel(prevPoints)) || 1);
+  const newLevel = Math.max(1, Number(toLevel(newPoints)) || 1);
+  return newLevel >= 2 && newLevel > prevLevel;
+}
+function shouldTutorialGuideBox(s, boxItemId) {
+  const p = s && s.progression;
+  if (!p || !p.starterBoxGranted || p.starterBoxOpened) return false;
+  const id = boxItemId || 'starterVictoryBox';
+  return id === 'starterVictoryBox';
+}
+function invSlotGlowClass(s, boxItemId, wouldFlash) {
+  if (shouldTutorialGuideBox(s, boxItemId)) return 'tutorial-guidance-glow';
+  return wouldFlash ? 'unlock-pulse' : '';
+}
+function tutorialAwardIsBoxOnly(s) {
+  const inv = (s && s.inventory) || {};
+  const perm = inv.permanent || [];
+  const temps = Object.values(inv.tempCharges || {}).reduce((n, c) => n + (Number(c) || 0), 0);
+  const shards = ((inv.shards && inv.shards.boost) || 0) + ((inv.shards && inv.shards.relic) || 0);
+  const stones = ((inv.stones && inv.stones.boost) || 0) + ((inv.stones && inv.stones.relic) || 0);
+  const boxes = (inv.boxes || []).filter(b => b && !b.opened);
+  return perm.length === 0 && temps === 0 && shards === 0 && stones === 0
+    && boxes.length === 1 && boxes[0].itemId === 'starterVictoryBox';
+}
+/* === v47-helpers-lib end === */
+
 // Visual-family ladder for Level, reusing the exact same tiered visual system
 // (CSS classes, color pairs, sub2/top escalation, and even the same RANK_ICON_SVG
 // icon set keyed by these same ids) originally built for the permanent Rank
@@ -2608,9 +2648,9 @@ function flushPendingLevelUp() {
 // /gems, but those show on the same lightweight claim — never the full
 // instance-exit reward overlay, which is reserved for exercise completions.
 function checkLevelUp(prevPoints, newPoints) {
-  const prevLevel = getLevel(prevPoints);
+  if (!shouldCelebrateLevel(prevPoints, newPoints, getLevel)) return;
+  const prevLevel = Math.max(1, getLevel(prevPoints) || 1);
   const newLevel = getLevel(newPoints);
-  if (newLevel === prevLevel) return;
   const goldAmt = awardGold(newLevel * 2, 'level up');
   showToast(`Level Up! Now Level ${newLevel} (+${goldAmt}g)`);
 
@@ -2789,10 +2829,9 @@ function renderClaimRewardsOverlay(reward) {
     void fill.offsetWidth;
     requestAnimationFrame(() => {
       fill.style.transition = 'width ' + (getCrXpFillMs() / 1000) + 's cubic-bezier(0.22, 1, 0.36, 1)';
-      const newLevel = getLevel(newTotal);
-      if (newLevel > prevLevel) {
-        // crossed a level boundary — fill to full for this bar; the level-up's
-        // own celebration (checkLevelUp) handles the bigger moment separately.
+      if (shouldCelebrateLevel(prevTotal, newTotal, getLevel)) {
+        // genuine climb (Level 2+) — fill to full for this bar; checkLevelUp
+        // handles the bigger moment separately. Level 1 is the default start.
         fill.style.width = '100%';
         text.textContent = `Level Up! ${newTotal} pts`;
       } else {
@@ -5882,9 +5921,13 @@ function renderInventoryTab() {
     return;
   }
 
-  const boxSlots = sealedBoxes.map(box => `<div class="inv-slot${shouldFlashItemType(state, itemTypeKey('box', box.itemId || STARTER_BOX_ID)) ? ' unlock-pulse' : ''}" data-slot-box="${box.instanceId}">
+  const boxSlots = sealedBoxes.map(box => {
+    const boxId = box.itemId || STARTER_BOX_ID;
+    const glow = invSlotGlowClass(state, boxId, shouldFlashItemType(state, itemTypeKey('box', boxId)));
+    return `<div class="inv-slot${glow ? ' ' + glow : ''}" data-slot-box="${box.instanceId}">
       <div class="inv-slot-icon">${STARTER_BOX_TMPL.icon}</div>
-    </div>`);
+    </div>`;
+  });
   const permSlots = permItems.map(inst => {
     const tmpl = itemTemplate(inst.itemId);
     const isEquipped = (state.equipped[tmpl.category] || []).some(eq => eq && eq.kind === 'permanent' && eq.instanceId === inst.instanceId);
@@ -6741,6 +6784,7 @@ function grantStarterVictoryBox(s) {
   if (!s || !s.progression || s.progression.starterBoxGranted) return false;
   s.inventory = s.inventory || { permanent: [], tempCharges: {}, shards: { boost: 0, relic: 0 }, stones: { boost: 0, relic: 0 }, boxes: [] };
   s.inventory.boxes = Array.isArray(s.inventory.boxes) ? s.inventory.boxes : [];
+  // Tutorial drop is the sealed box only — no shards, stones, or relics yet.
   if (!s.inventory.boxes.some(b => b.itemId === STARTER_BOX_ID && !b.opened)) {
     s.inventory.boxes.push({ instanceId: 'box-starter', itemId: STARTER_BOX_ID, opened: false });
   }
@@ -7441,6 +7485,8 @@ document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (
   switchView(view);
 }));
 function switchView(name) {
+  const instView = document.getElementById('instanceView');
+  if (instView) instView.classList.remove('instance-enter');
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
@@ -8315,6 +8361,12 @@ function renderInstanceView() {
   if (window.__instanceJustEntered) {
     view.classList.remove('instance-enter'); void view.offsetWidth; view.classList.add('instance-enter');
     window.__instanceJustEntered = false;
+    const onEnterEnd = (e) => {
+      if (e && e.target !== view) return;
+      view.classList.remove('instance-enter');
+      view.removeEventListener('animationend', onEnterEnd);
+    };
+    view.addEventListener('animationend', onEnterEnd);
   }
   const dateKey = todayStr();
 
