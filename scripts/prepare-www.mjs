@@ -105,9 +105,6 @@ function patchHtml(html) {
   const inject = `
 <style id="native-app-css">
   html.native-app, html.native-app body { background: #09080f; }
-  html.native-app .sticky-header { padding-top: env(safe-area-inset-top); }
-  html.native-app nav.tabbar { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
-  html.native-app body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 </style>
 <script src="./native-bridge.js"></script>
 `;

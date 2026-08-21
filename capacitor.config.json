@@ -28,7 +28,7 @@
       "showSpinner": false
     },
     "StatusBar": {
-      "style": "DARK",
+      "style": "LIGHT",
       "backgroundColor": "#09080f"
     },
     "CapacitorUpdater": {

@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>RIGCORE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --radius: 16px; --radius-sm: 11px; }
+  :root {
+    --radius: 16px; --radius-sm: 11px;
+    /* Capacitor Android sets --safe-area-inset-* in px; iOS uses env(). */
+    --app-sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+    --app-sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+    --app-sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+    --app-sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  }
 
   [data-theme="rig"] {
     --bg: #09080f; --panel: #121019; --line: #241f30;
@@ -43,8 +50,8 @@
       var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding-bottom: 88px;
+    min-height: 100dvh;
+    padding-bottom: calc(88px + var(--app-sab));
     overscroll-behavior-y: contain;
   }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
@@ -196,12 +203,12 @@
   .empty { text-align: center; padding: 26px 10px; color: var(--text-dim); }
   .empty .big { font-family: 'Barlow Condensed'; font-size: 19px; color: var(--text); margin-bottom: 4px; }
 
-  nav.tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--line); display: flex; padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); z-index: 10; }
+  nav.tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--line); display: flex; padding: 8px 6px calc(8px + var(--app-sab)); z-index: 10; }
   .tab { flex: 1; background: none; border: none; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: 'Barlow Condensed'; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 2px; cursor: pointer; border-radius: 10px; }
   .tab.active { color: var(--a2); }
   .tab svg { width: 21px; height: 21px; }
 
-  .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 20; white-space: nowrap; }
+  .toast { position: fixed; bottom: calc(92px + var(--app-sab)); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 20; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   input[type=file] { display: none; }
@@ -335,7 +342,7 @@
      scroll-events loop was what caused the old flicker. The name row always stays put;
      the sub row underneath slides/fades away on scroll down and back on scroll up,
      purely via transform+opacity so layout is never touched mid-scroll. --- */
-  .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); }
+  .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: var(--app-sat); }
   .name-badge-row { display: flex; justify-content: center; padding: 14px 14px 10px; max-width: 100%; overflow: hidden; transition: background 0.4s ease; }
   .sticky-sub {
     overflow: hidden; max-height: 280px; opacity: 1;
@@ -393,7 +400,7 @@
   .nb-daily-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gain); margin-left: 4px; flex-shrink: 0; cursor: pointer; box-shadow: 0 0 6px rgba(255,182,72,0.7); animation: ledPulse 1.6s ease-in-out infinite; }
   .tab-badge-dot { position: absolute; top: 4px; right: calc(50% - 16px); width: 8px; height: 8px; border-radius: 50%; background: var(--gain); box-shadow: 0 0 5px rgba(255,182,72,0.7); }
   .nb-popup {
-    position: absolute; z-index: 45; right: 14px; top: 54px; width: 220px;
+    position: absolute; z-index: 45; right: 14px; top: calc(var(--app-sat) + 52px); width: 220px;
     background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
     font-size: 12.5px; color: var(--text); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
     opacity: 0; transform: translateY(-6px); pointer-events: none; transition: all 0.18s ease;
@@ -550,7 +557,7 @@
   .cr-overlay {
     position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
     background: rgba(4,3,8,0.9); opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-    flex-direction: column; text-align: center; padding: 20px;
+    flex-direction: column; text-align: center; padding: calc(20px + var(--app-sat)) 20px calc(20px + var(--app-sab));
   }
   .cr-overlay.show { opacity: 1; pointer-events: auto; }
   .cr-burst {
@@ -608,7 +615,7 @@
   .modal-panel {
     width: 100%; max-width: 480px; max-height: 78vh; overflow-y: auto;
     background: var(--panel); border: 1px solid var(--line); border-radius: 20px 20px 0 0;
-    padding: 18px 18px 26px; box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    padding: 18px 18px calc(26px + var(--app-sab)); box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
   }
   .modal-head {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
@@ -622,7 +629,7 @@
   /* --- Onboarding flow: full-screen step-by-step setup for a new profile.
      Deliberately light on text — big tappable cards over paragraphs, one
      question per screen, progress dots instead of a "step 3 of 7" label. --- */
-  .ob-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; }
+  .ob-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; padding-top: var(--app-sat); }
   .ob-panel { flex: 1; display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; width: 100%; padding: 18px 18px 0; min-height: 0; }
   .ob-progress { display: flex; justify-content: center; gap: 6px; padding: 10px 0 18px; flex-shrink: 0; }
   .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all 0.25s ease; }
@@ -666,7 +673,7 @@
     flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
     color: var(--text); font-family: 'JetBrains Mono'; font-size: 15px; padding: 10px; text-align: center;
   }
-  .ob-nav { display: flex; gap: 10px; padding: 14px 0 calc(14px + env(safe-area-inset-bottom)); flex-shrink: 0; }
+  .ob-nav { display: flex; gap: 10px; padding: 14px 0 calc(14px + var(--app-sab)); flex-shrink: 0; }
   .ob-btn-back { flex: 0 0 auto; padding: 14px 18px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
   .ob-btn-next { flex: 1; padding: 14px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--a1), var(--a2)); border: none; color: #08070d; font-family: 'Barlow Condensed'; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
   .ob-btn-next:disabled { opacity: 0.4; }
@@ -906,9 +913,9 @@
      fit, e.g. a long tip panel), rather than the whole page scrolling like a
      normal webpage. `top` is set from JS to match the sticky header's
      already-computed height (syncHeaderHeight), since that height is dynamic. --- */
-  body.instance-no-scroll { overflow: hidden; height: 100vh; }
+  body.instance-no-scroll { overflow: hidden; height: 100dvh; }
   #instanceView.instance-fixed-scroll {
-    position: fixed; left: 0; right: 0; bottom: 70px;
+    position: fixed; left: 0; right: 0; bottom: calc(70px + var(--app-sab));
     overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 15;
     padding: 0 16px 20px;
   }
@@ -929,6 +936,8 @@
     100% { opacity: 0; }
   }
   .instance-header { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  #enchantWindow .instance-header,
+  #exerciseWikiOverlay .instance-header { padding-top: 2px; }
   .instance-leave-btn {
     display: flex; align-items: center; gap: 5px; background: var(--panel); border: 1px solid var(--line); color: var(--text-dim);
     border-radius: 100px; padding: 8px 14px; font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
@@ -944,7 +953,7 @@
      it's reached from Inventory, not the Dashboard. --- */
   #enchantWindow {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
-    overflow-y: auto; padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    overflow-y: auto; padding: calc(16px + var(--app-sat)) 16px calc(20px + var(--app-sab));
   }
   #enchantWindow.book-open { animation: enchantBookOpen 0.5s cubic-bezier(0.22, 1, 0.36, 1); transform-origin: center; }
   @keyframes enchantBookOpen {
@@ -1020,7 +1029,7 @@
   .wk-info-name .wiki-link-btn { margin-left: auto; }
   #exerciseWikiOverlay {
     position: fixed; inset: 0; z-index: 270; background: var(--bg);
-    overflow-y: auto; padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    overflow-y: auto; padding: calc(16px + var(--app-sat)) 16px calc(20px + var(--app-sab));
     display: none;
   }
   .wiki-photo {
@@ -5308,7 +5317,7 @@ function switchView(name) {
   const header = document.getElementById('stickyHeader');
   if (name === 'stats') {
     header.style.display = 'none';
-    document.body.style.paddingTop = '0px';
+    document.body.style.paddingTop = appSafeTop() + 'px';
   } else {
     header.style.display = '';
   }
@@ -7634,15 +7643,34 @@ function init() {
 // needs to toggle the 'collapsed' class to get an accurate reading (that toggle used to
 // risk a visible flash mid-measurement). Only called after a render/tab-switch, never
 // mid-scroll, so the page's own height stays constant while the user is scrolling.
+function appSafeTop() {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;padding-top:var(--app-sat)';
+  document.body.appendChild(probe);
+  const n = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+  probe.remove();
+  return n;
+}
+
 function syncHeaderHeight() {
   const nameRow = document.querySelector('.name-badge-row');
   const sub = document.getElementById('stickySub');
+  const header = document.getElementById('stickyHeader');
   if (!nameRow || !sub) return;
+  if (header && header.style.display === 'none') {
+    document.body.style.paddingTop = appSafeTop() + 'px';
+    return;
+  }
   const nameH = nameRow.getBoundingClientRect().height;
   const subH = sub.scrollHeight;
-  document.body.style.paddingTop = (nameH + subH) + 'px';
+  document.body.style.paddingTop = (appSafeTop() + nameH + subH) + 'px';
 }
+window.syncHeaderHeight = syncHeaderHeight;
 window.addEventListener('resize', syncHeaderHeight);
+new MutationObserver(() => syncHeaderHeight()).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['style'],
+});
 
 // --- Auto-hiding sub-header: the name badge itself stays pinned, but everything
 // beneath it (topbar, points/rank bar, streak bar, achievements) slides away on scroll

@@ -449,13 +449,18 @@ async function setup() {
   try { await CapacitorUpdater.notifyAppReady(); } catch (_) { /* builtin bundle */ }
 
   try {
+    await StatusBar.setOverlaysWebView({ overlay: true });
     await StatusBar.setStyle({ style: Style.Light });
-    await StatusBar.setBackgroundColor({ color: '#09080f' });
-  } catch (_) { /* older WebViews */ }
+  } catch (_) { /* older WebViews / Android 16 ignores overlay */ }
 
   try { await SplashScreen.hide(); } catch (_) { /* auto-hide is enough */ }
 
   hideHomeScreenShortcut();
+  if (typeof window.syncHeaderHeight === 'function') {
+    window.syncHeaderHeight();
+    requestAnimationFrame(() => window.syncHeaderHeight());
+    setTimeout(() => window.syncHeaderHeight(), 250);
+  }
   wireYoutube();
   wireExport();
   wireImport();

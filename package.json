@@ -6,6 +6,7 @@
   "scripts": {
     "test:backup": "node scripts/test-backup-restore.mjs",
     "test:ios": "node scripts/verify-ios-project.mjs",
+    "test:layout": "node scripts/test-safe-area.mjs",
     "verify:update": "node scripts/verify-live-update.mjs",
     "prepare:www": "node scripts/prepare-www.mjs",
     "bundle:live": "node scripts/make-live-bundle.mjs",
