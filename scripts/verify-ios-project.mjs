@@ -41,6 +41,8 @@ mustExist('ios/App/App/RIGCOREBridgeViewController.swift', 80);
 mustExist('ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', 10000);
 mustExist('ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png', 10000);
 mustExist('scripts/build-ios.sh', 200);
+mustExist('scripts/package-ios-ipa.sh', 400);
+mustExist('scripts/install-page.html', 400);
 
 mustInclude('ios/App/App/BackupImportPlugin.swift', [
   'jsName = "BackupImport"',
@@ -82,13 +84,16 @@ mustInclude('scripts/native-bridge.mjs', [
   'CapacitorUpdater.set(bundle)',
 ]);
 mustInclude('package.json', ['"@capacitor/ios"', '"build:ios"']);
-mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO']);
+mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO', 'package-ios-ipa.sh', 'RIGCORE-iOS']);
 mustInclude('.github/workflows/pages.yml', ['actions/deploy-pages@v4', 'path: docs']);
-mustInclude('scripts/build-ios.sh', ['IOS_TEAM_ID', 'Darwin']);
+mustInclude('scripts/package-ios-ipa.sh', ['iphoneos', 'Payload', 'RIGCORE.ipa']);
+mustInclude('scripts/install-page.html', ['Download Android app', 'TestFlight', 'not the iPhone app']);
+mustInclude('scripts/prepare-www.mjs', ['install-page.html', 'docs']);
+mustInclude('scripts/build-ios.sh', ['package-ios-ipa.sh']);
 
 if (errors.length) {
   console.error('iOS project check failed:');
   for (const err of errors) console.error(' -', err);
   process.exit(1);
 }
-console.log('iOS project ok — com.rigcore.app 3.3.2, BackupImport, CapacitorUpdater, Pages + TestFlight scripts present');
+console.log('iOS project ok — native iphoneos IPA packaging + install page (not a web-app shortcut)');

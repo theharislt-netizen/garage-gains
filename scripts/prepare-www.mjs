@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * Copies garage-gains.html into www/index.html, swaps Google Fonts for
- * locally bundled woff2 files, injects the native bridge, copies www to
- * docs/ for GitHub Pages, and writes live-update/ for Android + iPhone.
+ * locally bundled woff2 files, injects the native bridge, writes the
+ * GitHub Pages install landing page (not the web app), and writes
+ * live-update/ for the installed Android and native iPhone apps.
  */
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile, writeFile, copyFile, access, cp, rm } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, copyFile, access, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
@@ -150,5 +151,20 @@ if (await exists(iconSrc)) {
 await makeLiveBundle();
 
 await rm(docs, { recursive: true, force: true });
-await cp(www, docs, { recursive: true });
-console.log('www/ prepared (docs/ updated for GitHub Pages)');
+await mkdir(docs, { recursive: true });
+await writeFile(join(docs, '.nojekyll'), '');
+if (await exists(iconSrc)) {
+  await copyFile(iconSrc, join(docs, 'icon.png'));
+}
+
+const apkUrl = 'https://github.com/theharislt-netizen/garage-gains/raw/cursor/android-apk-eee8/dist/RIGCORE.apk';
+const testflightUrl = process.env.TESTFLIGHT_PUBLIC_URL || '';
+const testflightBlock = testflightUrl
+  ? `<a class="btn" href="${testflightUrl}">Install iPhone app (TestFlight)</a>`
+  : `<p class="note">The native iPhone app is built in CI. A TestFlight invite appears here once Apple Developer signing is set up.</p>`;
+
+let landing = await readFile(join(root, 'scripts/install-page.html'), 'utf8');
+landing = landing.replaceAll('__APK_URL__', apkUrl).replaceAll('__TESTFLIGHT_BLOCK__', testflightBlock);
+await writeFile(join(docs, 'index.html'), landing);
+
+console.log('www/ prepared (docs/ is the install page, not the web app)');

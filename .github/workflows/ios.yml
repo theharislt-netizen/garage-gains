@@ -34,3 +34,16 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Package iPhone IPA
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          chmod +x scripts/package-ios-ipa.sh
+          SKIP_PREPARE=1 bash scripts/package-ios-ipa.sh
+
+      - name: Upload iPhone IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: RIGCORE-iOS
+          path: dist/RIGCORE.ipa
