@@ -830,14 +830,15 @@
   .loadout-frame-ring .star-row,
   .enchant-drop-ic .star-row,
   #boxPrizeStars {
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
-    margin: 0; padding: 12px 2px 4px; pointer-events: none;
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; width: 100%;
+    margin: 0; padding: 12px 2px 4px; pointer-events: none; box-sizing: border-box;
+    display: flex; justify-content: center; align-items: flex-end; gap: 1px;
     background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 48%, transparent 100%);
     text-shadow: 0 1px 3px #000, 0 0 4px #000;
   }
-  .inv-slot-icon .star-row { font-size: 11px; letter-spacing: 0.4px; padding: 11px 1px 3px; }
-  .item-detail-icon .star-row { font-size: 16px; letter-spacing: 1.6px; padding: 16px 2px 5px; }
-  .loadout-frame-ring .star-row { font-size: 11px; letter-spacing: 0.4px; padding: 12px 2px 5px; }
+  .inv-slot-icon .star-row { font-size: 12px; letter-spacing: 0; padding: 12px 1px 3px; }
+  .item-detail-icon .star-row { font-size: 17px; letter-spacing: 0; padding: 18px 2px 5px; }
+  .loadout-frame-ring .star-row { font-size: 12px; letter-spacing: 0; padding: 13px 2px 5px; }
   .enchant-drop-ic .star-row { font-size: 10px; letter-spacing: 0.3px; padding: 10px 1px 2px; }
 
   /* --- v5.2: named RPG gear slots + set-bonus tracker --- */
