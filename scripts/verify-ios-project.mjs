@@ -82,7 +82,7 @@ mustInclude('scripts/native-bridge.mjs', [
   'CapacitorUpdater.set(bundle)',
 ]);
 mustInclude('package.json', ['"@capacitor/ios"', '"build:ios"']);
-mustInclude('.github/workflows/ios.yml', ['macos-14', 'CODE_SIGNING_ALLOWED=NO']);
+mustInclude('.github/workflows/ios.yml', ['macos-26', 'CODE_SIGNING_ALLOWED=NO']);
 mustInclude('.github/workflows/pages.yml', ['actions/deploy-pages@v4', 'path: www']);
 mustInclude('scripts/build-ios.sh', ['IOS_TEAM_ID', 'Darwin']);
 

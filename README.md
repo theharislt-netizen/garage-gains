@@ -24,7 +24,7 @@ After GitHub Pages is on, send this link:
 
 On the iPhone: open it in **Safari** → tap **Share** → **Add to Home Screen**. That puts a RIGCORE icon on the home screen. Every time they open it, Safari loads the latest copy from GitHub. No App Store, no token.
 
-Enable Pages once if the link 404s: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Enable Pages once if the link 404s: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the **GitHub Pages** workflow (or push again). The Pages job skips deploy until that setting is on.
 
 ### Native iPhone app (same shell as Android)
 

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +29,7 @@ jobs:
 
       - name: Compile iOS app (simulator, unsigned)
         run: |
+          xcodebuild -version
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO \
