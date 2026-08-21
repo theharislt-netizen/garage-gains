@@ -188,7 +188,7 @@ const UPDATE_REPO = 'theharislt-netizen/garage-gains';
 const UPDATE_REFS = ['cursor/android-apk-eee8', 'main'];
 const TOKEN_KEY = 'rigcore_githubToken';
 let updateCheckInFlight = false;
-let updatesArePublic = false;
+let updatesArePublic = true;
 
 function toast(msg) {
   if (typeof window.showToast === 'function') window.showToast(msg);
@@ -354,13 +354,28 @@ function wireUpdateStatus(version, extra) {
   }
 }
 
+async function fetchLatestManifestWithRetry() {
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      last = await fetchLatestManifest();
+      if (last && (last.version || last.privateRepo)) return last;
+    } catch (err) {
+      last = null;
+      console.error('update check failed', err);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+  return last;
+}
+
 async function checkAndApplyUpdate() {
   if (updateCheckInFlight) return;
   updateCheckInFlight = true;
   try {
     const current = await localBundleVersion();
-    wireUpdateStatus(current);
-    const manifest = await fetchLatestManifest();
+    wireUpdateStatus(current, 'Checking GitHub for updates…');
+    const manifest = await fetchLatestManifestWithRetry();
     if (!manifest) {
       wireUpdateStatus(current, 'Could not reach GitHub — using this copy');
       return;

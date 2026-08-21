@@ -77,7 +77,7 @@ print('zipped', len(files), 'files')
   const manifest = {
     version,
     checksum,
-    url: `https://raw.githubusercontent.com/${REPO}/${REFS[1]}/live-update/www.zip`,
+    url: `https://raw.githubusercontent.com/${REPO}/${REFS[0]}/live-update/www.zip`,
     urls: REFS.map((ref) => `https://raw.githubusercontent.com/${REPO}/${ref}/live-update/www.zip`),
   };
   await writeFile(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
