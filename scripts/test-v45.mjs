@@ -111,6 +111,6 @@ assert(!/max effort on set (one|1)/i.test(opening + later), 'boss copy must not 
 assert(!opening.includes(String(ctx.pacingNoteForSet && ctx.pacingNoteForSet('Max effort on set one, this tends to be a stronger lift', 0))),
   'boss pacing is not the workout pacing helper output');
 
-assert(html.includes('3.4.6'), 'About version bumped for v4.5');
+assert(html.includes('3.4.7'), 'About version bumped for v4.5');
 
 console.log('v4.5 tests ok — Level bar, Rank tab season icons, Daily Login order, independent boss logs');

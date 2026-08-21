@@ -16,7 +16,10 @@ function assert(cond, msg) {
 
 const handleOpen = html.slice(html.indexOf('function handleOpenBox'), html.indexOf('function getBoxRevealTier'));
 assert(handleOpen.includes('showBoxReveal(category, outcome)'), 'box tap still opens the reveal');
-assert(handleOpen.includes('afterPaint'), 'shop rebuild must wait until after the reveal paints');
+const openOnly = handleOpen.slice(handleOpen.indexOf('function handleOpenBox'), handleOpen.indexOf('function dismissBoxReveal'));
+assert(!openOnly.includes('renderShopModal()'), 'opening a box must not rebuild the shop under the overlay');
+assert(!openOnly.includes('save()'), 'save waits until dismiss, not the open tap');
+assert(handleOpen.includes('afterPaint'), 'shop rebuild must wait until after the overlay is gone');
 const revealAt = handleOpen.indexOf('showBoxReveal');
 const saveAt = handleOpen.indexOf('save()');
 assert(revealAt >= 0 && saveAt > revealAt, 'save must not run before the overlay is shown');
@@ -26,10 +29,12 @@ const openBoxFn = html.slice(html.indexOf('function openBox(category)'), html.in
 assert(!openBoxFn.includes('renderHeader()'), 'openBox itself must not render the header');
 assert(!openBoxFn.includes('save()'), 'openBox defers persist so the overlay can paint first');
 
-const revealClose = html.slice(html.indexOf('overlay.onclick = () =>'), html.indexOf('}, meta.buildMs);'));
-assert(revealClose.includes("overlay.style.display = 'none'"), 'tap still dismisses the reveal');
-assert(revealClose.includes('afterPaint'), 'inventory refresh waits until the overlay is gone');
+const revealClose = html.slice(html.indexOf('overlay.onclick = (e) =>'), html.indexOf('}, meta.buildMs);'));
+assert(revealClose.includes('dismissBoxReveal()'), 'tap still dismisses the reveal');
+assert(!revealClose.includes('renderShopModal()'), 'dismiss tap must not rebuild the shop on the same frame');
 assert(!revealClose.includes('renderHeader()'), 'dismissing a box must not rebuild the whole header');
+assert(handleOpen.includes("overlay.style.display = 'none'"), 'dismiss hides the overlay immediately');
+assert(handleOpen.includes('renderInventoryTab()'), 'inventory refresh waits until the overlay is gone');
 
 const starterOpen = html.slice(html.indexOf("id=\"itemDetailOpenBoxBtn\""), html.indexOf('if (target.kind === \'permanent\')'));
 assert(starterOpen.includes('showBoxReveal'), 'starter box still uses the reveal');
