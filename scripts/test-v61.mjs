@@ -116,8 +116,12 @@ assert(!html.includes("slot:'boots'") && !html.includes('slot:\'boots\''),
 
 const ashenCount = gearSetPieceCount('ashenGrinder');
 const ashen = setBonusBreakdownForTemplate(itemTemplate('wornCharm'), { ashenGrinder: 1 });
-assert(ashen.pieceCount === ashenCount && ashenCount === ITEMS_CATALOG.filter(t => t.setId === 'ashenGrinder').length,
-  'set-piece denominator follows the catalog roster, not a stale hardcoded 4');
+assert(ashen.pieceCount === 3, 'item-detail set count uses 3 Loadout slots');
+assert(ashenCount === 3, 'set-piece helper is the slot count, not the 4-piece catalog roster');
+assert(ITEMS_CATALOG.filter(t => t.setId === 'ashenGrinder').length === 4,
+  'Ashen Grinder still has four catalog pieces — the denominator must ignore that');
+const cinder = setBonusBreakdownForTemplate(itemTemplate('cinderAnvil'), { cinderforge: 2 });
+assert(cinder.pieceCount === 3 && cinder.equipped === 2, 'Cinderforge detail shows 2/3, not 2/4');
 
 const inv = {
   permanent: [
@@ -137,6 +141,6 @@ assert(payout.relicShards === 8 && inv.shards.relic === 8,
 assert(payout.boostShards === 16 && inv.shards.boost === 16,
   'two unknown temps convert to boost shards');
 
-assert(html.includes('3.4.19'), 'About version bumped for v6.1');
+assert(html.includes('3.4.20'), 'About version bumped for v6.1');
 
 console.log('v6.1 tests ok — relic/boost counts from Loadout slots, Boots leftovers remapped or salvaged');

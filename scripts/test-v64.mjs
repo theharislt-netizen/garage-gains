@@ -54,7 +54,7 @@ assert(boost.instanceId !== relic.instanceId, 'each sealed box has its own insta
 
 const line = sealedBoxRewardLine({ inventory: { boxes: [] } }, 'boost');
 assert(line.label === 'Boost Box', 'reward copy names the box, not the inner loot');
-assert(line.value === 'Added to Inventory', 'reward copy says the box went to Inventory');
+assert(line.value === 'x1', 'reward copy states the quantity received');
 
 assert(boxTemplate('shopBoostBox').category === 'boost', 'boost box template is categorized');
 assert(boxTemplate('shopRelicBox').category === 'relic', 'relic box template is categorized');
@@ -98,6 +98,6 @@ const destroyBtn = html.slice(html.indexOf('id="itemDetailDestroyBtn"') - 50, ht
 assert(!destroyBtn.includes('inv-btn-equip'), 'Destroy stays a secondary action');
 assert(html.includes('class="inv-btn" id="salvageConfirmCancel"'), 'Cancel stays a secondary bordered button');
 
-assert(html.includes('3.4.19'), 'About version bumped for v6.4');
+assert(html.includes('3.4.20'), 'About version bumped for v6.4');
 
 console.log('v6.4 tests ok — earned boxes stay sealed, shop still opens on Buy, Open/Activate match Equip');

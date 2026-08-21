@@ -22,6 +22,13 @@ function sliceFn(name, nextName) {
   return html.slice(start, end);
 }
 
+function sliceLib(name) {
+  const begin = html.indexOf(`/* === ${name} begin === */`);
+  const end = html.indexOf(`/* === ${name} end === */`);
+  assert(begin >= 0 && end > begin, name + ' markers missing');
+  return html.slice(begin, end);
+}
+
 const posFn = sliceFn('positionItemDetailPopup', 'finishItemDetailRender');
 assert(!posFn.includes('rect.top > 220'), 'popup must not pin with unconstrained bottom from a 220px heuristic');
 assert(!/popup\.style\.bottom\s*=\s*\(window\.innerHeight/.test(posFn), 'popup must not grow upward via bottom anchoring');
@@ -49,26 +56,21 @@ const starRowRuleAt = html.indexOf('.star-row {');
 const starRowRule = html.slice(starRowRuleAt, html.indexOf('}', starRowRuleAt) + 1);
 assert(!starRowRule.includes('color: var(--gain)'), 'the star row itself must not paint empty stars gold');
 
-const starStart = html.indexOf('function starRowHtml');
-const starEnd = html.indexOf('const ITEMS_CATALOG');
-assert(starStart >= 0 && starEnd > starStart, 'starRowHtml is present');
-const starCtx = {
-  itemMaxStar(tmpl) { return tmpl && tmpl.unique ? 5 : 4; },
-  Number,
-  Math,
-};
+const starCtx = { console, Math };
 vm.createContext(starCtx);
-vm.runInContext(html.slice(starStart, starEnd), starCtx);
-const two = starCtx.starRowHtml({ permanent: true }, 2);
-assert(two.includes('star-on') && two.includes('star-off'), '2-star items render both filled and empty marks');
-assert((two.match(/star-on/g) || []).length === 2, '2-star row has two filled stars');
-assert((two.match(/star-off/g) || []).length === 2, '2-star row has two empty stars up to max 4');
-const unique = starCtx.starRowHtml({ permanent: true, unique: true }, 5);
-assert((unique.match(/star-on/g) || []).length === 5, 'unique items show five filled stars');
-assert(!(unique.match(/star-off/g) || []).length, 'unique 5-star row has no empty marks');
-const zero = starCtx.starRowHtml({ permanent: true }, 0);
-assert((zero.match(/star-off/g) || []).length === 4, '0-star still shows four empty marks');
+vm.runInContext(sliceLib('item-catalog-lib'), starCtx);
+const two = starCtx.starRowHtml({ permanent: true }, 0, { star: 0, starCap: 2 });
+assert(!(two.match(/star-on/g) || []).length, 'fresh 2-star items spawn with no filled stars');
+assert((two.match(/star-off/g) || []).length === 2, '2-star spawn shows two gray headroom stars');
+const unique = starCtx.starRowHtml({ permanent: true, unique: true }, 5, { star: 5, starCap: 5 });
+assert((unique.match(/star-on/g) || []).length === 5, 'unique items can show five filled stars after enchanting');
+assert(!(unique.match(/star-off/g) || []).length, 'unique 5-star filled row has no empty marks');
+const zero = starCtx.starRowHtml({ permanent: true }, 0, { star: 0, starCap: 0 });
+assert(zero === '', '0-star items have no star row');
+const enchanted = starCtx.starRowHtml({ permanent: true }, 1, { star: 1, starCap: 2 });
+assert((enchanted.match(/star-on/g) || []).length === 1, 'enchanting fills one star of headroom');
+assert((enchanted.match(/star-off/g) || []).length === 1, 'remaining headroom stays gray');
 
-assert(html.includes('3.4.19'), 'About version bumped for v6.3 / v6.4');
+assert(html.includes('3.4.20'), 'About version bumped for v6.3 / v6.4');
 
 console.log('v6.3 tests ok — popup clamps after render, materials do not idle-glow, stars distinguish filled vs empty');

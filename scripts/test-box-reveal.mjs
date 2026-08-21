@@ -41,7 +41,9 @@ const relicArt = boxBuildupInnerHtml('relic', shopBoxArtSvg);
 assert(boostArt.includes('<svg'), 'boost open uses the chest SVG, not the loot emoji');
 assert(relicArt.includes('<svg'), 'relic open uses the chest SVG, not the loot emoji');
 assert(boostArt !== relicArt, 'boost and relic chests stay visually distinct');
-assert(boxBuildupInnerHtml('starter', shopBoxArtSvg) === '📦', 'starter box keeps the victory-box icon');
+const starterArt = boxBuildupInnerHtml('starter', shopBoxArtSvg);
+assert(starterArt.includes('<svg'), 'starter / Victory box uses chest SVG, not a cardboard emoji');
+assert(starterArt === relicArt, 'Victory box open art matches the Relic box');
 
 const handleOpen = html.slice(html.indexOf('function handleOpenBox'), html.indexOf('function getBoxRevealTier'));
 assert(handleOpen.includes('boxRevealIsBusy'), 'Buy is ignored while the overlay is up');
@@ -72,6 +74,6 @@ assert(!/transform:\s*scale/i.test(html.slice(html.indexOf('@keyframes boxItemIn
   'item-in must not scale');
 
 assert(html.includes("showBoxReveal('starter'"), 'starter box uses the starter build-up, not a shop chest');
-assert(html.includes('3.4.19'), 'About version bumped for the box-open fix');
+assert(html.includes('3.4.20'), 'About version bumped for the box-open fix');
 
 console.log('box-reveal tests ok — chest art on open, prize stays visible, Buy guarded after dismiss');

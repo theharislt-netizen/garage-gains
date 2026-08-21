@@ -382,7 +382,7 @@
   .ml-icon svg { width: 16px; height: 16px; }
   .name-badge {
     display: flex; align-items: center; gap: 6px; padding: 8px 14px 8px 28px;
-    max-width: min(148px, 38vw); min-width: 0; flex-shrink: 1; overflow: hidden;
+    max-width: min(300px, 72vw); min-width: 0; flex-shrink: 1; overflow: hidden;
     border-radius: 8px 18px 8px 18px;
     font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
     border: 1.5px solid var(--rank-color, rgba(var(--a1-rgb),0.5)); color: var(--text);
@@ -390,7 +390,7 @@
     filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.45)));
     transition: all 0.4s ease; white-space: nowrap; cursor: pointer;
   }
-  .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 1; min-width: 0; max-width: 7em; overflow: hidden; text-overflow: ellipsis; }
+  .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 1; min-width: 0; overflow: visible; }
   .name-badge .rank-tag { font-family: 'JetBrains Mono'; font-size: 8.5px; letter-spacing: 0.03em; color: var(--text-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .nb-streak {
     display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; flex-shrink: 0;
@@ -594,6 +594,7 @@
   .cr-line { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .cr-line:last-child { border-bottom: none; }
   .cr-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+  .cr-icon svg { width: 18px; height: 18px; display: block; margin: 0 auto; }
   .cr-label { flex: 1; color: var(--text-dim); }
   .cr-value { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--gain); }
   /* --- v3.0 §1c: XP growth animation — the bar visibly fills from its
@@ -921,6 +922,7 @@
     font-family: 'Barlow Condensed'; font-size: 12.5px; font-weight: 600; line-height: 1.2;
     text-align: center; max-width: 100%;
   }
+  .loadout-frame .star-row { font-size: 8px; letter-spacing: 0.4px; margin-top: 2px; }
   .loadout-frame.empty .loadout-frame-name { color: var(--text-dim); }
 
   /* --- v2.8: RPG-style slot-grid Inventory, replacing the list view. Empty
@@ -942,8 +944,18 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(180,85,245,0.0); }
     50% { box-shadow: 0 0 14px 3px rgba(180,85,245,0.55); }
   }
+  /* New-item glow is cyan so it cannot be mistaken for the purple tutorial
+     "tap this next" pulse. Clears as soon as the player opens the item. */
+  .inv-slot.new-item-glow {
+    animation: newItemGlowPulse 1.15s ease-in-out infinite;
+    border-color: rgba(var(--a2-rgb), 0.85);
+  }
+  @keyframes newItemGlowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--a2-rgb), 0.0); }
+    50% { box-shadow: 0 0 14px 3px rgba(var(--a2-rgb), 0.58); }
+  }
   /* Guided-step glow is a separate, stronger pulse than the one-time new-item
-     unlock-pulse. Must win on inventory slots when both classes are possible. */
+     glow. Must win on inventory slots when both classes are possible. */
   .inv-slot.tutorial-guidance-glow {
     animation: tutorial-guidance-glow-pulse 1.8s ease-in-out infinite;
     border-color: rgba(var(--a1-rgb), 0.75);
@@ -1640,7 +1652,6 @@
       <div class="ml-icon" id="nameBadgeIcon"></div>
       <div class="name-badge rank-f1" id="nameBadge">
         <span class="nb-name" id="nbNameText">HARIS</span>
-        <span class="rank-tag" id="rankTag">Warrior</span>
       </div>
       <div class="nb-streak" id="nbStreak">🔥<span id="nbStreakVal">0</span></div>
       <div class="nb-currency gold" id="nbGold"><span class="nb-cur-ic" id="nbGoldIcon"></span><span id="nbGoldVal">0</span></div>
@@ -1889,7 +1900,15 @@
           <circle cx="32" cy="42" r="2.4" fill="currentColor"/>
         </svg>
       </div>
-      <div class="box-reveal-buildup box-art-starter" id="boxArtStarter" style="color:var(--gain);">📦</div>
+      <div class="box-reveal-buildup box-art-starter" id="boxArtStarter" style="color:var(--a1);">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="8" y="24" width="48" height="30" rx="6" fill="rgba(180,85,245,0.18)" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 24h44c0-7-8-12-22-12S10 17 10 24Z" fill="rgba(255,182,72,0.16)" stroke="currentColor" stroke-width="2"/>
+          <rect x="28" y="20" width="8" height="12" rx="2" fill="currentColor"/>
+          <path d="M32 34l8 5v7c0 5-8 8-8 8s-8-3-8-8v-7l8-5Z" fill="rgba(255,182,72,0.35)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <circle cx="32" cy="42" r="2.4" fill="currentColor"/>
+        </svg>
+      </div>
       <div id="boxRevealPrize">
         <div class="box-reveal-burst-flash" id="boxPrizeBurst"></div>
         <div class="box-reveal-unique-flash" id="boxPrizeUnique"></div>
@@ -1900,6 +1919,7 @@
             <span id="boxPrizeMat"></span>
           </div>
           <div class="rn" id="boxPrizeName"></div>
+          <div id="boxPrizeStars"></div>
           <div class="rd" id="boxPrizeBody"></div>
           <div class="box-reveal-hint">Tap to close</div>
         </div>
@@ -2068,7 +2088,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.19</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.20</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
@@ -2625,6 +2645,12 @@ function acknowledgeItemType(s, key) {
   s.inventory.unseenTypes = s.inventory.unseenTypes.filter(k => k !== key);
   return s.inventory.unseenTypes.length !== before;
 }
+function stripNewItemGlow(el) {
+  if (!el || !el.classList) return false;
+  const had = el.classList.contains('new-item-glow') || el.classList.contains('unlock-pulse');
+  el.classList.remove('new-item-glow', 'unlock-pulse');
+  return had;
+}
 function shouldFlashItemType(s, key) {
   return !!(s && s.inventory && Array.isArray(s.inventory.unseenTypes) && s.inventory.unseenTypes.includes(key));
 }
@@ -2647,6 +2673,15 @@ function levelBarState(points) {
     remaining: Math.max(0, next - p),
     pct: Math.min(100, (into / span) * 100)
   };
+}
+function bossHpBarPct(progress, total) {
+  const t = Number(total) || 0;
+  const p = Math.max(0, Number(progress) || 0);
+  if (t <= 0) return 0;
+  return Math.min(100, (Math.max(0, t - p) / t) * 100);
+}
+function bossHpRemaining(progress, total) {
+  return Math.max(0, (Number(total) || 0) - (Number(progress) || 0));
 }
 function bossPacingNoteForSet(setIndex) {
   const n = (Number(setIndex) || 0) + 1;
@@ -2843,6 +2878,16 @@ const SHOP_BOX_COPY = {
 function boxesPricedEqually(boxCost) {
   return !!(boxCost && boxCost.boost > 0 && boxCost.boost === boxCost.relic);
 }
+function boxArtKind(itemId) {
+  const id = String(itemId || '');
+  if (id === 'boost' || id === 'shopBoostBox') return 'boost';
+  return 'relic';
+}
+function boxArtHtml(itemId) {
+  const kind = boxArtKind(itemId);
+  const color = kind === 'boost' ? 'var(--a2)' : 'var(--a1)';
+  return `<span class="box-art" style="color:${color}">${shopBoxArtSvg(kind)}</span>`;
+}
 function shopBoxArtSvg(kind) {
   if (kind === 'relic') {
     return `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -2940,12 +2985,15 @@ function suppressRewardItemGlow(s) {
 }
 function invSlotGlowClass(s, boxItemId, wouldFlash) {
   if (shouldTutorialGuideBox(s, boxItemId)) return 'tutorial-guidance-glow';
-  return wouldFlash ? 'unlock-pulse' : '';
+  return wouldFlash ? 'new-item-glow' : '';
 }
 function invRewardItemGlowClass(s, inst, tmpl, unique, starGlow) {
   if (suppressRewardItemGlow(s)) return '';
+  const key = inst && inst.itemId ? itemTypeKey('item', inst.itemId) : '';
+  if (key && shouldFlashItemType(s, key)) return 'new-item-glow';
   if (unique) return 'star-glow-5';
-  return typeof starGlow === 'function' ? starGlow(inst && inst.star, false) : '';
+  const filled = inst && inst.star;
+  return typeof starGlow === 'function' ? starGlow(filled, false) : '';
 }
 function tutorialAwardIsBoxOnly(s) {
   const inv = (s && s.inventory) || {};
@@ -2965,11 +3013,9 @@ function boxRevealIsBusy(nowMs, isOpen, guardUntilMs) {
   return !!isOpen || ((Number(nowMs) || 0) < (Number(guardUntilMs) || 0));
 }
 function boxBuildupInnerHtml(category, artFn) {
-  if (category === 'boost' || category === 'relic') {
-    const art = typeof artFn === 'function' ? artFn(category) : '';
-    return art || (category === 'boost' ? '⚡' : '🛡️');
-  }
-  return '📦';
+  const key = category === 'boost' ? 'boost' : 'relic';
+  const art = typeof artFn === 'function' ? artFn(key) : '';
+  return art || (key === 'boost' ? '⚡' : '🛡️');
 }
 function boxRevealBuildupHtml(category, artFn) {
   const color = category === 'boost' ? 'var(--a2)' : (category === 'relic' ? 'var(--a1)' : 'var(--gain)');
@@ -3072,7 +3118,8 @@ function queueBoxOpenWork(fn) {
 /* === item-catalog-lib begin === */
 const REGULAR_MAX_STAR = 4;
 const UNIQUE_STAR = 5;
-const REGULAR_STAR_WEIGHTS = [35, 28, 20, 12, 5];
+const REGULAR_STAR_TIERS = [0, 2, 3, 4];
+const REGULAR_STAR_WEIGHTS = [40, 32, 18, 10];
 const UNIQUE_ITEM_CHANCE = 0.08;
 function _svg(d) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -3115,9 +3162,21 @@ function itemIconHtml(tmpl) {
 }
 function matIconHtml(kind, cat) { return matIconSvg(kind, cat); }
 function isUniqueItem(tmpl) { return !!(tmpl && tmpl.unique); }
-function itemMaxStar(tmpl) {
+function itemMaxStar(tmpl, inst) {
+  return itemStarCap(tmpl, inst);
+}
+function itemStarCap(tmpl, inst) {
   if (!tmpl || !tmpl.permanent) return 0;
-  return isUniqueItem(tmpl) ? UNIQUE_STAR : REGULAR_MAX_STAR;
+  if (isUniqueItem(tmpl)) return UNIQUE_STAR;
+  if (inst && inst.starCap != null) return normalizeStarCap(inst.starCap, tmpl);
+  return REGULAR_MAX_STAR;
+}
+function normalizeStarCap(n, tmpl) {
+  if (tmpl && isUniqueItem(tmpl)) return UNIQUE_STAR;
+  const cap = Number(n);
+  if (!Number.isFinite(cap) || cap <= 0) return 0;
+  if (cap === 1) return 2;
+  return Math.min(REGULAR_MAX_STAR, Math.max(0, Math.round(cap)));
 }
 function rollWeightedPick(entries, rng) {
   const total = entries.reduce((s, e) => s + e.weight, 0);
@@ -3126,7 +3185,7 @@ function rollWeightedPick(entries, rng) {
   return entries[entries.length - 1];
 }
 function rollRegularStar(rng) {
-  const entries = REGULAR_STAR_WEIGHTS.map((weight, star) => ({ star, weight }));
+  const entries = REGULAR_STAR_TIERS.map((star, i) => ({ star, weight: REGULAR_STAR_WEIGHTS[i] }));
   return rollWeightedPick(entries, rng).star;
 }
 function grantStarForTemplate(tmpl, rng) {
@@ -3159,9 +3218,10 @@ function itemRevealTier(tmpl, star) {
   if (star >= 3) return 'uncommon';
   return 'common';
 }
-function starRowHtml(tmpl, star) {
+function starRowHtml(tmpl, star, inst) {
   if (!tmpl || !tmpl.permanent) return '';
-  const max = itemMaxStar(tmpl);
+  const max = itemStarCap(tmpl, inst);
+  if (max <= 0) return '';
   const n = Number(star);
   const filled = Math.max(0, Math.min(max, Number.isFinite(n) ? n : 0));
   let row = '<div class="star-row">';
@@ -3244,7 +3304,7 @@ const GEAR_SETS = {
   ashenGrinder: {
     id: 'ashenGrinder',
     name: 'Ashen Grinder',
-    pieceCount: 4,
+    pieceCount: 3,
     bonuses: [
       { count: 2, effectType: 'points', value: 0.03, label: '+3% session points' },
       { count: 4, effectType: 'gold', value: 0.06, label: '+6% session gold' },
@@ -3253,7 +3313,7 @@ const GEAR_SETS = {
   cinderforge: {
     id: 'cinderforge',
     name: 'Cinderforge',
-    pieceCount: 4,
+    pieceCount: 3,
     bonuses: [
       { count: 2, effectType: 'enchantSuccess', value: 0.04, label: '+4% enchant success' },
       { count: 4, effectType: 'enchantXp', value: 0.10, label: '+10% enchant XP' },
@@ -3271,7 +3331,7 @@ const GEAR_SETS = {
   unbroken: {
     id: 'unbroken',
     name: 'The Unbroken',
-    pieceCount: 4,
+    pieceCount: 3,
     bonuses: [
       { count: 2, effectType: 'points', value: 0.05, label: '+5% session points' },
       { count: 4, effectType: 'points', value: 0.10, label: '+10% session points' },
@@ -3310,10 +3370,12 @@ function isEquippableItemSlot(tmpl) {
   return isRelicSlotId(slot);
 }
 function gearSetPieceCount(setId) {
-  const listed = (typeof ITEMS_CATALOG !== 'undefined' ? ITEMS_CATALOG : [])
-    .filter(t => t && t.setId === setId).length;
-  const fallback = (GEAR_SETS[setId] && Number(GEAR_SETS[setId].pieceCount)) || 0;
-  return listed > 0 ? listed : fallback;
+  const catalog = typeof ITEMS_CATALOG !== 'undefined' ? ITEMS_CATALOG : [];
+  const member = catalog.find(t => t && t.setId === setId);
+  const kind = (member && member.category === 'boost') ? 'boost' : 'relic';
+  if (typeof loadoutSlotCount === 'function') return loadoutSlotCount(kind);
+  const fallback = (GEAR_SETS[setId] && Number(GEAR_SETS[setId].pieceCount)) || 3;
+  return fallback;
 }
 function retireOrphanGearItems(inventory) {
   const inv = inventory && typeof inventory === 'object' ? inventory : { permanent: [], tempCharges: {} };
@@ -3431,8 +3493,9 @@ function setBonusValueForEffect(counts, effectType) {
 function setBonusBreakdownForTemplate(tmpl, counts) {
   const set = tmpl && gearSetById(tmpl.setId);
   if (!set) return null;
-  const n = (counts && counts[set.id]) || 0;
-  const pieceCount = gearSetPieceCount(set.id);
+  const kind = tmpl.category === 'boost' ? 'boost' : 'relic';
+  const pieceCount = (typeof loadoutSlotCount === 'function') ? loadoutSlotCount(kind) : gearSetPieceCount(set.id);
+  const n = Math.min((counts && counts[set.id]) || 0, pieceCount);
   return {
     setId: set.id,
     setName: set.name,
@@ -3569,7 +3632,7 @@ function checkLevelUp(prevPoints, newPoints) {
       sealedBoxRewardLine(state, 'boost'),
       sealedBoxRewardLine(state, 'relic')
     );
-    if (guaranteed) lines.push({ icon:'✨', label:'Guaranteed Item', value: `${guaranteed.tmpl.name} (${guaranteed.star}★)` });
+    if (guaranteed) lines.push({ icon:'✨', label:'Guaranteed Item', value: `${guaranteed.tmpl.name} (${guaranteed.starCap || guaranteed.star || 0}★)` });
   }
 
   enqueueProgressClaim(state, {
@@ -3793,39 +3856,44 @@ const RANK_GUARANTEE_STARCAP = { epic:3, legend:4, mythic:5, mythicalhonor:5, my
 // landing near it), while keeping a genuine 5-star roll rare no matter the
 // source (box or rank guarantee) via a fixed extra dampener on that top value.
 function rollGuaranteedStar(starCap, biasIndex) {
-  const weights = [];
+  const caps = [];
   for (let s = 0; s <= starCap; s++) {
+    if (s === 1) continue;
     let w = 1 + s + biasIndex * 0.6;
     if (s === 5) w *= 0.15;
-    weights.push(w);
+    caps.push({ star: s, weight: w });
   }
-  const total = weights.reduce((a, b) => a + b, 0);
+  if (!caps.length) return 0;
+  const total = caps.reduce((a, b) => a + b.weight, 0);
   let r = Math.random() * total;
-  for (let s = 0; s <= starCap; s++) { r -= weights[s]; if (r <= 0) return s; }
-  return starCap;
+  for (const entry of caps) { r -= entry.weight; if (r <= 0) return entry.star; }
+  return caps[caps.length - 1].star;
 }
 function grantGuaranteedPermanentItem(rankId) {
   const idx = RANK_GUARANTEE_TIERS.indexOf(rankId);
   if (idx < 0) return null;
-  const starCap = RANK_GUARANTEE_STARCAP[rankId];
+  const capBudget = RANK_GUARANTEE_STARCAP[rankId];
   const category = Math.random() < 0.5 ? 'boost' : 'relic';
   const pool = eligibleItemPool(category).filter(i => i.permanent);
   if (!pool.length) return null;
   const uniques = pool.filter(i => i.unique);
   const regulars = pool.filter(i => !i.unique);
-  const tmpl = (starCap >= UNIQUE_STAR && uniques.length && Math.random() < UNIQUE_ITEM_CHANCE)
+  const tmpl = (capBudget >= UNIQUE_STAR && uniques.length && Math.random() < UNIQUE_ITEM_CHANCE)
     ? uniques[Math.floor(Math.random() * uniques.length)]
     : (regulars[Math.floor(Math.random() * regulars.length)] || pool[0]);
-  const star = tmpl.unique ? UNIQUE_STAR : Math.min(REGULAR_MAX_STAR, starCap, rollRegularStar());
+  const starCap = tmpl.unique ? UNIQUE_STAR : Math.min(REGULAR_MAX_STAR, capBudget, rollRegularStar());
   const owned = state.inventory.permanent.find(x => x.itemId === tmpl.id);
   if (owned) {
-    if (!tmpl.unique && star > owned.star) { owned.star = Math.min(star, itemMaxStar(tmpl)); return { kind:'upgraded', tmpl, star: owned.star }; }
-    return convertOwnedDuplicate(tmpl, star);
+    if (!tmpl.unique && starCap > itemStarCap(tmpl, owned)) {
+      owned.starCap = starCap;
+      return { kind:'upgraded', tmpl, star: owned.star, starCap: owned.starCap };
+    }
+    return convertOwnedDuplicate(tmpl, starCap);
   }
-  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId: tmpl.id, star };
+  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId: tmpl.id, star: 0, starCap };
   state.inventory.permanent.push(inst);
   noteItemTypeGranted(state, itemTypeKey('item', tmpl.id));
-  return { kind:'new', tmpl, star, inst };
+  return { kind:'new', tmpl, star: 0, starCap, inst };
 }
 // =========================================================
 // SEASONAL RANK (v2.2) — the OLD permanent Rank ladder (RANKS array, same
@@ -3882,7 +3950,7 @@ function creditSeasonPoints(amount) {
     ensureInventoryShape();
     const guaranteed = grantGuaranteedPermanentItem(newRank.id);
     if (guaranteed && guaranteed.tmpl) {
-      const star = guaranteed.star != null ? ` (${guaranteed.star}★)` : '';
+      const star = guaranteed.starCap != null ? ` (${guaranteed.starCap}★)` : (guaranteed.star != null ? ` (${guaranteed.star}★)` : '');
       lines.push({ icon:'✨', label:'Rank gift', value: guaranteed.tmpl.name + star });
     }
   }
@@ -4223,7 +4291,7 @@ function getEquippedEffectForSlot(slotId) {
   if (eq.kind === 'permanent') {
     const inst = (state.inventory.permanent || []).find(x => x.instanceId === eq.instanceId);
     if (!inst) return null;
-    return { template: itemTemplate(inst.itemId), star: inst.star, instanceId: inst.instanceId, slot: slotId };
+    return { template: itemTemplate(inst.itemId), star: inst.star, starCap: inst.starCap, instanceId: inst.instanceId, slot: slotId };
   }
   if (eq.kind === 'temporary') {
     if (!eq.sessionsLeft || eq.sessionsLeft <= 0) return null;
@@ -4312,8 +4380,14 @@ function ensureInventoryShape() {
   (state.inventory.permanent || []).forEach(inst => {
     const t = itemTemplate(inst.itemId);
     if (!t || !t.permanent) return;
-    if (t.unique) inst.star = UNIQUE_STAR;
-    else inst.star = Math.min(Number(inst.star) || 0, REGULAR_MAX_STAR);
+    if (t.unique) {
+      inst.starCap = UNIQUE_STAR;
+      inst.star = Math.min(Math.max(0, Number(inst.star) || 0), UNIQUE_STAR);
+      return;
+    }
+    const existingCap = inst.starCap != null ? inst.starCap : ((Number(inst.star) || 0) > 0 ? REGULAR_MAX_STAR : 0);
+    inst.starCap = normalizeStarCap(existingCap, t);
+    inst.star = Math.min(Math.max(0, Number(inst.star) || 0), inst.starCap || 0);
   });
   // v5.8: named Relic slots + three generic Boost slots. Legacy 8-slot and
   // array loadouts remap onto Amulet / Ring / Cloak and Boost I–III.
@@ -4341,10 +4415,11 @@ function grantItem(itemId) {
   }
   const owned = state.inventory.permanent.find(x => x.itemId === itemId);
   if (owned) {
-    const star = grantStarForTemplate(tmpl);
-    return convertOwnedDuplicate(tmpl, star);
+    const starCap = grantStarForTemplate(tmpl);
+    return convertOwnedDuplicate(tmpl, starCap);
   }
-  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: grantStarForTemplate(tmpl) };
+  const starCap = grantStarForTemplate(tmpl);
+  const inst = { instanceId: 'i' + Date.now() + Math.floor(Math.random()*1000), itemId, star: 0, starCap };
   state.inventory.permanent.push(inst);
   noteItemTypeGranted(state, itemTypeKey('item', itemId));
   return { kind:'new', tmpl, inst };
@@ -4490,7 +4565,7 @@ function notifyEnchantLevelUps(gained) {
   if (typeof renderSkillsGrid === 'function') renderSkillsGrid();
 }
 function performStarUpgrade(inst, tmpl) {
-  const cap = itemMaxStar(tmpl);
+  const cap = itemStarCap(tmpl, inst);
   if (inst.star >= cap) {
     return { success:true, star: inst.star, risky:false, levelsGained: 0 };
   }
@@ -4517,7 +4592,7 @@ function attemptRegrade(instanceId) {
   const inst = state.inventory.permanent.find(x => x.instanceId === instanceId);
   if (!inst) return null;
   const tmpl = itemTemplate(inst.itemId);
-  if (inst.star >= itemMaxStar(tmpl)) { showToast('Already at max star'); return null; }
+  if (inst.star >= itemStarCap(tmpl, inst)) { showToast('Already at max star'); return null; }
   if ((state.inventory.stones[tmpl.category] || 0) < 1) { showToast(`Not enough ${tmpl.category} enchantment stones`); return null; }
   state.inventory.stones[tmpl.category] -= 1;
   const outcome = performStarUpgrade(inst, tmpl);
@@ -4673,6 +4748,7 @@ function buyDirectItem(id) {
   item.buy();
   save();
   renderHeader();
+  refreshHeaderCurrency();
 }
 
 // --- Cosmetic titles ---------------------------------------------------------
@@ -6156,7 +6232,8 @@ function renderBossesSection() {
   const cards = state.bosses.map(boss => {
     const total = bossTotalTarget(boss);
     const progress = bossTotalProgress(boss);
-    const pct = total > 0 ? Math.min(100, (progress / total) * 100) : 0;
+    const remaining = bossHpRemaining(progress, total);
+    const pct = bossHpBarPct(progress, total);
 
     // v2.5: an active boss is a compact "Resume Fight" card — the full
     // composition/loot detail and the actual exercise logging now live in
@@ -6164,7 +6241,7 @@ function renderBossesSection() {
     if (boss.status === 'active') {
       return `<div class="boss-card" data-boss-resume="${boss.id}">
         <div class="boss-card-head">
-          <div><div class="boss-name">${boss.name}</div><div class="boss-hp-label">Fighting · ${progress} / ${total}</div></div>
+          <div><div class="boss-name">${boss.name}</div><div class="boss-hp-label">Fighting · HP ${remaining} / ${total}</div></div>
           <button class="boss-start-btn active" disabled>Resume</button>
         </div>
         <div class="boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%"></div></div>
@@ -6174,7 +6251,7 @@ function renderBossesSection() {
     const expanded = window.__expandedBossId === boss.id;
     return `<div class="boss-card${expanded ? ' expanded' : ''}" data-boss-toggle="${boss.id}">
       <div class="boss-card-head">
-        <div><div class="boss-name">${boss.name}</div><div class="boss-hp-label">Not Started · ${progress} / ${total}</div></div>
+        <div><div class="boss-name">${boss.name}</div><div class="boss-hp-label">Not Started · HP ${remaining} / ${total}</div></div>
         <button class="boss-start-btn" data-boss-start="${boss.id}">Start</button>
       </div>
       <div class="boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%"></div></div>
@@ -6796,7 +6873,7 @@ function itemSetBonusHtml(tmpl) {
     return `<div class="gear-set-bonus ${on ? 'active' : 'locked'}">${on ? '●' : '○'} ${bonus.count} pieces — ${bonus.label}</div>`;
   }).join('');
   return `<div class="item-set-breakdown">
-    <div class="item-set-head">${breakdown.setName} · ${breakdown.equipped}/${breakdown.pieceCount} pieces</div>
+    <div class="item-set-head">${breakdown.setName} · ${breakdown.equipped}/${breakdown.pieceCount} EQUIPPED</div>
     ${rows}
   </div>`;
 }
@@ -6809,10 +6886,12 @@ function loadoutFrameHtml(slot, level) {
   const name = filled ? eff.template.name : 'Empty';
   const kindAttr = filled ? (eff.instanceId ? 'permanent' : 'temporary') : '';
   const idAttr = filled ? (eff.instanceId || (eff.template && eff.template.id) || '') : '';
+  const stars = filled ? starRowHtml(eff.template, eff.star, { star: eff.star, starCap: eff.starCap }) : '';
   return `<button type="button" class="loadout-frame ${filled ? 'filled' : 'empty'}${glow ? ' ' + glow : ''}${unlocked ? '' : ' locked'}" data-loadout-slot="${slot.id}"${filled ? ` data-loadout-kind="${kindAttr}" data-loadout-id="${idAttr}"` : ''} ${filled ? '' : 'disabled'}>
     <div class="loadout-frame-ring">${icon}</div>
     <div class="loadout-frame-label">${slot.label}</div>
     <div class="loadout-frame-name">${unlocked ? name : 'Locked'}</div>
+    ${stars}
   </button>`;
 }
 function renderEquippedSummary() {
@@ -6877,14 +6956,13 @@ function renderInventoryTab() {
     state.activeInvFilter = chip.dataset.invFilter; save(); renderInventoryTab();
   }));
 
-  document.getElementById('invGoldGems').textContent = '';
-  document.getElementById('invGemsCount').textContent = '';
   document.getElementById('invShopEntry').onclick = openShopModal;
   document.getElementById('invLoadoutEntry').onclick = openLoadoutModal;
   const enchantEntry = document.getElementById('invEnchantEntry');
   enchantEntry.onclick = openEnchantModal;
   enchantEntry.classList.toggle('tutorial-guidance-glow', shouldTutorialGuideEnchant(state));
   enchantEntry.classList.toggle('unlock-pulse', false);
+  refreshHeaderCurrency();
 
   const filter = state.activeInvFilter || 'all';
   const sealedBoxes = (state.inventory.boxes || []).filter(b => boxMatchesInvFilter(b, filter));
@@ -6922,7 +7000,7 @@ function renderInventoryTab() {
     const tmpl = boxTemplate(boxId);
     const glow = invSlotGlowClass(state, boxId, shouldFlashItemType(state, itemTypeKey('box', boxId)));
     return `<div class="inv-slot${glow ? ' ' + glow : ''}" data-slot-box="${box.instanceId}">
-      <div class="inv-slot-icon">${tmpl.icon}</div>
+      <div class="inv-slot-icon">${boxArtHtml(boxId)}</div>
     </div>`;
   });
   const permSlots = permItems.map(inst => {
@@ -6931,7 +7009,7 @@ function renderInventoryTab() {
     const glow = invRewardItemGlowClass(state, inst, tmpl, unique, starGlowClass);
     return `<div class="inv-slot${glow ? ' ' + glow : ''}" data-slot-perm="${inst.instanceId}">
       <div class="inv-slot-icon">${itemIconHtml(tmpl)}</div>
-      ${starRowHtml(tmpl, inst.star)}
+      ${starRowHtml(tmpl, inst.star, inst)}
     </div>`;
   });
   const tempSlots = tempItems.map(([itemId, count]) => {
@@ -6997,7 +7075,10 @@ function positionItemDetailPopup(anchorEl) {
 }
 function finishItemDetailRender() {
   const target = window.__itemDetailTarget;
-  if (target && target.anchorEl) positionItemDetailPopup(target.anchorEl);
+  if (target && target.anchorEl) {
+    stripNewItemGlow(target.anchorEl);
+    positionItemDetailPopup(target.anchorEl);
+  }
 }
 function openItemDetailModal(kind, id, anchorEl) {
   const prev = window.__itemDetailTarget;
@@ -7026,7 +7107,7 @@ function renderItemDetailModal() {
     acknowledgeItemType(state, itemTypeKey('box', box.itemId || STARTER_BOX_ID));
     save();
     body.innerHTML = `
-      <div class="item-detail-icon">${tmpl.icon}</div>
+      <div class="item-detail-icon">${boxArtHtml(box.itemId || STARTER_BOX_ID)}</div>
       <div class="inv-item-name" style="text-align:center;">${tmpl.name}</div>
       <div class="dd" style="text-align:center; margin:8px 0 14px;">${tmpl.desc}</div>
       <div class="inv-item-actions" style="justify-content:center;">
@@ -7055,7 +7136,7 @@ function renderItemDetailModal() {
       <div class="inv-item-top" style="justify-content:center; flex-direction:column; align-items:center; gap:4px;">
         <div class="inv-item-name">${tmpl.name}</div>
         <div class="l2" style="text-transform:uppercase; letter-spacing:0.08em;">${[itemSetName(tmpl), slotLabel || tmpl.category].filter(Boolean).join(' · ')}</div>
-        ${starRowHtml(tmpl, inst.star)}
+        ${starRowHtml(tmpl, inst.star, inst)}
         ${isUniqueItem(tmpl) ? '<div class="l2" style="color:#f4f1ea; letter-spacing:0.14em; text-transform:uppercase; margin-top:4px;">Unique</div>' : ''}
       </div>
       <div class="item-bonus-now">+${itemBonusPercent(tmpl, inst.star)}% ${itemBonusStatLabel(tmpl)}</div>
@@ -7298,7 +7379,7 @@ function enchantTableReady() {
 }
 function enchantAttemptChancePct(inst, tmpl) {
   if (!inst || !tmpl) return 0;
-  if (inst.star >= itemMaxStar(tmpl)) return 0;
+  if (inst.star >= itemMaxStar(tmpl, inst)) return 0;
   if (inst.star + 1 <= REGRADE_SAFE_CEILING) return 100;
   return enchantSuccessChancePct();
 }
@@ -7308,7 +7389,7 @@ function enchantAttemptFromSlot() {
   const inst = state.inventory.permanent.find(x => x.instanceId === table.instanceId);
   if (!inst) return;
   const tmpl = itemTemplate(inst.itemId);
-  if (inst.star >= itemMaxStar(tmpl)) { showToast('Already at max star'); return; }
+  if (inst.star >= itemMaxStar(tmpl, inst)) { showToast('Already at max star'); return; }
   const beforeStar = inst.star;
   const beforePct = itemBonusPercent(tmpl, beforeStar);
   table.animating = true;
@@ -7392,7 +7473,7 @@ function renderEnchantModal() {
   const table = getEnchantTable();
   const inst = table.instanceId ? state.inventory.permanent.find(x => x.instanceId === table.instanceId) : null;
   const tmpl = inst ? itemTemplate(inst.itemId) : null;
-  const maxed = !!(inst && tmpl && inst.star >= itemMaxStar(tmpl));
+  const maxed = !!(inst && tmpl && inst.star >= itemMaxStar(tmpl, inst));
   const chance = inst && tmpl ? enchantAttemptChancePct(inst, tmpl) : null;
   const coach = enchantCoachText(table, inst, tmpl);
   const picker = window.__enchantPicker;
@@ -7424,7 +7505,8 @@ function renderEnchantModal() {
       <div class="section-title" style="margin-top:0;">Choose an item</div>
       ${items.length ? `<div class="inv-slot-grid">${items.map(p => {
         const t = itemTemplate(p.itemId);
-        return `<div class="inv-slot" data-enchant-pick="${p.instanceId}"><div class="inv-slot-icon">${itemIconHtml(t)}</div>${starRowHtml(t, p.star)}</div>`;
+        const guideItem = !!(coach && !table.instanceId && p.itemId === STARTER_RELIC_ID);
+        return `<div class="inv-slot${guideItem ? ' tutorial-guidance-glow' : ''}" data-enchant-pick="${p.instanceId}"><div class="inv-slot-icon">${itemIconHtml(t)}</div>${starRowHtml(t, p.star, p)}</div>`;
       }).join('')}</div>` : '<div class="empty"><div class="big">No items yet</div></div>'}
       <button class="btn" id="enchantPickerCancel">Cancel</button>
     </div>`;
@@ -7433,7 +7515,7 @@ function renderEnchantModal() {
     const have = state.inventory.stones[cat] || 0;
     pickerHtml = `<div class="enchant-picker show" id="enchantPicker">
       <div class="section-title" style="margin-top:0;">Place a stone</div>
-      <div class="card" style="text-align:center;">
+      <div class="card${coach && table.instanceId && !table.stonePlaced ? ' tutorial-guidance-glow' : ''}" style="text-align:center;" id="enchantStonePickCard">
         <div class="item-detail-icon">${matIconHtml('stone', cat)}</div>
         <div>${cat === 'relic' ? 'Relic' : 'Boost'} Enchantment Stone</div>
         <div class="l2" style="margin:8px 0;">Owned: ${have}</div>
@@ -7528,7 +7610,7 @@ function renderShopModal() {
   body.innerHTML = `
     <div class="shop-balance-row">
       <div class="bal"><div class="n mono" id="shopGoldVal" style="color:var(--gain);">${state.gold}</div><div class="l">Gold</div></div>
-      <div class="bal"><div class="n mono" style="color:var(--a2);">${state.gems}</div><div class="l">Gems</div></div>
+      <div class="bal"><div class="n mono" id="shopGemsVal" style="color:var(--a2);">${state.gems || 0}</div><div class="l">Gems</div></div>
       <div class="bal"><div class="n mono" style="color:var(--a1);">${state.streakFreezes || 0}</div><div class="l">Freezes</div></div>
     </div>
     <div class="shop-section-title">Chests</div>
@@ -7564,6 +7646,7 @@ function handleOpenBox(category) {
   const overlay = document.getElementById('boxRevealOverlay');
   window.__boxRevealOpen = true;
   if (!isAdminSandbox(state)) state.gold -= cost;
+  refreshHeaderCurrency();
   coverBoxRevealOverlay(overlay, category);
   coverShopForBoxReveal(true);
   queueBoxOpenWork(() => {
@@ -7598,7 +7681,10 @@ function getBoxRevealTier(outcome) {
   if (outcome.kind === 'stone') return outcome.rarity || maxStarToRevealTier(outcome.result && outcome.result.tmpl && outcome.result.tmpl.maxStar);
   const tmpl = outcome.result && outcome.result.tmpl;
   if (!tmpl) return 'common';
-  const star = outcome.result.inst ? outcome.result.inst.star : (outcome.result.star != null ? outcome.result.star : 0);
+  const inst = outcome.result.inst;
+  const star = (inst && inst.starCap != null)
+    ? inst.starCap
+    : (outcome.result.starCap != null ? outcome.result.starCap : (inst && inst.star != null ? inst.star : (outcome.result.star != null ? outcome.result.star : 0)));
   return itemRevealTier(tmpl, star);
 }
 const BOX_TIER_META = {
@@ -7609,7 +7695,7 @@ const BOX_TIER_META = {
   unique:    { label: 'Legendary', color: '#f4f1ea',         buildMs: 1800 },
 };
 function boxRevealPrizeCopy(category, outcome, tier) {
-  const lootFallback = category === 'boost' ? '⚡' : (category === 'relic' ? '🛡️' : '📦');
+  const lootFallback = category === 'boost' ? '⚡' : '🛡️';
   const tmpl = (outcome && outcome.result && outcome.result.tmpl) || { name: 'Loot', icon: lootFallback };
   const catLabel = (category === 'boost' || category === 'relic') ? category + ' ' : '';
   let bodyLine;
@@ -7669,6 +7755,11 @@ function fillBoxRevealPrize(category, outcome) {
     }
   }
   if (nameEl) nameEl.textContent = tmpl.name || 'Loot';
+  const starsEl = document.getElementById('boxPrizeStars');
+  if (starsEl) {
+    const inst = outcome && outcome.result && outcome.result.inst;
+    starsEl.innerHTML = (tmpl && tmpl.permanent) ? starRowHtml(tmpl, inst && inst.star, inst || outcome.result) : '';
+  }
   if (bodyEl) bodyEl.textContent = copy.bodyLine;
   return tier;
 }
@@ -7956,9 +8047,9 @@ function sealedBoxRewardLine(s, category) {
   const granted = grantSealedBox(s, category);
   const tmpl = (granted && granted.tmpl) || boxTemplate(category === 'relic' ? SHOP_RELIC_BOX_ID : SHOP_BOOST_BOX_ID);
   return {
-    icon: category === 'relic' ? '🛡️' : '⚡',
+    icon: (typeof boxArtHtml === 'function') ? boxArtHtml(tmpl.id) : (category === 'relic' ? '🛡️' : '⚡'),
     label: tmpl.name,
-    value: 'Added to Inventory'
+    value: 'x1'
   };
 }
 const RANK_WALKTHROUGH_GOLD = 80;
@@ -8067,7 +8158,7 @@ function openStarterVictoryBox(s) {
   box.opened = true;
   s.inventory.boxes = s.inventory.boxes.filter(b => !b.opened);
   if (!s.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID)) {
-    s.inventory.permanent.push({ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0 });
+    s.inventory.permanent.push({ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0, starCap: 0 });
   }
   s.inventory.stones.relic = (s.inventory.stones.relic || 0) + 1;
   if (typeof noteItemTypeGranted === 'function' && typeof itemTypeKey === 'function') {
@@ -8718,10 +8809,22 @@ function showToast(msg, ms) {
 }
 
 function refreshHeaderCurrency() {
+  const goldAmt = state.gold || 0;
+  const gemAmt = state.gems || 0;
   const gold = document.getElementById('nbGoldVal');
-  if (gold) gold.textContent = state.gold;
+  if (gold) gold.textContent = goldAmt;
   const freeze = document.getElementById('nbFreezeVal');
   if (freeze) freeze.textContent = state.streakFreezes || 0;
+  const shopGold = document.getElementById('shopGoldVal');
+  if (shopGold) shopGold.textContent = goldAmt;
+  const shopGems = document.getElementById('shopGemsVal');
+  if (shopGems) shopGems.textContent = gemAmt;
+  const invGold = document.getElementById('invGoldGems');
+  if (invGold) invGold.textContent = goldAmt + 'g';
+  const invGems = document.getElementById('invGemsCount');
+  if (invGems) invGems.textContent = gemAmt + ' gems';
+  const goldGems = document.getElementById('goldGemsSummary');
+  if (goldGems) goldGems.textContent = `${goldAmt}g · ${gemAmt} gems`;
 }
 
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
@@ -9107,10 +9210,9 @@ function renderHeader() {
   if (nbGoldIcon && !nbGoldIcon.innerHTML) nbGoldIcon.innerHTML = GOLD_ICON_SVG;
   const nbFreezeIcon = document.getElementById('nbFreezeIcon');
   if (nbFreezeIcon && !nbFreezeIcon.innerHTML) nbFreezeIcon.innerHTML = FREEZE_ICON_SVG;
-  document.getElementById('nbGoldVal').textContent = state.gold;
-  document.getElementById('nbFreezeVal').textContent = state.streakFreezes || 0;
   document.getElementById('nbGold').onclick = () => { closeFreezePopup(); openShopModal(); };
   document.getElementById('nbFreeze').onclick = toggleFreezePopup;
+  refreshHeaderCurrency();
   ensureSeason();
   updateRankTabBadge();
 
@@ -9122,12 +9224,6 @@ function renderHeader() {
   const rank = applyRankPairChrome(nameBadgeIcon, nameBadge, document.getElementById('mlBadgeFrame'));
   if (nameBadge) {
     nameBadge.onclick = openRankModal;
-    const rankTag = document.getElementById('rankTag');
-    if (rankTag) {
-      rankTag.textContent = isOwnerAdminSandbox()
-        ? getRank((state.season && state.season.points) || 0).name
-        : ('Level ' + getLevel(state.totalPoints));
-    }
   }
   if (nameBadgeIcon) {
     nameBadgeIcon.onclick = (e) => { e.stopPropagation(); openRankModal(); };
@@ -9547,7 +9643,7 @@ function completeBaselineQuest() {
     { icon:'🔥', label:'Day Streak', value: state.streak.current },
   ];
   if (firstWorkout && grantStarterVictoryBox(state)) {
-    rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+    rewardLines.push({ icon: boxArtHtml(STARTER_BOX_ID), label: 'First Victory Box', value: 'x1' });
     feedbackBoxReceived();
   }
   queueReward({ kind:'workout', title:'Baseline Complete', subtitle: rec.signalIds.length + ' test lifts logged', lines: rewardLines });
@@ -9662,12 +9758,13 @@ function renderInstanceView() {
     const boss = state.bosses.find(b => b.id === inst.bossId);
     if (!boss || boss.status !== 'active') { leaveInstance(); return; }
     const total = bossTotalTarget(boss), progress = bossTotalProgress(boss);
-    const pct = total > 0 ? Math.min(100, (progress / total) * 100) : 0;
+    const remaining = bossHpRemaining(progress, total);
+    const pct = bossHpBarPct(progress, total);
     body.innerHTML = `
       <div class="quest-type-tag warmup-tag" style="background:rgba(var(--a1-rgb),0.12); border-color:rgba(var(--a1-rgb),0.35); color:var(--a1);">Boss Fight</div>
       <div class="wk-info-head">${boss.name}</div>
       <div class="boss-image">${boss.image}</div>
-      <div class="boss-hp-label" style="text-align:center; margin-bottom:6px;">${progress} / ${total}</div>
+      <div class="boss-hp-label" style="text-align:center; margin-bottom:6px;">HP ${remaining} / ${total}</div>
       <div class="boss-hp-track" style="margin-bottom:16px;"><div class="boss-hp-fill" style="width:${pct}%"></div></div>
       <div id="bossFightExerciseList"></div>`;
     const exList = boss.exIds.map(exId => getAllExercises().find(e => e.id === exId)).filter(Boolean);
@@ -10019,7 +10116,7 @@ function finalizeSessionIfNeeded(dateKey, currentPoints) {
         { icon:'🔥', label:'Day Streak', value: state.streak.current },
       ];
       if (firstWorkout && grantStarterVictoryBox(state)) {
-        rewardLines.push({ icon:'📦', label:'Reward', value: 'First Victory Box' });
+        rewardLines.push({ icon: boxArtHtml(STARTER_BOX_ID), label: 'First Victory Box', value: 'x1' });
         feedbackBoxReceived();
       }
       queueReward({ kind:'workout', title:'Workout Complete', subtitle: exList.length + ' exercises logged', lines: rewardLines });

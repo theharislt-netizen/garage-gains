@@ -40,6 +40,7 @@ vm.runInContext(sliceLib('first-run-unlock-lib'), ctx);
 const REGULAR_MAX_STAR = vm.runInContext('REGULAR_MAX_STAR', ctx);
 const UNIQUE_STAR = vm.runInContext('UNIQUE_STAR', ctx);
 const REGULAR_STAR_WEIGHTS = vm.runInContext('REGULAR_STAR_WEIGHTS', ctx);
+const REGULAR_STAR_TIERS = vm.runInContext('REGULAR_STAR_TIERS', ctx);
 const UNIQUE_ITEM_CHANCE = vm.runInContext('UNIQUE_ITEM_CHANCE', ctx);
 const ITEMS_CATALOG = vm.runInContext('ITEMS_CATALOG', ctx);
 const {
@@ -60,10 +61,11 @@ const {
 assert(REGULAR_MAX_STAR === 4, 'regular pool caps at 4');
 assert(UNIQUE_STAR === 5, 'uniques are 5-star');
 assert(UNIQUE_ITEM_CHANCE < 0.15 && UNIQUE_ITEM_CHANCE > 0, 'uniques stay rarer than the 0–4 curve');
-assert(REGULAR_STAR_WEIGHTS.length === 5, 'weights cover stars 0 through 4');
+assert(REGULAR_STAR_TIERS.join(',') === '0,2,3,4', 'spawn tiers skip 1-star');
+assert(REGULAR_STAR_WEIGHTS.length === 4, 'weights cover 0, 2, 3, and 4 star');
 for (let i = 1; i < REGULAR_STAR_WEIGHTS.length; i++) {
   assert(REGULAR_STAR_WEIGHTS[i] < REGULAR_STAR_WEIGHTS[i - 1],
-    `star ${i} must be rarer than star ${i - 1}`);
+    `tier ${REGULAR_STAR_TIERS[i]} must be rarer than tier ${REGULAR_STAR_TIERS[i - 1]}`);
 }
 
 assert(rollRegularStar(() => 0.01) === 0, 'low rolls land on 0-star');
@@ -161,6 +163,6 @@ assert(craftFn.includes("matIconHtml('shards', 'boost')"), 'boost shard craft us
 assert(!craftFn.includes('🔹') && !craftFn.includes('💠'), 'craft UI must not use identical emoji for both types');
 assert(craftFn.includes('itemIconHtml(t)'), 'enchant picker uses dedicated item icons');
 
-assert(html.includes('3.4.19'), 'About version bumped for v5.0');
+assert(html.includes('3.4.20'), 'About version bumped for v5.0');
 
 console.log('v5.0 tests ok — shared 0–4 pool, unique roster, weighted stars, enchant items, icons, unique glow/reveal');

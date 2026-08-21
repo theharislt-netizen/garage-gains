@@ -91,7 +91,8 @@ const counts = equippedSetCountsFromTemplates(ashen);
 const breakdown = setBonusBreakdownForTemplate(itemTemplate('wornCharm'), counts);
 assert(breakdown && breakdown.setName === 'Ashen Grinder', 'item detail can load the set');
 assert(breakdown.equipped === 3 && breakdown.bonuses[0].active === true, '2-piece tier is active with 3 equipped');
-assert(breakdown.bonuses[1].active === false, '4-piece tier stays inactive until the set is complete');
+assert(breakdown.bonuses[1].count === 3 && breakdown.bonuses[1].active === true,
+  'the old 4-piece tier caps at 3 Loadout slots and is live once 3 are equipped');
 const locked = setBonusBreakdownForTemplate(itemTemplate('wornCharm'), { ashenGrinder: 1 });
 assert(locked.bonuses.every(b => b.active === false), 'unmet tiers stay inactive');
 
@@ -127,6 +128,6 @@ const enchantRule = html.slice(enchantCssAt, html.indexOf('}', enchantCssAt) + 1
 assert(enchantRule.includes('display: flex') && enchantRule.includes('align-items: center') && enchantRule.includes('justify-content: center'),
   'ITEM and STONE placeholders share a centered icon box');
 
-assert(html.includes('3.4.19'), 'About version bumped for v5.8');
+assert(html.includes('3.4.20'), 'About version bumped for v5.8');
 
 console.log('v5.8 tests ok — 3+3 loadout, inventory move, set bonuses on items, shard card, enchant centering');

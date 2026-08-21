@@ -100,8 +100,8 @@ assert(isGearSlotUnlockedAtLevel('cloak', 1) && isGearSlotUnlockedAtLevel('boost
 
 assert(GEAR_SETS.ashenGrinder && GEAR_SETS.cinderforge && GEAR_SETS.vaultborn && GEAR_SETS.unbroken,
   'four named gear sets');
-assert(GEAR_SETS.ashenGrinder.pieceCount === 4 && GEAR_SETS.vaultborn.pieceCount === 3,
-  'set sizes match the roster');
+assert(GEAR_SETS.ashenGrinder.pieceCount === 3 && GEAR_SETS.vaultborn.pieceCount === 3,
+  'set sizes match the 3 Loadout slots, not the catalog roster');
 
 const twoAshen = setBonusValueForEffect({ ashenGrinder: 2 }, 'points');
 const fourAshenGold = setBonusValueForEffect({ ashenGrinder: 4 }, 'gold');
@@ -203,6 +203,6 @@ assert(icons.lorequill.includes('M7 5.2 12 3.4 17 5.2') && icons.gildthread.incl
   'cloak silhouettes stay on the cloak family');
 assert(icons.wornCharm !== icons.grindersChair, 'set pieces still look distinct');
 
-assert(html.includes('3.4.19'), 'About version bumped for v5.2');
+assert(html.includes('3.4.20'), 'About version bumped for v5.2');
 
 console.log('v5.2 tests ok — committed-paint box lag fix, equipment sets, gear icons, materials unchanged');

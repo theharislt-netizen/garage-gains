@@ -73,7 +73,7 @@ assert(shouldTutorialGuideBox(boxed, 'shopBoostBox') === false, 'other boxes do 
 assert(invSlotGlowClass(boxed, 'starterVictoryBox', true) === 'tutorial-guidance-glow', 'guidance glow wins over new-item flash');
 boxed.progression.starterBoxOpened = true;
 assert(shouldTutorialGuideBox(boxed, 'starterVictoryBox') === false, 'guidance glow clears once the box is opened');
-assert(invSlotGlowClass(boxed, 'starterVictoryBox', true) === 'unlock-pulse', 'opened/other items keep the subtler new-item glow');
+assert(invSlotGlowClass(boxed, 'starterVictoryBox', true) === 'new-item-glow', 'opened/other items keep the subtler new-item glow');
 assert(invSlotGlowClass(boxed, 'starterVictoryBox', false) === '', 'viewed items have no glow');
 
 const invRender = html.slice(html.indexOf('const boxSlots = sealedBoxes.map'), html.indexOf('const permSlots = permItems.map'));
@@ -91,6 +91,6 @@ assert(renderInst.includes("addEventListener('animationend'"), 'enter animation 
 assert(renderInst.includes('window.__instanceJustEntered'), 'enter class is only added on a real entry');
 assert(html.includes("instView.classList.remove('instance-enter')"), 'dashboard chrome still clears leftover enter class');
 
-assert(html.includes('3.4.19'), 'About version bumped for v4.7');
+assert(html.includes('3.4.20'), 'About version bumped for v4.7');
 
 console.log('v4.7 tests ok — no Level 1 celebration, box-only tutorial drop, dual glows, instance-enter stripped on tab change');
