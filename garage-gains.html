@@ -1106,6 +1106,115 @@
   .quest-type-tag.morning-tag { color: var(--gain); background: rgba(255,182,72,0.14); border-color: rgba(255,182,72,0.45); }
   .quest-row-card.done-row { opacity: 0.55; }
 
+  /* --- v4.1: persistent collapsible quest section headers --- */
+  .dash-sec-toggle {
+    display: flex; align-items: center; gap: 7px; width: 100%;
+    background: none; border: none; padding: 0; margin: 20px 2px 8px;
+    color: var(--text-dim); cursor: pointer; text-align: left;
+    font-size: 12.5px; letter-spacing: 0.1em; font-family: 'Barlow Condensed'; text-transform: uppercase;
+  }
+  .dash-sec-toggle .dash-sec-name { flex: 1; min-width: 0; }
+  .dash-sec-toggle .dash-sec-chev {
+    font-family: 'JetBrains Mono'; font-size: 12px; letter-spacing: 0; opacity: 0.7; flex-shrink: 0;
+  }
+  .dash-sec-toggle.is-collapsed { opacity: 0.78; margin-bottom: 4px; }
+
+  /* --- v4.1: low-key Dashboard quick-log (secondary, not a CTA) --- */
+  .quick-log-fab {
+    position: fixed; right: 16px; bottom: calc(84px + var(--app-sab));
+    z-index: 40; width: 44px; height: 44px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text-dim);
+    font-size: 24px; line-height: 1; font-weight: 400; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.28); opacity: 0.88;
+  }
+  .quick-log-fab:active { color: var(--text); border-color: var(--a2); opacity: 1; }
+  .quick-log-overlay {
+    position: fixed; inset: 0; z-index: 50; background: var(--bg);
+    display: flex; flex-direction: column;
+    padding: calc(12px + var(--app-sat)) 16px calc(88px + var(--app-sab));
+  }
+  .quick-log-overlay[hidden], .quick-log-fab[hidden] { display: none !important; }
+  .quick-log-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .ql-search {
+    width: 100%; box-sizing: border-box; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); font-family: 'Inter'; font-size: 15px; padding: 12px 14px;
+  }
+  .ql-hint { font-size: 12px; color: var(--text-dim); margin: -4px 2px 10px; }
+  .ql-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 13px 14px; margin-bottom: 8px; color: inherit; text-align: left; cursor: pointer;
+  }
+  .ql-row .nm { font-family: 'Barlow Condensed'; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+  .ql-row .ms { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .ql-row .tag {
+    flex-shrink: 0; font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-dim);
+    padding: 4px 8px; border-radius: 100px; border: 1px solid var(--line);
+  }
+  .ql-row.adhoc .tag { color: var(--a2); border-color: rgba(var(--a2-rgb),0.4); }
+  .ql-change {
+    background: none; border: none; color: var(--text-dim); font-family: 'Barlow Condensed';
+    font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; padding: 0 0 12px;
+  }
+
+  /* --- v4.1: Settings home + nested sub-screens --- */
+  .settings-hero { margin: 0 0 22px; padding: 2px 2px 0; }
+  .settings-hero .eyebrow {
+    font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.16em; color: var(--text-dim);
+  }
+  .settings-hero h1 { font-size: 32px; line-height: 1; margin: 4px 0 8px; }
+  .settings-lead { margin: 0; font-size: 13.5px; color: var(--text-dim); line-height: 1.45; }
+  .settings-back {
+    display: inline-flex; align-items: center; gap: 4px; margin-bottom: 12px;
+    background: var(--panel); border: 1px solid var(--line); color: var(--text-dim);
+    border-radius: 100px; padding: 8px 14px; font-family: 'Barlow Condensed'; font-size: 13px;
+    letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700; cursor: pointer;
+  }
+  .settings-back[hidden] { display: none !important; }
+  .settings-group { margin-bottom: 22px; }
+  .settings-group-label {
+    font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-dim); margin: 0 4px 8px;
+  }
+  .settings-nav-card { padding: 4px 6px; }
+  .settings-nav-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: none; border: none; color: inherit; text-align: left;
+    padding: 14px 10px; cursor: pointer; border-radius: 12px;
+  }
+  .settings-nav-row + .settings-nav-row { border-top: 1px solid var(--line); }
+  .settings-nav-ic {
+    width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(var(--a1-rgb),0.12); color: var(--a1);
+  }
+  .settings-nav-ic.svg-a2 { background: rgba(var(--a2-rgb),0.12); color: var(--a2); }
+  .settings-nav-ic svg { width: 18px; height: 18px; }
+  .settings-nav-text { flex: 1; min-width: 0; }
+  .settings-nav-title {
+    display: block; font-family: 'Barlow Condensed'; font-size: 16px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .settings-nav-sub { display: block; font-size: 12px; color: var(--text-dim); margin-top: 2px; line-height: 1.35; }
+  .settings-nav-chev { color: var(--text-dim); font-size: 22px; line-height: 1; flex-shrink: 0; }
+  .settings-copy-card .settings-copy-title {
+    font-family: 'Barlow Condensed'; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .we-editor-intro { margin-bottom: 12px; }
+  .we-editor-kicker {
+    font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--a2); margin-bottom: 4px;
+  }
+  .we-day-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .we-day-tab {
+    flex: 1; padding: 9px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+    color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 13px; letter-spacing: 0.05em;
+    text-transform: uppercase; font-weight: 700; cursor: pointer;
+  }
+  .we-day-tab.active { border-color: var(--a2); color: var(--text); background: rgba(var(--a2-rgb),0.12); }
+  .we-empty { font-size: 13px; color: var(--text-dim); padding: 10px 2px 4px; }
+  #settingsSubscreen[hidden], #settingsHome[hidden], [data-settings-pane][hidden] { display: none !important; }
+
   /* --- v2.1.3: Workout compact-card-first pattern, matching Bosses/Quests --- */
   .workout-summary-card { cursor: pointer; }
   .wk-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -1437,54 +1546,136 @@
   </div>
 
   <section id="view-settings" class="view">
-    <h2 style="font-size:26px; margin-bottom:14px;">Settings</h2>
-    <div class="section-title">Profiles</div>
-    <div class="card" id="adminModeSettingsCard" style="display:none;">
-      <div class="admin-mode-note" id="adminModeSettingsHint"></div>
-      <button class="btn admin-mode" id="adminModeSettingsBtn" style="margin-top:0;">Enter Admin Mode</button>
+    <div class="settings-hero">
+      <button type="button" class="settings-back" id="settingsBackBtn" hidden>‹ Back</button>
+      <div class="eyebrow">RIGCORE</div>
+      <h1 id="settingsTitle">Settings</h1>
+      <p class="settings-lead" id="settingsSubtitle">Tune the gym to you — nothing extra on this screen.</p>
     </div>
-    <div class="card" id="profilesList"></div>
-    <button class="btn" id="newProfileBtn">+ New Profile</button>
-    <div class="section-title">Equipment</div>
-    <div class="card">
-      <div class="l2" style="margin-bottom:8px;">Toggle what you currently own — the workout editor and future routine generation both use this list.</div>
-      <div class="ob-equip-grid" id="settingsEquipGrid"></div>
-      <div id="settingsDumbbellRange"></div>
-      <button class="btn" id="regenRoutineBtn" style="margin-top:10px;">Regenerate Routine From Equipment</button>
+
+    <div id="settingsHome">
+      <div class="settings-group">
+        <div class="settings-group-label">Profile</div>
+        <div class="card" id="adminModeSettingsCard" style="display:none;">
+          <div class="admin-mode-note" id="adminModeSettingsHint"></div>
+          <button class="btn admin-mode" id="adminModeSettingsBtn" style="margin-top:0;">Enter Admin Mode</button>
+        </div>
+        <div class="card settings-nav-card" id="profilesList"></div>
+        <button class="btn" id="newProfileBtn">+ New Profile</button>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Training</div>
+        <div class="card settings-nav-card">
+          <button type="button" class="settings-nav-row" data-settings-sub="editor">
+            <span class="settings-nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18 10l-4-4L4 16v4Z"/><path d="M14 6l4 4"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Workout Editor</span><span class="settings-nav-sub">Days, catalog, and equipment</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+          <button type="button" class="settings-nav-row" data-settings-sub="schedule">
+            <span class="settings-nav-ic svg-a2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Weekly Schedule</span><span class="settings-nav-sub">Which weekday is Push, Pull, Core, or Rest</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+          <button type="button" class="settings-nav-row" data-settings-sub="problems">
+            <span class="settings-nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Problem Areas</span><span class="settings-nav-sub">Personalize mobility work</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Preferences</div>
+        <div class="card settings-nav-card">
+          <button type="button" class="settings-nav-row" data-settings-sub="theme">
+            <span class="settings-nav-ic svg-a2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Theme</span><span class="settings-nav-sub">Match the rest of the app</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+          <button type="button" class="settings-nav-row" data-settings-sub="sound">
+            <span class="settings-nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Sound &amp; Haptics</span><span class="settings-nav-sub">Tones and vibration</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+          <button type="button" class="settings-nav-row" data-settings-sub="shortcut">
+            <span class="settings-nav-ic svg-a2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 17h.01"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Add to Home Screen</span><span class="settings-nav-sub">Launch RIGCORE like an app</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Data</div>
+        <div class="card settings-nav-card">
+          <button type="button" class="settings-nav-row" data-settings-sub="data">
+            <span class="settings-nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg></span>
+            <span class="settings-nav-text"><span class="settings-nav-title">Backup &amp; Restore</span><span class="settings-nav-sub">Export, import, or rebuild points</span></span>
+            <span class="settings-nav-chev">›</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">About</div>
+        <div class="card">
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.0</div></div>
+          <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Danger Zone</div>
+        <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
+      </div>
     </div>
-    <div class="section-title">Exercises</div>
-    <div class="card" id="exercisesManagerCard"></div>
-    <div class="section-title">Problem Areas</div>
-    <div class="card" id="problemProfileCard"></div>
-    <div class="section-title">Weekly Schedule</div>
-    <div class="card" id="scheduleEditorCard"></div>
-    <div class="section-title">Sound &amp; Haptics</div>
-    <div class="card" id="feedbackTogglesCard"></div>
-    <div class="section-title">Edit Workout</div>
-    <div class="card" id="workoutEditorCard"></div>
-    <div class="section-title">Theme</div>
-    <div class="theme-grid" id="themeGrid"></div>
-    <div class="section-title">Shortcut</div>
-    <div class="card">
-      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch RIGCORE like an app</div></div></div>
-      <button class="btn" id="addHomeBtn">Add to Home Screen</button>
-    </div>
-    <div class="section-title">Data</div>
-    <div class="card">
-      <div class="settings-row"><div>Export data<div class="l2">Save a backup file to your phone</div></div></div>
-      <button class="btn" id="exportBtn">Export Backup</button>
-      <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore your name, routine, and history from a .json backup</div></div></div>
-      <button class="btn" id="importBtn">Import Backup</button>
-      <input type="file" id="importFile" accept=".json,application/json,text/plain,text/*,*/*" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
-      <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
-      <button class="btn" id="recalcPointsBtn">Recalculate Points</button>
-    </div>
-    <div class="section-title">Danger Zone</div>
-    <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
-    <div class="section-title">About</div>
-    <div class="card">
-      <div class="settings-row"><div>Version</div><div class="l2 mono">3.3.2</div></div>
-      <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
+
+    <div id="settingsSubscreen" hidden>
+      <div data-settings-pane="editor" hidden>
+        <div class="card settings-copy-card">
+          <div class="settings-copy-title">Your kit</div>
+          <div class="l2" style="margin-bottom:10px;">Toggle what you currently own — day lists and routine generation both use this.</div>
+          <div class="ob-equip-grid" id="settingsEquipGrid"></div>
+          <div id="settingsDumbbellRange"></div>
+          <button class="btn" id="regenRoutineBtn" style="margin-top:10px;">Regenerate Routine From Equipment</button>
+        </div>
+        <div class="card" id="workoutEditorCard"></div>
+        <div class="card" id="exercisesManagerCard"></div>
+      </div>
+      <div data-settings-pane="schedule" hidden>
+        <div class="card" id="scheduleEditorCard"></div>
+      </div>
+      <div data-settings-pane="problems" hidden>
+        <div class="card" id="problemProfileCard"></div>
+      </div>
+      <div data-settings-pane="theme" hidden>
+        <div class="card settings-copy-card">
+          <div class="settings-copy-title">App theme</div>
+          <div class="l2" style="margin-bottom:10px;">The same palette used across Dashboard, Rank, and Inventory.</div>
+          <div class="theme-grid" id="themeGrid"></div>
+        </div>
+      </div>
+      <div data-settings-pane="sound" hidden>
+        <div class="card" id="feedbackTogglesCard"></div>
+      </div>
+      <div data-settings-pane="shortcut" hidden>
+        <div class="card">
+          <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch RIGCORE like an app</div></div></div>
+          <button class="btn" id="addHomeBtn">Add to Home Screen</button>
+        </div>
+      </div>
+      <div data-settings-pane="data" hidden>
+        <div class="card">
+          <div class="settings-row"><div>Export data<div class="l2">Save a backup file to your phone</div></div></div>
+          <button class="btn" id="exportBtn">Export Backup</button>
+          <div class="settings-row" style="margin-top:14px;"><div>Import data<div class="l2">Restore your name, routine, and history from a .json backup</div></div></div>
+          <button class="btn" id="importBtn">Import Backup</button>
+          <input type="file" id="importFile" accept=".json,application/json,text/plain,text/*,*/*" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
+          <div class="settings-row" style="margin-top:14px;"><div>Recalculate points<div class="l2">Rebuilds your total from current baseline rates</div></div></div>
+          <button class="btn" id="recalcPointsBtn">Recalculate Points</button>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -1512,6 +1703,18 @@
     Settings
   </button>
 </nav>
+
+<button type="button" class="quick-log-fab" id="quickLogFab" aria-label="Quick log an exercise" hidden>+</button>
+<div id="quickLogOverlay" class="quick-log-overlay" hidden>
+  <div class="instance-header">
+    <button type="button" class="instance-leave-btn" id="quickLogLeaveBtn">‹ Leave</button>
+    <div>
+      <div class="instance-title">Quick Log</div>
+      <div class="instance-subtitle" id="quickLogSubtitle">Same points as a real set</div>
+    </div>
+  </div>
+  <div class="quick-log-body" id="quickLogBody"></div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -3446,13 +3649,11 @@ function ensureWarmupQuests() {
   if (getTodayDayType() === null) return; // workout days only — mirrors Rest Day Quests' rest-day-only gate, inverted
   if (state.warmupQuests && state.warmupQuests.date === today && Array.isArray(state.warmupQuests.options)) return;
   state.warmupQuests = { date: today, cleared: false, options: WARMUP_QUEST_TEMPLATES.map(t => ({ ...t, status: 'available', progress: {} })) };
-  window.__warmupSectionOpened = false; // v2.9: starts collapsed again each fresh day
 }
 // Either clearing condition (Section 2 of the 2.1.4 spec) funnels through
 // here so there's exactly one place that flips `cleared` and it can't fire twice.
 function clearWarmupQuests() {
   if (state.warmupQuests && !state.warmupQuests.cleared) state.warmupQuests.cleared = true;
-  window.__warmupSectionOpened = false; // v2.9: starts collapsed again next time it reappears
 }
 // v2.1.5: reward is now a percentage of today's full workout point value
 // (10% Quick, 15% Standard, 20% Extended — spanning the spec's 10-20% range,
@@ -4305,7 +4506,8 @@ function showWarmupIntro() {
     overlay.classList.remove('show');
     if (state.progression) state.progression.warmupIntroSeen = true;
     window.__showWarmupDespiteFirstRun = true;
-    window.__warmupSectionOpened = true;
+    ensureDashCollapsed(state);
+    state.dashCollapsed.warmup = false;
     save();
     renderToday();
   });
@@ -4315,6 +4517,24 @@ function showWarmupIntro() {
     save();
     window.__workoutStarted = true;
     enterInstance({ type: 'workout' });
+  });
+}
+
+function dashQuestTitleHtml(sectionId, iconHtml, iconClass, label) {
+  const collapsed = isDashSectionCollapsed(state, sectionId);
+  return `<button type="button" class="section-title dash-sec-toggle${collapsed ? ' is-collapsed' : ''}" data-dash-collapse="${sectionId}" aria-expanded="${collapsed ? 'false' : 'true'}">
+    <span class="dash-sec-ic${iconClass ? ' ' + iconClass : ''}">${iconHtml}</span>
+    <span class="dash-sec-name">${label}</span>
+    <span class="dash-sec-chev" aria-hidden="true">${collapsed ? '▸' : '▾'}</span>
+  </button>`;
+}
+function bindDashQuestToggle(slot, rerender) {
+  const btn = slot && slot.querySelector('[data-dash-collapse]');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    toggleDashSectionCollapsed(state, btn.dataset.dashCollapse);
+    save();
+    rerender();
   });
 }
 
@@ -4328,8 +4548,9 @@ function renderBossesSection() {
     // otherwise looks indistinguishable from the feature being broken.
     const hasAnyBaseline = Object.keys(state.baselines || {}).length > 0;
     if (hasAnyBaseline) { slot.innerHTML = ''; return; }
-    slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic">${DASH_BOSS_ICON}</span>Bosses</div>
-      <div class="card" style="text-align:center; padding:20px 16px; color:var(--text-dim); font-size:12.5px;">Bosses unlock once you've completed your first full workout — that's what locks in your baselines.</div>`;
+    slot.innerHTML = `${dashQuestTitleHtml('bosses', DASH_BOSS_ICON, '', 'Bosses')}
+      ${isDashSectionCollapsed(state, 'bosses') ? '' : `<div class="card" style="text-align:center; padding:20px 16px; color:var(--text-dim); font-size:12.5px;">Bosses unlock once you've completed your first full workout — that's what locks in your baselines.</div>`}`;
+    bindDashQuestToggle(slot, renderBossesSection);
     return;
   }
   const cards = state.bosses.map(boss => {
@@ -4367,7 +4588,9 @@ function renderBossesSection() {
       </div>` : ''}
     </div>`;
   }).join('');
-  slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic">${DASH_BOSS_ICON}</span>Bosses</div><div class="card boss-section-card">${cards}</div>`;
+  slot.innerHTML = `${dashQuestTitleHtml('bosses', DASH_BOSS_ICON, '', 'Bosses')}${isDashSectionCollapsed(state, 'bosses') ? '' : `<div class="card boss-section-card">${cards}</div>`}`;
+  bindDashQuestToggle(slot, renderBossesSection);
+  if (isDashSectionCollapsed(state, 'bosses')) return;
   slot.querySelectorAll('[data-boss-toggle]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.bossToggle;
     window.__expandedBossId = window.__expandedBossId === id ? null : id;
@@ -4409,8 +4632,10 @@ function renderQuestsSection() {
       </div>` : ''}
     </div>`;
   }).join('');
-  slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic">${DASH_QUEST_ICON}</span>Quests</div>
-    <div class="card quest-section-card">${rows}<div class="quest-note">Optional — no penalty for skipping, and these never affect your streak.</div></div>`;
+  slot.innerHTML = `${dashQuestTitleHtml('quests', DASH_QUEST_ICON, '', 'Quests')}
+    ${isDashSectionCollapsed(state, 'quests') ? '' : `<div class="card quest-section-card">${rows}<div class="quest-note">Optional — no penalty for skipping, and these never affect your streak.</div></div>`}`;
+  bindDashQuestToggle(slot, renderQuestsSection);
+  if (isDashSectionCollapsed(state, 'quests')) return;
   slot.querySelectorAll('[data-quest-toggle]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.questToggle;
     window.__expandedQuestId = window.__expandedQuestId === id ? null : id;
@@ -4440,27 +4665,16 @@ function renderWarmupSection() {
   const wq = state.warmupQuests;
   if (!wq || wq.date !== todayStr() || wq.cleared || getTodayDayType() === null) { slot.innerHTML = ''; return; }
 
+  const collapsed = isDashSectionCollapsed(state, 'warmup');
   const activeOpt = wq.options.find(o => o.status === 'active');
   if (activeOpt) {
-    // v2.5: the full move-stepping flow now only lives in the full-screen
-    // instance — this is just a compact resume card on the Dashboard.
-    slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic warmup-ic">${DASH_WARMUP_ICON}</span>Warm-Up</div>
-      <div class="card workout-summary-card quest-section-card" id="warmupResumeCard">
+    slot.innerHTML = `${dashQuestTitleHtml('warmup', DASH_WARMUP_ICON, 'warmup-ic', 'Warm-Up')}
+      ${collapsed ? '' : `<div class="card workout-summary-card quest-section-card" id="warmupResumeCard">
         <div class="wk-row"><div><div class="wk-title">${activeOpt.label}</div><div class="wk-sub">Warm-Up Quest · ${activeOpt.difficulty} · In progress</div></div><button class="go-btn">Resume</button></div>
-      </div>`;
-    document.getElementById('warmupResumeCard').addEventListener('click', () => enterInstance({ type: 'warmup', optionId: activeOpt.id }, true));
-    return;
-  }
-
-  // v2.9: the 3-option picker now sits behind its own collapsed summary card
-  // (same collapsed-card-first pattern as Workout) — the "Resume" state above
-  // is already its own compact card, so this only wraps the browse/pick state.
-  if (!window.__warmupSectionOpened) {
-    slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic warmup-ic">${DASH_WARMUP_ICON}</span>Warm-Up</div>
-      <div class="card workout-summary-card quest-section-card" id="warmupOpenCard">
-        <div class="wk-row"><div><div class="wk-title">Warm-Up</div><div class="wk-sub">3 options — pick one before you start your workout</div></div><button class="go-btn">View</button></div>
-      </div>`;
-    document.getElementById('warmupOpenCard').addEventListener('click', () => { window.__warmupSectionOpened = true; renderWarmupSection(); });
+      </div>`}`;
+    bindDashQuestToggle(slot, renderWarmupSection);
+    const resume = document.getElementById('warmupResumeCard');
+    if (resume) resume.addEventListener('click', () => enterInstance({ type: 'warmup', optionId: activeOpt.id }, true));
     return;
   }
 
@@ -4487,20 +4701,12 @@ function renderWarmupSection() {
       </div>` : ''}
     </div>`;
   }).join('');
-  slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic warmup-ic">${DASH_WARMUP_ICON}</span>Warm-Up</div>
-    <div class="card warmup-card quest-section-card">
-      <div class="wk-row" id="warmupCollapseHead" style="cursor:pointer; margin-bottom:10px;">
-        <div><div class="wk-title">Warm-Up</div><div class="wk-sub">Tap to collapse</div></div>
-        <button class="go-btn" type="button">Close</button>
-      </div>
+  slot.innerHTML = `${dashQuestTitleHtml('warmup', DASH_WARMUP_ICON, 'warmup-ic', 'Warm-Up')}
+    ${collapsed ? '' : `<div class="card warmup-card quest-section-card">
       ${rows}<div class="quest-note">Pick one — completing it clears the rest for today. Starting your workout without one clears them too, no penalty.</div>
-    </div>`;
-  document.getElementById('warmupCollapseHead').addEventListener('click', (e) => {
-    e.stopPropagation();
-    window.__warmupSectionOpened = false;
-    window.__expandedWarmupId = null;
-    renderWarmupSection();
-  });
+    </div>`}`;
+  bindDashQuestToggle(slot, renderWarmupSection);
+  if (collapsed) return;
   slot.querySelectorAll('[data-warmup-toggle]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.warmupToggle;
     window.__expandedWarmupId = window.__expandedWarmupId === id ? null : id;
@@ -4510,7 +4716,7 @@ function renderWarmupSection() {
     e.stopPropagation();
     const optionId = btn.dataset.warmupStart;
     startWarmupQuest(optionId);
-    enterInstance({ type: 'warmup', optionId }); // v2.5: straight into the full-screen instance
+    enterInstance({ type: 'warmup', optionId });
   }));
   attachDashTipDemoAndWiki(slot);
 }
@@ -4561,8 +4767,10 @@ function renderMobilitySection() {
     </div>`;
   }).join('');
 
-  slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic mobility-ic">${DASH_MOBILITY_ICON}</span>Mobility</div>
-    <div class="card mobility-card quest-section-card">${rows}<div class="quest-note">Grindable, do-anytime recovery work — three slots spread through the day, no penalty for skipping.</div></div>`;
+  slot.innerHTML = `${dashQuestTitleHtml('mobility', DASH_MOBILITY_ICON, 'mobility-ic', 'Mobility')}
+    ${isDashSectionCollapsed(state, 'mobility') ? '' : `<div class="card mobility-card quest-section-card">${rows}<div class="quest-note">Grindable, do-anytime recovery work — three slots spread through the day, no penalty for skipping.</div></div>`}`;
+  bindDashQuestToggle(slot, renderMobilitySection);
+  if (isDashSectionCollapsed(state, 'mobility')) return;
   slot.querySelectorAll('[data-mobility-toggle]').forEach(el => el.addEventListener('click', () => {
     const i = parseInt(el.dataset.mobilityToggle);
     window.__expandedMobilityId = window.__expandedMobilityId === i ? null : i;
@@ -4592,11 +4800,13 @@ function renderMorningStretchSection() {
   if (!s || s.date !== todayStr() || s.status === 'expired' || getTodayDayType() === null) { slot.innerHTML = ''; return; }
 
   if (s.status === 'active') {
-    slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic morning-ic">${DASH_MOBILITY_ICON}</span>Morning Stretch</div>
-      <div class="card workout-summary-card morning-card" id="morningResumeCard">
+    slot.innerHTML = `${dashQuestTitleHtml('morning', DASH_MOBILITY_ICON, 'morning-ic', 'Morning Stretch')}
+      ${isDashSectionCollapsed(state, 'morning') ? '' : `<div class="card workout-summary-card morning-card" id="morningResumeCard">
         <div class="wk-row"><div><div class="wk-title">${s.label}</div><div class="wk-sub">In progress</div></div><button class="go-btn">Resume</button></div>
-      </div>`;
-    document.getElementById('morningResumeCard').addEventListener('click', () => enterInstance({ type: 'morningStretch' }, true));
+      </div>`}`;
+    bindDashQuestToggle(slot, renderMorningStretchSection);
+    const resume = document.getElementById('morningResumeCard');
+    if (resume) resume.addEventListener('click', () => enterInstance({ type: 'morningStretch' }, true));
     return;
   }
 
@@ -4614,8 +4824,8 @@ function renderMorningStretchSection() {
     actionHtml = `<button class="quest-btn morning-btn" data-morning-start>Start</button>`;
   }
   const reward = computeMobilityReward(true);
-  slot.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px;"><span class="dash-sec-ic morning-ic">${DASH_MOBILITY_ICON}</span>Morning Stretch</div>
-    <div class="card morning-card quest-section-card">
+  slot.innerHTML = `${dashQuestTitleHtml('morning', DASH_MOBILITY_ICON, 'morning-ic', 'Morning Stretch')}
+    ${isDashSectionCollapsed(state, 'morning') ? '' : `<div class="card morning-card quest-section-card">
       <div class="quest-row-card${s.status === 'completed' ? ' done-row' : ''}" data-morning-toggle>
         <div class="quest-row-head">
           <div><div class="quest-type-tag morning-tag">Morning Stretch</div><div class="quest-label">${s.label}</div><div class="quest-status-label">${statusLabel}</div></div>
@@ -4633,7 +4843,9 @@ function renderMorningStretchSection() {
         </div>` : ''}
       </div>
       <div class="quest-note">Full-body morning flow — every hold, then the bonus. Miss the morning window and it's gone for the day.</div>
-    </div>`;
+    </div>`}`;
+  bindDashQuestToggle(slot, renderMorningStretchSection);
+  if (isDashSectionCollapsed(state, 'morning')) return;
   slot.querySelectorAll('[data-morning-toggle]').forEach(el => el.addEventListener('click', () => {
     window.__expandedMorningStretch = !expanded;
     renderMorningStretchSection();
@@ -5702,7 +5914,10 @@ function defaultState() {
     problemProfile: {},      // regionId -> [issueId, ...]; empty/missing region = not flagged
     mobilityQuests: null,    // {date, slots:[...]} — see ensureMobilityQuests(); 3 REGULAR slots as of v2.9
     morningStretch: null,    // {date, status, templateId, label, moves, progress, stretchVersion}
-    morningStretchLastTemplateId: null
+    morningStretchLastTemplateId: null,
+
+    // --- v4.1: per-section Dashboard quest collapse. Missing/false = expanded.
+    dashCollapsed: {}
   };
 }
 function todayStr(d) {
@@ -5931,6 +6146,62 @@ function itemBonusStatLabel(tmpl) {
 }
 /* === first-run-unlock-lib end === */
 
+/* === dash-collapse-lib begin === */
+const DASH_QUEST_SECTION_IDS = ['morning', 'warmup', 'mobility', 'quests', 'bosses'];
+function ensureDashCollapsed(s) {
+  if (!s || typeof s !== 'object') return {};
+  if (!s.dashCollapsed || typeof s.dashCollapsed !== 'object' || Array.isArray(s.dashCollapsed)) s.dashCollapsed = {};
+  return s.dashCollapsed;
+}
+function isDashSectionCollapsed(s, id) {
+  return !!(s && s.dashCollapsed && s.dashCollapsed[id]);
+}
+function toggleDashSectionCollapsed(s, id) {
+  ensureDashCollapsed(s);
+  s.dashCollapsed[id] = !s.dashCollapsed[id];
+  return !!s.dashCollapsed[id];
+}
+function getDashQuestSectionIds() { return DASH_QUEST_SECTION_IDS; }
+/* === dash-collapse-lib end === */
+
+/* === quick-log-lib begin === */
+const AD_HOC_BODYWEIGHT_IDS = [
+  'standardPushup',
+  'pikePushup',
+  'legRaise',
+  'plank',
+  'hollowHold',
+  'rearDelt',
+  'archerPushup'
+];
+function adHocRank(ex) {
+  if (!ex) return 999;
+  const ranked = AD_HOC_BODYWEIGHT_IDS.indexOf(ex.id);
+  if (ranked >= 0) return ranked;
+  const noEquip = !ex.equip || ex.equip.length === 0;
+  if (noEquip) return 50;
+  return 100;
+}
+function sortAdHocCatalog(exercises, query) {
+  const q = String(query || '').trim().toLowerCase();
+  let list = (exercises || []).filter(e => e && !e.archived);
+  if (q) {
+    list = list.filter(e =>
+      String(e.name || '').toLowerCase().indexOf(q) !== -1 ||
+      String(e.muscle || '').toLowerCase().indexOf(q) !== -1 ||
+      String(e.day || '').toLowerCase().indexOf(q) !== -1
+    );
+  }
+  return list.slice().sort((a, b) => {
+    const ra = adHocRank(a);
+    const rb = adHocRank(b);
+    if (ra !== rb) return ra - rb;
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+}
+function getAdHocBodyweightIds() { return AD_HOC_BODYWEIGHT_IDS; }
+/* === quick-log-lib end === */
+
 let state = load();
 function load() {
   try {
@@ -5939,6 +6210,7 @@ function load() {
       const fresh = defaultState();
       clearTestingEconomyOnce(fresh);
       ensureProgressionUnlock(fresh);
+      ensureDashCollapsed(fresh);
       return fresh;
     }
     const merged = Object.assign(defaultState(), JSON.parse(raw));
@@ -5961,6 +6233,7 @@ function load() {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('progression save failed', e); }
     }
+    ensureDashCollapsed(merged);
     return merged;
   } catch(e) { console.error('load failed', e); return defaultState(); }
 }
@@ -6293,10 +6566,16 @@ function switchView(name) {
   // for this since a display:none element reports zero scrollHeight.
   document.getElementById('stickySub').style.display = (name === 'inventory' || name === 'rank') ? 'none' : '';
   if (name === 'stats') renderStats();
-  if (name === 'settings') { renderSettingsEquipment(); renderExercisesManager(); renderWorkoutEditor(); renderProfilesList(); renderScheduleEditor(); renderFeedbackToggles(); renderProblemProfileEditor(); }
+  if (name === 'settings') {
+    window.__settingsSub = null;
+    renderSettingsChrome();
+    renderProfilesList();
+  }
   if (name === 'inventory') renderInventoryTab();
   if (name === 'rank') { renderRankTab(); startRankCountdown(); } else { stopRankCountdown(); }
   if (name !== 'stats') syncHeaderHeight();
+  if (name !== 'today' && window.__quickLogOpen) closeQuickLog(true);
+  syncQuickLogFab();
 }
 
 function renderUpcoming() {
@@ -6944,6 +7223,7 @@ function renderExerciseCardsInto(containerEl, exList, dateKey) {
 // commits are all completely unchanged; only where their UI mounts differs.
 // =========================================================
 function enterInstance(instanceObj, isResume) {
+  if (window.__quickLogOpen) closeQuickLog(true);
   window.__activeInstance = instanceObj;
   window.__instanceJustEntered = !isResume;
   window.__autoCommitFirst = !isResume;
@@ -7119,6 +7399,7 @@ function renderToday() {
     instViewFix.classList.add('instance-fixed-scroll');
     instViewFix.style.top = document.body.style.paddingTop || '0px';
     renderInstanceView();
+    syncQuickLogFab();
     return;
   }
   document.getElementById('dashboardNormalContent').style.display = '';
@@ -7155,6 +7436,7 @@ function renderToday() {
 
   if (!dayType) {
     container.innerHTML = `<div class="rest-panel"><div class="big">Rest day</div>No scheduled session — recovery is part of the plan.</div>`;
+    syncQuickLogFab();
     return;
   }
 
@@ -7195,6 +7477,7 @@ function renderToday() {
       else { renderToday(); } // not started yet — just reveal the info/preview screen inline
     };
     document.getElementById('workoutSummaryCard').addEventListener('click', openFn);
+    syncQuickLogFab();
     return;
   }
 
@@ -7221,6 +7504,7 @@ function renderToday() {
       enterInstance({ type: 'workout' });
     });
     attachDashTipDemoAndWiki(container);
+    syncQuickLogFab();
     return;
   }
 
@@ -7233,6 +7517,7 @@ function renderToday() {
     enterInstance({ type: 'workout' }, true);
     return;
   }
+  syncQuickLogFab();
 }
 
 
@@ -7434,7 +7719,7 @@ let __exTimerInterval = null;
 function startExerciseTimer(exId, idx, target) {
   clearExerciseTimerInterval();
   window.__exTimerState = { exId, idx, target, elapsed: 0, targetFeedbackFired: false };
-  renderToday();
+  refreshAfterSetChange();
   __exTimerInterval = setInterval(() => {
     if (!window.__exTimerState) { clearExerciseTimerInterval(); return; }
     window.__exTimerState.elapsed += 1;
@@ -7534,6 +7819,124 @@ function renderRestTimer(justFinished) {
   }
 }
 
+function refreshAfterSetChange() {
+  if (window.__quickLogOpen) {
+    renderQuickLogOverlay();
+    return;
+  }
+  renderToday();
+}
+function syncQuickLogFab() {
+  const fab = document.getElementById('quickLogFab');
+  if (!fab) return;
+  const onDash = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
+  fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen);
+}
+function closeQuickLog(silent) {
+  window.__quickLogOpen = false;
+  window.__quickLogSelectedId = null;
+  window.__quickLogQuery = '';
+  const overlay = document.getElementById('quickLogOverlay');
+  if (overlay) overlay.hidden = true;
+  syncQuickLogFab();
+  if (!silent) renderToday();
+}
+function openQuickLog() {
+  if (window.__activeInstance) return;
+  window.__quickLogOpen = true;
+  window.__quickLogSelectedId = null;
+  window.__quickLogQuery = window.__quickLogQuery || '';
+  const overlay = document.getElementById('quickLogOverlay');
+  if (overlay) overlay.hidden = false;
+  syncQuickLogFab();
+  renderQuickLogOverlay();
+}
+function renderQuickLogOverlay() {
+  const body = document.getElementById('quickLogBody');
+  const sub = document.getElementById('quickLogSubtitle');
+  if (!body) return;
+  const dateKey = todayStr();
+  const selected = window.__quickLogSelectedId
+    ? getAllExercises().find(e => e.id === window.__quickLogSelectedId && !e.archived)
+    : null;
+  if (sub) sub.textContent = selected
+    ? (selected.isTime ? 'Log seconds — same rate as a workout set' : 'Log reps — same rate as a workout set')
+    : 'Same points as a real set';
+  if (selected) {
+    window.__expandedEx = selected.id;
+    body.innerHTML = `<button type="button" class="ql-change" id="quickLogChangeEx">‹ All exercises</button><div id="quickLogCardMount"></div>`;
+    const change = document.getElementById('quickLogChangeEx');
+    if (change) change.addEventListener('click', () => {
+      window.__quickLogSelectedId = null;
+      window.__expandedEx = null;
+      renderQuickLogOverlay();
+    });
+    renderExerciseCardsInto(document.getElementById('quickLogCardMount'), [selected], dateKey);
+    attachTodayListeners(dateKey);
+    return;
+  }
+  const q = window.__quickLogQuery || '';
+  const list = sortAdHocCatalog(getAllExercises(), q);
+  const rows = list.map(ex => {
+    const adhoc = AD_HOC_BODYWEIGHT_IDS.indexOf(ex.id) >= 0 || !(ex.equip && ex.equip.length);
+    return `<button type="button" class="ql-row${adhoc ? ' adhoc' : ''}" data-ql-pick="${ex.id}">
+      <div><div class="nm">${ex.name}</div><div class="ms">${ex.muscle}${ex.isTime ? ' · timed' : ''}</div></div>
+      <span class="tag">${adhoc ? 'Ready' : (DAY_NAMES[ex.day] || ex.day)}</span>
+    </button>`;
+  }).join('');
+  body.innerHTML = `<input class="ql-search" id="quickLogSearch" type="search" placeholder="Search the catalog…" value="${String(q).replace(/"/g, '&quot;')}" autocomplete="off">
+    <div class="ql-hint">${q.trim() ? list.length + ' match' + (list.length === 1 ? '' : 'es') : 'Bodyweight first — no gear, no setup.'}</div>
+    ${rows || '<div class="empty"><div class="big">Nothing matches</div>Try a different name or muscle.</div>'}`;
+  const search = document.getElementById('quickLogSearch');
+  if (search) {
+    search.addEventListener('input', () => {
+      window.__quickLogQuery = search.value;
+      renderQuickLogOverlay();
+      const again = document.getElementById('quickLogSearch');
+      if (again) {
+        again.focus();
+        const len = again.value.length;
+        try { again.setSelectionRange(len, len); } catch (e) {}
+      }
+    });
+  }
+  body.querySelectorAll('[data-ql-pick]').forEach(btn => btn.addEventListener('click', () => {
+    window.__quickLogSelectedId = btn.dataset.qlPick;
+    window.__expandedEx = btn.dataset.qlPick;
+    uiActiveSetIdx[btn.dataset.qlPick] = null;
+    renderQuickLogOverlay();
+  }));
+}
+
+const SETTINGS_SUB = {
+  editor: { title: 'Workout Editor', lead: 'Days, catalog, and the gear you train with.' },
+  schedule: { title: 'Weekly Schedule', lead: 'Which weekday is Push, Pull, Core, or Rest.' },
+  problems: { title: 'Problem Areas', lead: 'Flag what mobility work should focus on.' },
+  theme: { title: 'Theme', lead: 'The same palette used across the rest of the app.' },
+  sound: { title: 'Sound & Haptics', lead: 'Tones and vibration for sets and rewards.' },
+  shortcut: { title: 'Add to Home Screen', lead: 'Launch RIGCORE like an app.' },
+  data: { title: 'Backup & Restore', lead: 'Export, import, or rebuild points from baselines.' }
+};
+function renderSettingsChrome() {
+  const sub = window.__settingsSub || null;
+  const home = document.getElementById('settingsHome');
+  const screen = document.getElementById('settingsSubscreen');
+  const back = document.getElementById('settingsBackBtn');
+  const title = document.getElementById('settingsTitle');
+  const lead = document.getElementById('settingsSubtitle');
+  if (home) home.hidden = !!sub;
+  if (screen) screen.hidden = !sub;
+  if (back) back.hidden = !sub;
+  if (title) title.textContent = (sub && SETTINGS_SUB[sub]) ? SETTINGS_SUB[sub].title : 'Settings';
+  if (lead) lead.textContent = (sub && SETTINGS_SUB[sub]) ? SETTINGS_SUB[sub].lead : 'Tune the gym to you — nothing extra on this screen.';
+  document.querySelectorAll('[data-settings-pane]').forEach(p => { p.hidden = p.dataset.settingsPane !== sub; });
+  if (sub === 'editor') { renderSettingsEquipment(); renderWorkoutEditor(); renderExercisesManager(); }
+  if (sub === 'schedule') renderScheduleEditor();
+  if (sub === 'problems') renderProblemProfileEditor();
+  if (sub === 'theme') renderThemeGrid();
+  if (sub === 'sound') renderFeedbackToggles();
+}
+
 function attachTodayListeners(dateKey) {
   // Shared commit path for finishing a set, regardless of whether the value came from
   // the numeric stepper or from a running exercise timer — keeps points/baseline/rest-
@@ -7603,14 +8006,16 @@ function attachTodayListeners(dateKey) {
     const stillShort = session.sets[exId].length < ex.suggestedSets;
     uiActiveSetIdx[exId] = null; // next tap continues onto a new set
     window.__tipOpen = null;
-    if (!stillShort) {
+    if (window.__quickLogOpen) {
+      window.__expandedEx = exId;
+    } else if (!stillShort) {
       const dt = getTodayDayType();
       const exList = getDayExercises(dt);
       const nextEx = exList.find(e => e.id !== exId && getExReps(session, e.id).length < e.suggestedSets);
       window.__expandedEx = nextEx ? nextEx.id : null;
     }
-    startRestTimer(ex);
-    setTimeout(() => renderToday(), !stillShort ? 550 : 0);
+    if (!window.__quickLogOpen) startRestTimer(ex);
+    setTimeout(() => refreshAfterSetChange(), (!window.__quickLogOpen && !stillShort) ? 550 : 0);
   }
 
   // v2.3.1: deletes a logged set entirely — subtracts its own points, re-indexes
@@ -7645,7 +8050,7 @@ function attachTodayListeners(dateKey) {
     recomputeBestForExercise(exId);
     uiActiveSetIdx[exId] = null;
     save();
-    renderToday();
+    refreshAfterSetChange();
   }
 
   document.querySelectorAll('[data-toggle]').forEach(head => {
@@ -7654,7 +8059,7 @@ function attachTodayListeners(dateKey) {
       window.__expandedEx = (window.__expandedEx === id) ? null : id;
       window.__tipOpen = null;
       delete uiActiveSetIdx[id];
-      renderToday();
+      refreshAfterSetChange();
     });
   });
 
@@ -7664,7 +8069,7 @@ function attachTodayListeners(dateKey) {
       const exId = pip.dataset.ex;
       window.__expandedEx = exId;
       uiActiveSetIdx[exId] = pip.dataset.idx === 'new' ? null : parseInt(pip.dataset.idx);
-      renderToday();
+      refreshAfterSetChange();
     });
   });
 
@@ -7726,7 +8131,7 @@ function attachTodayListeners(dateKey) {
       const exId = btn.dataset.add;
       window.__expandedEx = exId;
       uiActiveSetIdx[exId] = null;
-      renderToday();
+      refreshAfterSetChange();
     });
   });
 
@@ -7735,7 +8140,7 @@ function attachTodayListeners(dateKey) {
       e.stopPropagation();
       const exId = btn.dataset.tip;
       window.__tipOpen = window.__tipOpen === exId ? null : exId;
-      renderToday();
+      refreshAfterSetChange();
     });
   });
 
@@ -8470,7 +8875,11 @@ function renderExercisesManager() {
   if (!card) return;
   const all = getAllExercises();
   const openId = window.__exerciseFormOpenId; // null | 'new' | an existing exercise id
-  const rows = all.map(ex => {
+  const q = String(window.__emQuery || '').trim().toLowerCase();
+  const visible = q
+    ? all.filter(ex => String(ex.name || '').toLowerCase().indexOf(q) !== -1 || String(ex.muscle || '').toLowerCase().indexOf(q) !== -1 || String(ex.day || '').toLowerCase().indexOf(q) !== -1)
+    : all;
+  const rows = visible.map(ex => {
     const editing = openId === ex.id;
     return `<div class="em-row${ex.archived ? ' archived' : ''}">
       <div><div>${ex.name}</div><div class="ms">${DAY_NAMES[ex.day] || ex.day} · ${ex.muscle}</div></div>
@@ -8481,8 +8890,23 @@ function renderExercisesManager() {
     </div>
     ${editing ? renderExerciseFormHtml(ex) : ''}`;
   }).join('');
-  card.innerHTML = rows + `<button class="we-add-btn" id="emAddBtn" style="margin-top:10px;">+ Add Custom Exercise</button>${openId === 'new' ? renderExerciseFormHtml(null) : ''}`;
+  card.innerHTML = `<div class="we-editor-kicker">Exercise catalog</div>
+    <div class="l2" style="margin-bottom:10px;">Edit names and archive moves you don't use. Custom exercises can be added to a day list above.</div>
+    <input class="ql-search" id="emSearch" type="search" placeholder="Search catalog…" value="${String(window.__emQuery || '').replace(/"/g, '&quot;')}" autocomplete="off">
+    ${rows || '<div class="we-empty">No matching exercises.</div>'}
+    <button class="we-add-btn" id="emAddBtn" style="margin-top:10px;">+ Add Custom Exercise</button>${openId === 'new' ? renderExerciseFormHtml(null) : ''}`;
 
+  const search = document.getElementById('emSearch');
+  if (search) search.addEventListener('input', () => {
+    window.__emQuery = search.value;
+    renderExercisesManager();
+    const again = document.getElementById('emSearch');
+    if (again) {
+      again.focus();
+      const len = again.value.length;
+      try { again.setSelectionRange(len, len); } catch (e) {}
+    }
+  });
   card.querySelectorAll('[data-em-edit]').forEach(btn => btn.addEventListener('click', () => {
     window.__exerciseFormOpenId = window.__exerciseFormOpenId === btn.dataset.emEdit ? null : btn.dataset.emEdit;
     renderExercisesManager();
@@ -8549,51 +8973,61 @@ function renderWorkoutEditor() {
   if (!card) return;
   ensureCustomExercisesSeeded();
   const dayTypes = ['push', 'pull', 'core'];
-  card.innerHTML = dayTypes.map(dt => {
-    const ids = state.customExercises[dt] || [];
-    const rows = ids.map((id, i) => {
-      const ex = getAllExercises().find(e => e.id === id);
-      if (!ex) return '';
-      return `<div class="we-ex-row">
-        <div><div>${ex.name}</div><div class="ms">${ex.muscle}</div></div>
-        <div style="display:flex; align-items:center; gap:4px;">
-          <button class="we-reorder-btn" data-reorder="${dt}::${i}::up" ${i === 0 ? 'disabled' : ''}>▲</button>
-          <button class="we-reorder-btn" data-reorder="${dt}::${i}::down" ${i === ids.length - 1 ? 'disabled' : ''}>▼</button>
-          <button class="we-remove-btn" data-remove-ex="${dt}::${id}">✕</button>
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="we-day-block">
-      <div class="we-day-title">${DAY_NAMES[dt]}</div>
-      ${rows || '<div class="l2">No exercises — add one below.</div>'}
-      <button class="we-add-btn" data-add-day="${dt}">+ Add Exercise</button>
-      <div id="wePicker-${dt}"></div>
+  const dt = dayTypes.includes(window.__weDayTab) ? window.__weDayTab : 'push';
+  window.__weDayTab = dt;
+  const ids = state.customExercises[dt] || [];
+  const rows = ids.map((id, i) => {
+    const ex = getAllExercises().find(e => e.id === id);
+    if (!ex) return '';
+    return `<div class="we-ex-row">
+      <div><div>${ex.name}</div><div class="ms">${ex.muscle}</div></div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <button class="we-reorder-btn" data-reorder="${dt}::${i}::up" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button class="we-reorder-btn" data-reorder="${dt}::${i}::down" ${i === ids.length - 1 ? 'disabled' : ''}>▼</button>
+        <button class="we-remove-btn" data-remove-ex="${dt}::${id}">✕</button>
+      </div>
     </div>`;
   }).join('');
+  card.innerHTML = `<div class="we-editor-intro">
+      <div class="we-editor-kicker">Day lists</div>
+      <div class="l2">Pick a day, then add, reorder, or remove what shows up in that workout.</div>
+    </div>
+    <div class="we-day-tabs">
+      ${dayTypes.map(d => `<button type="button" class="we-day-tab${d === dt ? ' active' : ''}" data-we-tab="${d}">${DAY_NAMES[d]}</button>`).join('')}
+    </div>
+    <div class="we-day-block">
+      ${rows || '<div class="we-empty">Nothing on this day yet — add one below.</div>'}
+      <button class="we-add-btn" data-add-day="${dt}">+ Add to ${DAY_NAMES[dt]}</button>
+      <div id="wePicker-${dt}"></div>
+    </div>`;
 
+  card.querySelectorAll('[data-we-tab]').forEach(btn => btn.addEventListener('click', () => {
+    window.__weDayTab = btn.dataset.weTab;
+    renderWorkoutEditor();
+  }));
   card.querySelectorAll('[data-reorder]').forEach(btn => btn.addEventListener('click', () => {
-    const [dt, iStr, dir] = btn.dataset.reorder.split('::');
+    const [day, iStr, dir] = btn.dataset.reorder.split('::');
     const i = parseInt(iStr);
-    const arr = state.customExercises[dt];
+    const arr = state.customExercises[day];
     const j = dir === 'up' ? i - 1 : i + 1;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
     save(); renderWorkoutEditor();
   }));
   card.querySelectorAll('[data-remove-ex]').forEach(btn => btn.addEventListener('click', () => {
-    const [dt, id] = btn.dataset.removeEx.split('::');
-    state.customExercises[dt] = (state.customExercises[dt] || []).filter(x => x !== id);
+    const [day, id] = btn.dataset.removeEx.split('::');
+    state.customExercises[day] = (state.customExercises[day] || []).filter(x => x !== id);
     save(); renderWorkoutEditor();
   }));
   card.querySelectorAll('[data-add-day]').forEach(btn => btn.addEventListener('click', () => {
-    const dt = btn.dataset.addDay;
-    const slot = document.getElementById('wePicker-' + dt);
+    const day = btn.dataset.addDay;
+    const pickerSlot = document.getElementById('wePicker-' + day);
     const owned = state.equipment || [];
-    const already = state.customExercises[dt] || [];
-    const options = getAllExercises().filter(e => e.day === dt && isExerciseUnlocked(e) && !already.includes(e.id) && (e.equip || []).every(eq => owned.includes(eq)));
-    if (slot.innerHTML) { slot.innerHTML = ''; return; }
-    slot.innerHTML = `<div class="we-picker-list">${options.length ? options.map(e => `<div class="we-picker-row" data-pick="${dt}::${e.id}"><span>${e.name}</span><span class="ms">${e.muscle}</span></div>`).join('') : '<div class="l2" style="padding:8px 0;">No more exercises match your equipment for this day.</div>'}</div>`;
-    slot.querySelectorAll('[data-pick]').forEach(row => row.addEventListener('click', () => {
+    const already = state.customExercises[day] || [];
+    const options = getAllExercises().filter(e => e.day === day && isExerciseUnlocked(e) && !already.includes(e.id) && (e.equip || []).every(eq => owned.includes(eq)));
+    if (pickerSlot.innerHTML) { pickerSlot.innerHTML = ''; return; }
+    pickerSlot.innerHTML = `<div class="we-picker-list">${options.length ? options.map(e => `<div class="we-picker-row" data-pick="${day}::${e.id}"><span>${e.name}</span><span class="ms">${e.muscle}</span></div>`).join('') : '<div class="l2" style="padding:8px 0;">No more exercises match your equipment for this day.</div>'}</div>`;
+    pickerSlot.querySelectorAll('[data-pick]').forEach(row => row.addEventListener('click', () => {
       const [d, id] = row.dataset.pick.split('::');
       state.customExercises[d] = state.customExercises[d] || [];
       state.customExercises[d].push(id);
@@ -8604,6 +9038,20 @@ function renderWorkoutEditor() {
 document.getElementById('newProfileBtn').addEventListener('click', createProfile);
 const adminModeSettingsBtn = document.getElementById('adminModeSettingsBtn');
 if (adminModeSettingsBtn) adminModeSettingsBtn.addEventListener('click', toggleOwnerAdminMode);
+const settingsBackBtn = document.getElementById('settingsBackBtn');
+if (settingsBackBtn) settingsBackBtn.addEventListener('click', () => {
+  window.__settingsSub = null;
+  renderSettingsChrome();
+  renderProfilesList();
+});
+document.querySelectorAll('[data-settings-sub]').forEach(btn => btn.addEventListener('click', () => {
+  window.__settingsSub = btn.dataset.settingsSub;
+  renderSettingsChrome();
+}));
+const quickLogFab = document.getElementById('quickLogFab');
+if (quickLogFab) quickLogFab.addEventListener('click', openQuickLog);
+const quickLogLeaveBtn = document.getElementById('quickLogLeaveBtn');
+if (quickLogLeaveBtn) quickLogLeaveBtn.addEventListener('click', () => closeQuickLog(false));
 
 function init() {
   document.body.setAttribute('data-theme', state.theme || 'rig');
@@ -8613,6 +9061,7 @@ function init() {
   renderProfilesList();
   syncTabLocks();
   syncHeaderHeight();
+  syncQuickLogFab();
   maybeShowOnboarding();
 }
 

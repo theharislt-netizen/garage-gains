@@ -2,7 +2,7 @@
 
 One app file, **`garage-gains.html`**, ships to Android and iPhone. You do **not** maintain two copies.
 
-Package id: `com.rigcore.app` · Version **3.3.2**.
+Package id: `com.rigcore.app` · Version **3.4.0**.
 
 ## Android (actual app)
 

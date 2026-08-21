@@ -64,8 +64,8 @@ mustInclude('ios/App/App.xcodeproj/project.pbxproj', [
   'BackupImportPlugin.swift',
   'RIGCOREBridgeViewController.swift',
   'PRODUCT_BUNDLE_IDENTIFIER = com.rigcore.app;',
-  'MARKETING_VERSION = 3.3.2;',
-  'CURRENT_PROJECT_VERSION = 332;',
+  'MARKETING_VERSION = 3.4.0;',
+  'CURRENT_PROJECT_VERSION = 340;',
 ]);
 mustInclude('ios/App/App/Info.plist', [
   'ITSAppUsesNonExemptEncryption',
