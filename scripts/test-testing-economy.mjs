@@ -31,7 +31,7 @@ const ctx = { console };
 vm.createContext(ctx);
 vm.runInContext(html.slice(begin, end), ctx);
 
-const { clearTestingEconomyOnce, isOwnerTesterIdentity, refillAdminEconomy } = ctx;
+const { clearTestingEconomyOnce, isOwnerTesterIdentity, refillAdminEconomy, applyAdminSandboxPresentation } = ctx;
 
 const seeded = {
   gold: 740,
@@ -79,5 +79,30 @@ assert(clearTestingEconomyOnce(admin) === false, 'admin sandbox must not be wipe
 assert(admin.gold === 999999 && admin.gems === 9999, 'admin gold/gems stay unlimited');
 assert(admin.inventory.permanent.length === 1, 'admin test items must stay');
 assert(refillAdminEconomy({ gold: 1 }) === false, 'non-admin must not refill');
+
+assert(html.includes('id="adminModeSettingsBtn"'), 'Settings must have an Admin Mode switch');
+assert(html.includes('id="adminModeToggleBtn"'), 'Profile must have an Admin Mode switch');
+assert(html.includes('Back to my profile'), 'leaving Admin Mode must be one tap');
+assert(html.includes("s.inventory = emptyShopInventory()"), 'admin sandbox must start with its own empty inventory');
+assert(!/s\.inventory\s*=\s*from\.inventory/.test(html), 'admin must not copy main-profile items');
+
+const present = {
+  __adminSandbox: true,
+  gold: 10,
+  gems: 0,
+  totalPoints: 50,
+  selectedTitle: 'Haris',
+  season: { number: 1, startDate: '', endDate: '', points: 100 },
+  profile: { displayName: 'Haris', equippedBanner: null, displayedAchievementIds: [] },
+  inventory: { permanent: [{ itemId: 'kept' }], tempCharges: {}, shards: { boost: 1, relic: 0 }, stones: { boost: 0, relic: 0 } },
+};
+assert(applyAdminSandboxPresentation(present) === true, 'stale admin profile should be restyled');
+assert(present.profile.displayName === 'ADMIN', 'admin must not show the real name');
+assert(present.selectedTitle === 'ADMIN', 'admin title must be ADMIN');
+assert(present.season.points === 13000, 'admin season rank must be max');
+assert(present.totalPoints >= 1110050, 'admin level points must be max');
+assert(present.gold === 999999 && present.gems === 9999, 'admin gold/gems stay unlimited');
+assert(present.inventory.permanent.length === 1 && present.inventory.permanent[0].itemId === 'kept', 'admin items must stay on the sandbox profile');
+assert(applyAdminSandboxPresentation({ gold: 5, profile: { displayName: 'Haris' } }) === false, 'main profile must not be restyled as ADMIN');
 
 console.log('testing-economy ok — no starter gold, test items wiped once, hero weekly/notify chrome removed');

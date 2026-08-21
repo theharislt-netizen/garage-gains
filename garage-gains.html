@@ -165,6 +165,8 @@
 
   .btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: var(--radius-sm); font-family: 'Barlow Condensed'; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; cursor: pointer; background: var(--panel); border: 1px solid var(--line); color: var(--text); margin-top: 6px; }
   .btn.danger { background: transparent; border: 1px solid #ff5c5c; color: #ff5c5c; }
+  .btn.admin-mode { background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; border: none; }
+  .admin-mode-note { font-size: 12.5px; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px; }
 
   .section-title { font-size: 12.5px; letter-spacing: 0.1em; color: var(--text-dim); margin: 20px 2px 8px; font-family:'Barlow Condensed'; text-transform: uppercase;}
 
@@ -1278,6 +1280,7 @@
 
   <section id="view-inventory" class="view">
     <h2 style="font-size:26px; margin-bottom:6px;">Inventory</h2>
+    <div class="admin-mode-note" id="adminInvBanner" style="display:none;">Admin Mode — these items stay off your main profile.</div>
     <div class="inv-primary-actions" id="invPrimaryActions">
       <div class="inv-primary-btn" id="invShopEntry">
         <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>
@@ -1317,6 +1320,10 @@
   <section id="view-settings" class="view">
     <h2 style="font-size:26px; margin-bottom:14px;">Settings</h2>
     <div class="section-title">Profiles</div>
+    <div class="card" id="adminModeSettingsCard" style="display:none;">
+      <div class="admin-mode-note" id="adminModeSettingsHint"></div>
+      <button class="btn admin-mode" id="adminModeSettingsBtn" style="margin-top:0;">Enter Admin Mode</button>
+    </div>
     <div class="card" id="profilesList"></div>
     <button class="btn" id="newProfileBtn">+ New Profile</button>
     <div class="section-title">Equipment</div>
@@ -4782,6 +4789,8 @@ function renderEquippedSummary() {
 const INV_GRID_COLUMNS = 4;
 function renderInventoryTab() {
   ensureInventoryShape();
+  const adminBanner = document.getElementById('adminInvBanner');
+  if (adminBanner) adminBanner.style.display = isOwnerAdminSandbox() ? 'block' : 'none';
   const filterRow = document.getElementById('invFilterRow');
   const filters = [ { id:'all', label:'All' }, { id:'boost', label:'Boosts' }, { id:'relic', label:'Relics' }, { id:'mats', label:'Materials' } ];
   filterRow.innerHTML = filters.map(f =>
@@ -5341,6 +5350,8 @@ function getCurrentProfileMeta() { return registry.profiles.find(p => p.id === r
 const ADMIN_SANDBOX_ID = 'p-admin';
 const ADMIN_SANDBOX_GOLD = 999999;
 const ADMIN_SANDBOX_GEMS = 9999;
+const ADMIN_SANDBOX_RANK_POINTS = 13000;
+const ADMIN_SANDBOX_LEVEL_POINTS = 1110050;
 function emptyShopInventory() {
   return {
     permanent: [],
@@ -5367,6 +5378,23 @@ function refillAdminEconomy(s) {
   let changed = false;
   if (s.gold !== ADMIN_SANDBOX_GOLD) { s.gold = ADMIN_SANDBOX_GOLD; changed = true; }
   if (s.gems !== ADMIN_SANDBOX_GEMS) { s.gems = ADMIN_SANDBOX_GEMS; changed = true; }
+  return changed;
+}
+function applyAdminSandboxPresentation(s) {
+  if (!isAdminSandbox(s)) return false;
+  let changed = refillAdminEconomy(s);
+  s.profile = s.profile || { displayName: '', equippedBanner: null, displayedAchievementIds: [] };
+  if (s.profile.displayName !== 'ADMIN') { s.profile.displayName = 'ADMIN'; changed = true; }
+  if (s.selectedTitle !== 'ADMIN') { s.selectedTitle = 'ADMIN'; changed = true; }
+  if (!Array.isArray(s.unlockedTitles)) s.unlockedTitles = [];
+  if (!s.unlockedTitles.includes('ADMIN')) { s.unlockedTitles = s.unlockedTitles.concat(['ADMIN']); changed = true; }
+  s.season = s.season || { number: 1, startDate: '', endDate: '', points: 0 };
+  if ((s.season.points || 0) < ADMIN_SANDBOX_RANK_POINTS) { s.season.points = ADMIN_SANDBOX_RANK_POINTS; changed = true; }
+  if ((s.totalPoints || 0) < ADMIN_SANDBOX_LEVEL_POINTS) { s.totalPoints = ADMIN_SANDBOX_LEVEL_POINTS; changed = true; }
+  if (!Array.isArray(s.inventory && s.inventory.permanent)) {
+    s.inventory = emptyShopInventory();
+    changed = true;
+  }
   return changed;
 }
 function clearTestingEconomyOnce(s) {
@@ -5408,13 +5436,16 @@ function load() {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('test-economy save failed', e); }
     }
-    refillAdminEconomy(merged);
+    if (applyAdminSandboxPresentation(merged)) {
+      try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
+      catch (e) { console.error('admin presentation save failed', e); }
+    }
     return merged;
   } catch(e) { console.error('load failed', e); return defaultState(); }
 }
 function save() {
   try {
-    refillAdminEconomy(state);
+    applyAdminSandboxPresentation(state);
     localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(state));
   }
   catch(e) { console.error('save failed', e); showToast('Save failed — storage may be full'); }
@@ -5444,6 +5475,22 @@ function currentOwnerTesterNames() {
 function currentProfileIsOwnerTester() {
   return isOwnerTesterIdentity(currentOwnerTesterNames());
 }
+function isOwnerAdminSandbox() {
+  return isAdminSandbox(state) || (registry && registry.currentId === ADMIN_SANDBOX_ID);
+}
+function canSeeOwnerAdminControls() {
+  return isOwnerAdminSandbox() || currentProfileIsOwnerTester();
+}
+function findAdminSandboxMeta() {
+  return (registry.profiles || []).find(p => p.id === ADMIN_SANDBOX_ID || p.adminSandbox) || null;
+}
+function rememberOwnerMainProfile() {
+  if (isOwnerAdminSandbox()) return;
+  if (registry.currentId && registry.currentId !== ADMIN_SANDBOX_ID) {
+    registry.ownerMainId = registry.currentId;
+    saveRegistry();
+  }
+}
 function buildAdminSandboxState(from) {
   const s = defaultState();
   s.__adminSandbox = true;
@@ -5451,10 +5498,20 @@ function buildAdminSandboxState(from) {
   s.gold = ADMIN_SANDBOX_GOLD;
   s.gems = ADMIN_SANDBOX_GEMS;
   s.streakFreezes = 99;
+  s.totalPoints = ADMIN_SANDBOX_LEVEL_POINTS;
   s.inventory = emptyShopInventory();
   s.inventory.shards = { boost: 40, relic: 40 };
   s.inventory.stones = { boost: 10, relic: 10 };
-  s.profile = { displayName: 'Admin', equippedBanner: null, displayedAchievementIds: [] };
+  s.profile = { displayName: 'ADMIN', equippedBanner: null, displayedAchievementIds: [] };
+  s.selectedTitle = 'ADMIN';
+  s.unlockedTitles = ['ADMIN'];
+  const today = typeof todayStr === 'function' ? todayStr() : '';
+  s.season = {
+    number: 1,
+    startDate: today,
+    endDate: typeof addDays === 'function' ? addDays(today, 365) : today,
+    points: ADMIN_SANDBOX_RANK_POINTS
+  };
   s.equipment = (from && Array.isArray(from.equipment)) ? from.equipment.slice() : [];
   s.dumbbellRange = from && from.dumbbellRange ? Object.assign({}, from.dumbbellRange) : null;
   s.customDaySchedule = from && from.customDaySchedule ? JSON.parse(JSON.stringify(from.customDaySchedule)) : null;
@@ -5465,19 +5522,63 @@ function buildAdminSandboxState(from) {
     : { name: 'Admin', weightKg: null, freq: 5, goal: null, bodyType: null, focus: 'full' };
   return s;
 }
+function refreshExistingAdminSandbox(id) {
+  try {
+    const raw = localStorage.getItem(profileStorageKey(id));
+    const s = raw ? Object.assign(defaultState(), JSON.parse(raw)) : buildAdminSandboxState(state);
+    s.__adminSandbox = true;
+    applyAdminSandboxPresentation(s);
+    localStorage.setItem(profileStorageKey(id), JSON.stringify(s));
+  } catch (e) { console.error('admin sandbox refresh failed', e); }
+}
 function openOwnerAdminSandbox() {
-  if (isAdminSandbox(state)) { showToast('Already on Admin sandbox'); return; }
+  if (isOwnerAdminSandbox()) { showToast('Already in Admin Mode'); return; }
   if (!currentProfileIsOwnerTester()) return;
-  const existing = (registry.profiles || []).find(p => p.id === ADMIN_SANDBOX_ID || p.adminSandbox);
+  rememberOwnerMainProfile();
+  const existing = findAdminSandboxMeta();
   if (existing) {
-    switchProfile(existing.id);
+    existing.name = 'ADMIN';
+    existing.adminSandbox = true;
+    existing.onboarded = true;
+    saveRegistry();
+    refreshExistingAdminSandbox(existing.id);
+    switchProfile(existing.id, { toast: 'Admin Mode on' });
     return;
   }
   const blob = buildAdminSandboxState(state);
-  registry.profiles.push({ id: ADMIN_SANDBOX_ID, name: 'Admin (sandbox)', onboarded: true, adminSandbox: true });
+  registry.profiles.push({ id: ADMIN_SANDBOX_ID, name: 'ADMIN', onboarded: true, adminSandbox: true });
   saveRegistry();
   localStorage.setItem(profileStorageKey(ADMIN_SANDBOX_ID), JSON.stringify(blob));
-  switchProfile(ADMIN_SANDBOX_ID);
+  switchProfile(ADMIN_SANDBOX_ID, { toast: 'Admin Mode on' });
+}
+function leaveOwnerAdminSandbox() {
+  if (!isOwnerAdminSandbox()) return;
+  const mainId = registry.ownerMainId
+    || (registry.profiles || []).find(p => p.id !== ADMIN_SANDBOX_ID && !p.adminSandbox)?.id;
+  if (!mainId || mainId === registry.currentId) {
+    showToast('No main profile to return to');
+    return;
+  }
+  switchProfile(mainId, { toast: 'Back to your profile' });
+}
+function toggleOwnerAdminMode() {
+  if (isOwnerAdminSandbox()) leaveOwnerAdminSandbox();
+  else openOwnerAdminSandbox();
+  closeProfileScreen();
+}
+function syncAdminModeControls() {
+  const show = canSeeOwnerAdminControls();
+  const inAdmin = isOwnerAdminSandbox();
+  const card = document.getElementById('adminModeSettingsCard');
+  const btn = document.getElementById('adminModeSettingsBtn');
+  const hint = document.getElementById('adminModeSettingsHint');
+  if (card) card.style.display = show ? '' : 'none';
+  if (btn) btn.textContent = inAdmin ? 'Back to my profile' : 'Enter Admin Mode';
+  if (hint) {
+    hint.textContent = inAdmin
+      ? 'Admin Mode is on. Gold, items, and rank here stay off your main profile.'
+      : 'Switch to a separate Admin profile: max rank, unlimited gold, and its own items. Your main profile stays untouched.';
+  }
 }
 let __ownerAdminTapCount = 0;
 let __ownerAdminTapTimer = null;
@@ -5485,16 +5586,17 @@ function bindOwnerAdminUnlock() {
   const el = document.getElementById('profilePreviewName');
   if (!el) return;
   el.addEventListener('click', () => {
-    if (!currentProfileIsOwnerTester() || isAdminSandbox(state)) return;
+    if (!currentProfileIsOwnerTester() || isOwnerAdminSandbox()) return;
     __ownerAdminTapCount += 1;
     if (__ownerAdminTapTimer) clearTimeout(__ownerAdminTapTimer);
     __ownerAdminTapTimer = setTimeout(() => { __ownerAdminTapCount = 0; }, 2500);
     if (__ownerAdminTapCount < 7) return;
     __ownerAdminTapCount = 0;
     openOwnerAdminSandbox();
+    closeProfileScreen();
   });
 }
-function switchProfile(id) {
+function switchProfile(id, opts) {
   if (id === registry.currentId) return;
   save(); // flush the outgoing profile first
   registry.currentId = id;
@@ -5506,7 +5608,8 @@ function switchProfile(id) {
   renderToday();
   renderProfilesList();
   maybeShowOnboarding();
-  showToast('Switched to ' + getCurrentProfileMeta().name);
+  const toast = opts && opts.toast;
+  showToast(toast || ('Switched to ' + getCurrentProfileMeta().name));
 }
 function createProfile() {
   const n = registry.profiles.length + 1;
@@ -5534,17 +5637,21 @@ function deleteProfile(id) {
 function renderProfilesList() {
   const el = document.getElementById('profilesList');
   if (!el) return;
-  el.innerHTML = registry.profiles.map(p => `
+  el.innerHTML = registry.profiles.map(p => {
+    const isAdmin = !!(p.adminSandbox || p.id === ADMIN_SANDBOX_ID);
+    return `
     <div class="settings-row" data-switch-profile="${p.id}" style="cursor:pointer;">
-      <div>${p.name}${p.id === registry.currentId ? ' <span class="baseline-tag">ACTIVE</span>' : ''}${p.adminSandbox || p.id === ADMIN_SANDBOX_ID ? ' <span class="baseline-tag">TEST</span>' : ''}<div class="l2">${p.adminSandbox || p.id === ADMIN_SANDBOX_ID ? 'Unlimited gold · this phone only' : (p.onboarded ? 'Set up' : 'Not set up yet')}</div></div>
+      <div>${isAdmin ? 'ADMIN' : p.name}${p.id === registry.currentId ? ' <span class="baseline-tag">ACTIVE</span>' : ''}${isAdmin ? ' <span class="baseline-tag">ADMIN</span>' : ''}<div class="l2">${isAdmin ? 'Separate items · max rank · this phone only' : (p.onboarded ? 'Set up' : 'Not set up yet')}</div></div>
       ${registry.profiles.length > 1 ? `<button class="ex-link-btn" data-delete-profile="${p.id}" style="color:#ff5c5c;">Delete</button>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
   el.querySelectorAll('[data-switch-profile]').forEach(row => {
     row.addEventListener('click', (e) => { if (e.target.closest('[data-delete-profile]')) return; switchProfile(row.dataset.switchProfile); });
   });
   el.querySelectorAll('[data-delete-profile]').forEach(btn => {
     btn.addEventListener('click', (e) => { e.stopPropagation(); deleteProfile(btn.dataset.deleteProfile); });
   });
+  syncAdminModeControls();
 }
 
 // =========================================================
@@ -5745,6 +5852,10 @@ const PROFILE_MAX_SHOWCASE_ACHIEVEMENTS = 3;
 function ensureProfileShape() {
   if (!state.profile) state.profile = { displayName: '', equippedBanner: null, displayedAchievementIds: [] };
   if (!Array.isArray(state.profile.displayedAchievementIds)) state.profile.displayedAchievementIds = [];
+  if (isAdminSandbox(state)) {
+    applyAdminSandboxPresentation(state);
+    return;
+  }
   const meta = typeof getCurrentProfileMeta === 'function' ? getCurrentProfileMeta() : null;
   const fromOb = state.onboarding && state.onboarding.name && String(state.onboarding.name).trim();
   const fromMeta = meta && meta.name && String(meta.name).trim();
@@ -5800,19 +5911,31 @@ function renderProfileScreen() {
     </div>`;
   }).join('');
 
+  const inAdmin = isOwnerAdminSandbox();
+  const seasonRank = getRank((state.season && state.season.points) || 0);
+  const adminToggleHtml = canSeeOwnerAdminControls() ? `
+    <div class="card">
+      <div class="admin-mode-note">${inAdmin
+        ? 'You are in Admin Mode. Gold, items, and rank here stay off your main profile.'
+        : 'Admin Mode is a separate profile: max rank, unlimited gold, and its own items. Your main profile stays untouched.'}</div>
+      <button class="btn admin-mode" id="adminModeToggleBtn" style="margin-top:0;">${inAdmin ? 'Back to my profile' : 'Enter Admin Mode'}</button>
+    </div>` : '';
+
   body.innerHTML = `
     <div class="profile-preview card" style="border-color:${tier.color};">
       <div class="ml-icon ${tier.cls}${tier.sub2 ? ' rank-sub2' : ''}${tier.top ? ' rank-top' : ''}" style="position:static; margin:0 auto 8px; width:44px; height:44px; color:${tier.color};" id="profilePreviewIcon"></div>
       <div class="profile-preview-name" id="profilePreviewName">${state.profile.displayName}</div>
-      ${state.selectedTitle ? `<div class="profile-preview-title">"${state.selectedTitle}"</div>` : ''}
+      ${inAdmin ? `<div class="profile-preview-title">${seasonRank.name}</div>` : (state.selectedTitle ? `<div class="profile-preview-title">"${state.selectedTitle}"</div>` : '')}
       <div class="profile-preview-badges">${showcased.length ? showcased.map(b => `<div class="ppb" title="${b.name}">${b.icon}</div>`).join('') : `<div class="l2" style="font-size:11px;">No achievements showcased yet</div>`}</div>
     </div>
 
-    <div class="profile-section-title">Display Name</div>
+    ${adminToggleHtml}
+
+    ${inAdmin ? '' : `<div class="profile-section-title">Display Name</div>
     <div class="profile-name-form">
       <input type="text" id="profileNameInput" value="${state.profile.displayName}" maxlength="16">
       <button class="btn" id="profileNameSaveBtn" style="width:auto; margin:0; padding:9px 16px;">Save</button>
-    </div>
+    </div>`}
 
     <div class="profile-section-title">Name Banner</div>
     <div class="theme-grid">${bannerGridHtml}</div>
@@ -5825,8 +5948,11 @@ function renderProfileScreen() {
   `;
   document.getElementById('profilePreviewIcon').innerHTML = LEVEL_ICON_SVG[tier.id];
   bindOwnerAdminUnlock();
+  const adminToggleBtn = document.getElementById('adminModeToggleBtn');
+  if (adminToggleBtn) adminToggleBtn.addEventListener('click', toggleOwnerAdminMode);
 
-  document.getElementById('profileNameSaveBtn').addEventListener('click', () => {
+  const nameSaveBtn = document.getElementById('profileNameSaveBtn');
+  if (nameSaveBtn) nameSaveBtn.addEventListener('click', () => {
     const val = document.getElementById('profileNameInput').value.trim();
     if (!val) { showToast('Name cannot be empty'); return; }
     state.profile.displayName = val.slice(0, 16);
@@ -5965,7 +6091,12 @@ function renderHeader() {
     nameBadge.style.setProperty('--rank-color', tier.color);
     nameBadge.style.setProperty('--rank-color2', tier.color2);
     nameBadge.onclick = openRankModal;
-    document.getElementById('rankTag').textContent = 'Level ' + level;
+    const rankTag = document.getElementById('rankTag');
+    if (rankTag) {
+      rankTag.textContent = isOwnerAdminSandbox()
+        ? getRank((state.season && state.season.points) || 0).name
+        : ('Level ' + level);
+    }
   }
   if (nameBadgeIcon) {
     nameBadgeIcon.className = 'ml-icon ' + tier.cls + subCls + topCls;
@@ -7909,6 +8040,8 @@ function renderWorkoutEditor() {
   }));
 }
 document.getElementById('newProfileBtn').addEventListener('click', createProfile);
+const adminModeSettingsBtn = document.getElementById('adminModeSettingsBtn');
+if (adminModeSettingsBtn) adminModeSettingsBtn.addEventListener('click', toggleOwnerAdminMode);
 
 function init() {
   document.body.setAttribute('data-theme', state.theme || 'rig');
