@@ -66,8 +66,10 @@ assert(html.includes('shop-behind-box'), 'shop can hide without a rebuild');
 assert(!html.includes('#boxRevealOverlay .box-art-boost,\n  #boxRevealOverlay .box-art-relic,\n  #boxRevealOverlay .box-art-starter { display: none; }')
   && !html.includes('.box-art-starter { display: none; }'),
   'chests must not toggle display:none on open');
-assert(html.includes('visibility: visible; opacity: 1; animation: boxShake'),
+assert(html.includes('visibility: visible; opacity: 1'),
   'the active chest fades in instead of mounting');
+assert(html.includes('#boxRevealOverlay.box-reveal-on .box-reveal-buildup') && html.includes('animation: boxShake'),
+  'shake runs on the visible overlay, not only while the chest is display-toggled');
 assert(!html.includes('filter: drop-shadow(0 0 8px var(--a1))'),
   'rare pulse must not use filter:drop-shadow');
 
@@ -76,6 +78,6 @@ assert(starterOpen.includes('queueBoxOpenWork'), 'starter box uses the same yiel
 assert(starterOpen.indexOf('coverBoxRevealOverlay') < starterOpen.indexOf('openStarterVictoryBox'),
   'starter loot waits until the overlay is on');
 
-assert(html.includes('3.4.12'), 'About version bumped for v5.4');
+assert(html.includes('3.4.13'), 'About version bumped for v5.4');
 
 console.log('v5.4 tests ok — box open yields a frame, no mid-shake recast, premounted prize');

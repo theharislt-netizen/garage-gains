@@ -987,10 +987,13 @@
     visibility: hidden; opacity: 0; pointer-events: none;
   }
   .box-reveal-buildup svg { width: 96px; height: 96px; display: block; }
-  #boxRevealOverlay.box-cat-boost:not(.box-prize-on) .box-art-boost,
-  #boxRevealOverlay.box-cat-relic:not(.box-prize-on) .box-art-relic,
-  #boxRevealOverlay.box-cat-starter:not(.box-prize-on) .box-art-starter {
-    visibility: visible; opacity: 1; animation: boxShake 0.22s ease-in-out infinite;
+  #boxRevealOverlay.box-reveal-on .box-reveal-buildup {
+    animation: boxShake 0.22s ease-in-out infinite;
+  }
+  #boxRevealOverlay.box-reveal-on.box-cat-boost:not(.box-prize-on) .box-art-boost,
+  #boxRevealOverlay.box-reveal-on.box-cat-relic:not(.box-prize-on) .box-art-relic,
+  #boxRevealOverlay.box-reveal-on.box-cat-starter:not(.box-prize-on) .box-art-starter {
+    visibility: visible; opacity: 1;
   }
   #boxRevealPrize {
     visibility: hidden; opacity: 0; pointer-events: none;
@@ -1944,7 +1947,7 @@
       </div>
       <div data-settings-pane="about" hidden>
         <div class="card">
-          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.12</div></div>
+          <div class="settings-row"><div>Version</div><div class="l2 mono">3.4.13</div></div>
           <div class="settings-row"><div>Split</div><div class="l2">Push · Pull · Core · Push · Pull</div></div>
         </div>
       </div>
