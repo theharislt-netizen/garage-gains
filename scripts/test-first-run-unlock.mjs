@@ -44,6 +44,11 @@ const {
   isRankTabUnlocked,
   shouldHideDashboardExtras,
   grantStarterVictoryBox,
+  ensureTutorialAfterBaseline,
+  needsBaselineQuest,
+  shouldSkipBaselineTutorial,
+  hasPreTutorialProgress,
+  ensureBaselineQuestFlags,
   openStarterVictoryBox,
   markEquipTutorialDone,
   markEnchantTutorialDone,
@@ -61,6 +66,25 @@ const fresh = { workoutLog: {}, inventory: { permanent: [], tempCharges: {}, sha
 assert(ensureProgressionUnlock(fresh) === true, 'new profile should seed progression');
 assert(!isInventoryTabUnlocked(fresh) && !isRankTabUnlocked(fresh), 'new profile must lock Inventory and Rank');
 assert(shouldHideDashboardExtras(fresh) === true, 'new profile dashboard must be workout-only');
+fresh.totalPoints = 12;
+fresh.workoutLog = { '2026-08-22': { completed: false, sets: { standardPushup: [10] } } };
+fresh.onboarding = { name: 'Alex', freq: 5 };
+assert(hasPreTutorialProgress(fresh) === false, 'first-session points must not count as veteran progress');
+assert(shouldSkipBaselineTutorial(fresh) === false, 'first-run accounts stay in the baseline tutorial after the first set');
+assert(needsBaselineQuest(fresh) === true, 'baseline quest stays open while Inventory is still locked');
+assert(ensureBaselineQuestFlags(fresh) === false || fresh.progression.baselineQuestDone === false, 'first-set points must not mark baseline done');
+
+const stuckFirstRun = {
+  onboarding: { name: 'Alex' },
+  totalPoints: 36,
+  workoutLog: { '2026-08-22': { completed: false, sets: {} } },
+  inventory: { permanent: [], tempCharges: {}, shards: { boost: 0, relic: 0 }, stones: { boost: 0, relic: 0 }, boxes: [] },
+  progression: Object.assign(defaultProgression(false), { baselineQuestDone: true, baselineIntroSeen: true }),
+};
+assert(isInventoryTabUnlocked(stuckFirstRun) === false, 'broken save still locks Inventory');
+assert(ensureTutorialAfterBaseline(stuckFirstRun) === true, 'load heals a finished baseline that never granted the box');
+assert(isInventoryTabUnlocked(stuckFirstRun) === true, 'healed save unlocks Inventory');
+assert(stuckFirstRun.inventory.boxes.some(b => b.itemId === 'starterVictoryBox'), 'healed save has the First Victory Box');
 
 const veteran = { workoutLog: { '2026-01-01': { completed: true, sets: {} } }, inventory: { permanent: [] } };
 assert(ensureProgressionUnlock(veteran) === true, 'existing save should grandfather');

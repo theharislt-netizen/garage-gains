@@ -6284,6 +6284,7 @@ function updateRankTabBadge() {
 }
 function syncTabLocks() {
   ensureProgressionUnlock(state);
+  if (ensureTutorialAfterBaseline(state)) save();
   const invTab = document.querySelector('.tab[data-view="inventory"]');
   const rankTab = document.querySelector('.tab[data-view="rank"]');
   if (invTab) {
@@ -8687,13 +8688,17 @@ function hasLoggedWorkoutSets(s) {
     return Object.values(sess.sets).some(reps => Array.isArray(reps) && reps.some(r => r !== null && r !== undefined));
   });
 }
+function hasNonStarterPermanentItems(s) {
+  const perm = s.inventory && Array.isArray(s.inventory.permanent) ? s.inventory.permanent : [];
+  return perm.some(x => x && x.itemId && x.itemId !== STARTER_RELIC_ID);
+}
 function hasPreTutorialProgress(s) {
   if (!s || s.__adminSandbox) return false;
+  if (s.progression && s.progression.grandfathered) return true;
+  // A counted workout is veteran progress. In-progress baseline points/sets
+  // are the tutorial itself and must not skip the First Victory Box.
   if (countCompletedWorkouts(s) > 0) return true;
-  if ((Number(s.totalPoints) || 0) > 0) return true;
-  if (hasLoggedWorkoutSets(s)) return true;
-  const perm = s.inventory && Array.isArray(s.inventory.permanent) ? s.inventory.permanent : [];
-  if (perm.some(x => x && x.itemId && x.itemId !== STARTER_RELIC_ID)) return true;
+  if (hasNonStarterPermanentItems(s)) return true;
   return false;
 }
 function shouldSkipBaselineTutorial(s) {
@@ -8732,6 +8737,17 @@ function ensureBaselineQuestFlags(s) {
     changed = true;
   }
   return changed;
+}
+function ensureTutorialAfterBaseline(s) {
+  if (!s || !s.progression || s.__adminSandbox) return false;
+  if (s.progression.starterBoxGranted || s.progression.inventoryUnlocked) return false;
+  if (s.progression.grandfathered) return false;
+  if (hasNonStarterPermanentItems(s)) return false;
+  const finishedOrMarkedDone = s.progression.baselineQuestDone === true
+    || countCompletedWorkouts(s) > 0
+    || !!(s.workoutLog && Object.values(s.workoutLog).some(sess => sess && sess.baselineQuest));
+  if (!finishedOrMarkedDone) return false;
+  return grantStarterVictoryBox(s);
 }
 function grantStarterVictoryBox(s) {
   if (!s || !s.progression || s.progression.starterBoxGranted) return false;
@@ -9017,6 +9033,7 @@ function load() {
       ensureFeatureIntroFlags(fresh);
       ensureEquipTutorialFlags(fresh);
       ensureBaselineQuestFlags(fresh);
+      ensureTutorialAfterBaseline(fresh);
       ensurePendingProgressClaims(fresh);
       ensureDashCollapsed(fresh);
       ensureSeenItemTypes(fresh);
@@ -9044,7 +9061,7 @@ function load() {
     }
     const restoredPlan = restoreHarisHtmlPlan(merged);
     const relicFixed = ensureStarterRelicEnchantable(merged);
-    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensureBaselineQuestFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged) || restoredPlan || relicFixed) {
+    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensureBaselineQuestFlags(merged) || ensureTutorialAfterBaseline(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged) || restoredPlan || relicFixed) {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('v42 flag save failed', e); }
     }
@@ -10206,7 +10223,8 @@ function beginBaselineInstance(isResume) {
   enterInstance({ type: 'baseline', title: 'Set Your Baseline', exercises }, isResume);
 }
 function completeBaselineQuest() {
-  if (!needsBaselineQuest(state)) {
+  const alreadyRewarded = !!(state.progression && state.progression.starterBoxGranted && state.progression.inventoryUnlocked);
+  if (!needsBaselineQuest(state) && alreadyRewarded) {
     if (activeBaseline()) leaveInstance();
     return;
   }
@@ -10253,13 +10271,12 @@ function completeBaselineQuest() {
   state.progression.baselineQuestDone = true;
   state.progression.baselineIntroSeen = true;
 
-  const firstWorkout = countCompletedWorkouts(state) === 1;
   const rewardLines = [
     { icon:'⭐', label:'Points', value: '+' + finalDayPoints },
     { icon:'🪙', label:'Gold', value: '+' + sessionGold },
     { icon:'🔥', label:'Day Streak', value: state.streak.current },
   ];
-  if (firstWorkout && grantStarterVictoryBox(state)) {
+  if (grantStarterVictoryBox(state)) {
     rewardLines.push({ icon: boxArtHtml(STARTER_BOX_ID), label: 'First Victory Box', value: 'x1' });
     feedbackBoxReceived();
   }
