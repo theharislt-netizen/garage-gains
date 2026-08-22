@@ -55,11 +55,11 @@ const {
   ensureStarterRelicEnchantable,
   openStarterVictoryBox,
   grantStarterVictoryBox,
-  STARTER_RELIC_ID,
-  STARTER_RELIC_MIN_STAR,
-  STARTER_RELIC_STAR_CAP,
-  HARIS_HTML_CUSTOM_EXERCISES,
 } = ctx;
+const STARTER_RELIC_ID = vm.runInContext('STARTER_RELIC_ID', ctx);
+const STARTER_RELIC_MIN_STAR = vm.runInContext('STARTER_RELIC_MIN_STAR', ctx);
+const STARTER_RELIC_STAR_CAP = vm.runInContext('STARTER_RELIC_STAR_CAP', ctx);
+const HARIS_HTML_CUSTOM_EXERCISES = vm.runInContext('HARIS_HTML_CUSTOM_EXERCISES', ctx);
 
 assert(STARTER_RELIC_MIN_STAR >= 2, 'tutorial relic is at least 2-star');
 assert(STARTER_RELIC_STAR_CAP > STARTER_RELIC_MIN_STAR, 'starter relic still has room to enchant');
