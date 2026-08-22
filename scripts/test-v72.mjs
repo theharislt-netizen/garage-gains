@@ -35,6 +35,7 @@ const ctx = { console, Math };
 vm.createContext(ctx);
 vm.runInContext(sliceLib('v47-helpers-lib'), ctx);
 vm.runInContext(sliceLib('v48-helpers-lib'), ctx);
+vm.runInContext(sliceLib('item-catalog-lib'), ctx);
 vm.runInContext(sliceLib('first-run-unlock-lib'), ctx);
 
 const {
@@ -55,6 +56,9 @@ const {
   ensureStarterRelicEnchantable,
   openStarterVictoryBox,
   grantStarterVictoryBox,
+  itemStarCap,
+  starRowHtml,
+  itemStarsHtml,
 } = ctx;
 const STARTER_RELIC_ID = vm.runInContext('STARTER_RELIC_ID', ctx);
 const STARTER_RELIC_MIN_STAR = vm.runInContext('STARTER_RELIC_MIN_STAR', ctx);
@@ -63,6 +67,21 @@ const HARIS_HTML_CUSTOM_EXERCISES = vm.runInContext('HARIS_HTML_CUSTOM_EXERCISES
 
 assert(STARTER_RELIC_MIN_STAR >= 2, 'tutorial relic is at least 2-star');
 assert(STARTER_RELIC_STAR_CAP > STARTER_RELIC_MIN_STAR, 'starter relic still has room to enchant');
+assert(itemStarCap({ id: 'wornCharm', permanent: true, starterOnly: true }, { star: 0, starCap: 0 }) === 4,
+  'a leftover 0-cap tutorial relic is treated as a 4-cap so Enchant is not "already maxed"');
+const visible = starRowHtml({ id: 'wornCharm', permanent: true, starterOnly: true }, 2, { star: 2, starCap: 4 });
+assert((visible.match(/star-on/g) || []).length === 2, 'tutorial prize shows two filled stars');
+assert(itemStarsHtml({ id: 'wornCharm', permanent: true, starterOnly: true }, { star: 0, starCap: 0 }).includes('star-row'),
+  '0-cap starter relic still renders a star row after the cap repair');
+assert(html.includes('id="boxPrizeStars"') && html.indexOf('id="boxPrizeStars"') > html.indexOf('id="boxPrizeIcon"')
+  && html.indexOf('id="boxPrizeStars"') < html.indexOf('id="boxPrizeName"'),
+  'victory-box stars sit under the art, not clipped inside the portrait');
+const closeEnchant = sliceFn('closeEnchantModal', 'returnEnchantStoneIfNeeded');
+assert(closeEnchant.includes("classList.toggle('tutorial-guidance-glow', shouldTutorialGuideEnchant(state))"),
+  'leaving Enchant without finishing puts the glow back immediately');
+const invShape = sliceFn('ensureInventoryShape', 'grantItem');
+assert(invShape.includes("t.id === 'wornCharm'") && invShape.includes('inst.star = 2'),
+  'inventory normalize upgrades a stuck 0-star tutorial relic');
 
 const boxed = {
   progression: defaultProgression(false),
