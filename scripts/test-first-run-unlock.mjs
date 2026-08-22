@@ -48,12 +48,13 @@ const {
   needsBaselineQuest,
   shouldSkipBaselineTutorial,
   hasPreTutorialProgress,
+  hasActuallyCompletedBaseline,
   ensureBaselineQuestFlags,
+  markRankWalkthroughDone,
   openStarterVictoryBox,
   markEquipTutorialDone,
   markEnchantTutorialDone,
   ensureEquipTutorialFlags,
-  markRankWalkthroughDone,
   itemBonusPercent,
   defaultProgression,
 } = ctx;
@@ -78,11 +79,17 @@ const stuckFirstRun = {
   onboarding: { name: 'Alex' },
   totalPoints: 36,
   workoutLog: { '2026-08-22': { completed: false, sets: {} } },
+  customExercises: { push: ['standardPushup'], pull: ['dbRow'], core: ['plank'] },
   inventory: { permanent: [], tempCharges: {}, shards: { boost: 0, relic: 0 }, stones: { boost: 0, relic: 0 }, boxes: [] },
   progression: Object.assign(defaultProgression(false), { baselineQuestDone: true, baselineIntroSeen: true }),
 };
 assert(isInventoryTabUnlocked(stuckFirstRun) === false, 'broken save still locks Inventory');
-assert(ensureTutorialAfterBaseline(stuckFirstRun) === true, 'load heals a finished baseline that never granted the box');
+assert(hasActuallyCompletedBaseline(stuckFirstRun) === false, 'a skip flag is not a finished baseline');
+assert(ensureTutorialAfterBaseline(stuckFirstRun) === false, 'do not grant the relic box until the baseline sets are done');
+assert(ensureBaselineQuestFlags(stuckFirstRun) === true, 'load reopens a skip-flagged first-run baseline');
+assert(needsBaselineQuest(stuckFirstRun) === true, 'Set Your Baseline comes back');
+stuckFirstRun.workoutLog['2026-08-22'] = { completed: true, baselineQuest: true, sets: { standardPushup: [12, 10, 8] } };
+assert(ensureTutorialAfterBaseline(stuckFirstRun) === true, 'a really finished baseline still grants the missed box');
 assert(isInventoryTabUnlocked(stuckFirstRun) === true, 'healed save unlocks Inventory');
 assert(stuckFirstRun.inventory.boxes.some(b => b.itemId === 'starterVictoryBox'), 'healed save has the First Victory Box');
 
@@ -144,8 +151,12 @@ assert(markEnchantTutorialDone(mid) === true, 'enchant tutorial completion is re
 assert(isRankTabUnlocked(mid) === true, 'Rank unlocks after enchant tutorial');
 assert(mid.progression.nudgeRank === true, 'Rank tab should pulse');
 
+assert(shouldHideDashboardExtras(mid) === true, 'other quests stay hidden until Rank is claimed');
+mid.workoutLog['2026-08-21'].baselineQuest = true;
 const prize = markRankWalkthroughDone(mid);
 assert(prize && prize.gold === RANK_WALKTHROUGH_GOLD && prize.gems === RANK_WALKTHROUGH_GEMS, 'rank intro pays a milestone reward');
+assert(mid.progression.nudgeDashboard === true, 'Rank hands the last glow to Dashboard');
+assert(shouldHideDashboardExtras(mid) === false, 'the full Dashboard opens after Rank');
 assert(markRankWalkthroughDone(mid) === null, 'rank intro reward is once');
 
 const charm = { baseValue: 0.02, effectType: 'points', scope: 'session' };

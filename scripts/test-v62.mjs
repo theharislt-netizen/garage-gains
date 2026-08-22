@@ -87,6 +87,9 @@ assert(p.nudgeRank === true, 'Inventory tap does not clear Rank');
 assert(acknowledgeTutorialNavTap(p, 'inventory') === false, 'a second Inventory tap is a no-op');
 assert(acknowledgeTutorialNavTap(p, 'rank') === true, 'Rank tap consumes its glow');
 assert(p.nudgeRank === false, 'Rank glow flag is cleared on tap');
+p.nudgeDashboard = true;
+assert(acknowledgeTutorialNavTap(p, 'today') === true, 'Dashboard tap consumes the last tutorial glow');
+assert(p.nudgeDashboard === false, 'Dashboard glow flag is cleared on tap');
 
 const tabClick = html.slice(html.indexOf("document.querySelectorAll('.tab').forEach"), html.indexOf('function switchView(name)'));
 assert(tabClick.includes('acknowledgeTutorialNavTap(state.progression, view)'),

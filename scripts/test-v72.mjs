@@ -53,6 +53,10 @@ const {
   hasNonStarterPermanentItems,
   ensureTutorialAfterBaseline,
   isInventoryTabUnlocked,
+  hasActuallyCompletedBaseline,
+  wasBaselineSkippedWithoutDoingIt,
+  isTutorialFullyFinished,
+  markRankWalkthroughDone,
   restoreHarisHtmlPlan,
   shouldRestoreHarisHtmlPlan,
   harisHtmlPlanIsIntact,
@@ -168,13 +172,15 @@ const stuckAfterBaseline = {
   inventory: { permanent: [], boxes: [] },
   progression: Object.assign(defaultProgression(false), { baselineQuestDone: true, baselineIntroSeen: true }),
 };
-assert(needsBaselineQuest(stuckAfterBaseline) === false, 'a wrongly-closed quest no longer blocks the dashboard');
+assert(hasActuallyCompletedBaseline(stuckAfterBaseline) === true, 'three logged test sets count as a finished baseline');
+assert(needsBaselineQuest(stuckAfterBaseline) === false, 'a finished quest record does not stay open');
 assert(isInventoryTabUnlocked(stuckAfterBaseline) === false, 'stuck save still has Inventory locked');
-assert(ensureTutorialAfterBaseline(stuckAfterBaseline) === true, 'load recovers the missed First Victory Box');
+assert(ensureTutorialAfterBaseline(stuckAfterBaseline) === true, 'a really finished baseline still grants the missed box');
 assert(isInventoryTabUnlocked(stuckAfterBaseline) === true, 'recovery unlocks Inventory');
 assert(stuckAfterBaseline.progression.starterBoxGranted === true, 'recovery grants the starter box');
 assert(stuckAfterBaseline.progression.nudgeInventory === true, 'recovery resumes the inventory tutorial glow');
 assert(ensureTutorialAfterBaseline(stuckAfterBaseline) === false, 'recovery is once');
+assert(shouldHideDashboardExtras(stuckAfterBaseline) === true, 'other quests stay hidden until Rank finishes');
 
 assert(completeFn.includes('alreadyRewarded'), 'completeBaselineQuest still grants when skip flags flipped early');
 assert(completeFn.includes('grantStarterVictoryBox(state)'), 'baseline completion still grants the First Victory Box');
@@ -190,14 +196,56 @@ const harisLive = {
   progression: defaultProgression(false),
 };
 assert(hasLoggedWorkoutSets(harisLive) === true, 'incomplete logged sets still count as progress');
-assert(hasPreTutorialProgress(harisLive) === true, 'HARIS-like save is pre-tutorial progress');
-assert(shouldSkipBaselineTutorial(harisLive) === true, 'existing custom-plan accounts skip the blocking baseline quest');
-assert(needsBaselineQuest(harisLive) === false, 'HARIS is not trapped on Set Your Baseline');
-assert(shouldHideDashboardExtras(harisLive) === false, 'existing progress keeps other quests visible');
+assert(hasActuallyCompletedBaseline(harisLive) === false, 'incomplete logs are not a finished baseline');
+assert(shouldSkipBaselineTutorial(harisLive) === false, 'the owner plan does not skip Set Your Baseline');
+assert(needsBaselineQuest(harisLive) === true, 'HARIS still gets Set Your Baseline');
+assert(shouldHideDashboardExtras(harisLive) === true, 'other quests stay hidden until baseline and Rank are done');
 assert(hasNonStarterPermanentItems(harisLive) === true, 'HARIS already owns gym items');
-assert(ensureBaselineQuestFlags(harisLive) === true, 'live save is grandfathered out of the tutorial quest');
-assert(harisLive.progression.baselineQuestDone === true, 'baselineQuestDone is set so the Workout card returns');
-assert(ensureTutorialAfterBaseline(harisLive) === false, 'HARIS is not given a first-run victory box');
+assert(ensureTutorialAfterBaseline(harisLive) === false, 'HARIS is not given a first-run victory box just for having a plan');
+
+const skippedHaris = {
+  profile: { displayName: 'HARIS' },
+  onboarding: null,
+  totalPoints: 64,
+  workoutLog: { '2026-08-19': { completed: false, sets: { weightedCrunch: [12, 10, 10] } } },
+  customExercises: {
+    push: ['chairDips', 'handsElevatedPushup', 'standardPushup', 'pikePushup', 'ohPress'],
+    pull: ['dbRow', 'tableRow', 'dbCurl', 'hammerCurl', 'zottman', 'rearDelt'],
+    core: ['weightedCrunch', 'declineSitup', 'legRaise', 'plank', 'hollowHold']
+  },
+  inventory: { permanent: [{ itemId: 'grindersChair', star: 3 }, { itemId: 'wornCharm', star: 0, starCap: 2 }], boxes: [] },
+  progression: Object.assign(defaultProgression(false), {
+    baselineQuestDone: true,
+    baselineIntroSeen: true,
+    starterBoxGranted: true,
+    starterBoxOpened: true,
+    inventoryUnlocked: true,
+    enchantTutorialDone: true,
+    rankUnlocked: true,
+    rankWalkthroughDone: true
+  }),
+};
+assert(wasBaselineSkippedWithoutDoingIt(skippedHaris) === true, 'skip-flagged owner save is caught');
+assert(ensureBaselineQuestFlags(skippedHaris) === true, 'load reopens the skipped baseline');
+assert(skippedHaris.progression.baselineQuestDone === false, 'baselineQuestDone is cleared until the test sets are logged');
+assert(needsBaselineQuest(skippedHaris) === true, 'Set Your Baseline comes back');
+assert(ensureTutorialAfterBaseline(skippedHaris) === false, 'reopen does not grant another relic box');
+assert(harisHtmlPlanIsIntact(skippedHaris) === true, 'reopening baseline keeps the HTML-era routine');
+assert(isTutorialFullyFinished(skippedHaris) === false, 'tutorial is not finished until the real baseline is done');
+assert(shouldHideDashboardExtras(skippedHaris) === true, 'Dashboard extras stay hidden until the real baseline is done');
+skippedHaris.workoutLog['2026-08-22'] = { completed: true, baselineQuest: true, sets: { standardPushup: [12, 10, 8] } };
+assert(hasActuallyCompletedBaseline(skippedHaris) === true, 'a real baseline session counts');
+assert(needsBaselineQuest(skippedHaris) === false, 'finished baseline hides the quest card');
+assert(isTutorialFullyFinished(skippedHaris) === true, 'baseline plus Rank opens the rest of Dashboard');
+assert(shouldHideDashboardExtras(skippedHaris) === false, 'the full Dashboard returns after the real baseline');
+
+const rankThenDash = {
+  workoutLog: { '2026-08-22': { completed: true, baselineQuest: true, sets: { standardPushup: [10] } } },
+  progression: defaultProgression(false),
+};
+rankThenDash.progression.baselineQuestDone = true;
+const rankPrize = markRankWalkthroughDone(rankThenDash);
+assert(rankPrize && rankThenDash.progression.nudgeDashboard === true, 'finishing Rank glows Dashboard last');
 
 assert(hasAssignedWorkoutPlan({ customExercises: HARIS_HTML_CUSTOM_EXERCISES }) === true, 'HTML backup plan counts as assigned');
 assert(shouldRestoreHarisHtmlPlan(harisLive) === true, 'a stripped HARIS plan is restored');
@@ -213,4 +261,4 @@ assert(shouldRestoreHarisHtmlPlan(other) === false, 'non-HARIS profiles are not 
 assert(html.includes('they never replace your assigned workout plan'), 'baseline intro no longer implies a new routine');
 assert(!completeFn.includes('generateRoutine(state.onboarding)'), 'completeBaselineQuest does not call generateRoutine');
 
-console.log('v7.2 tests ok — plan preserved, HARIS restore, 2-star tutorial relic, Enchant glow persists, baseline skip does not eat the box');
+console.log('v7.2 tests ok — plan preserved, owner baseline reopened, extras wait for Rank, Dashboard glow last');

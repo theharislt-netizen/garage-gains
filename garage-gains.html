@@ -3093,6 +3093,10 @@ function acknowledgeTutorialNavTap(progression, view) {
     progression.nudgeRank = false;
     changed = true;
   }
+  if (view === 'today' && progression.nudgeDashboard) {
+    progression.nudgeDashboard = false;
+    changed = true;
+  }
   return changed;
 }
 function acknowledgeTutorialEnchantTap(progression) {
@@ -6284,9 +6288,13 @@ function updateRankTabBadge() {
 }
 function syncTabLocks() {
   ensureProgressionUnlock(state);
-  if (ensureTutorialAfterBaseline(state)) save();
+  if (ensureBaselineQuestFlags(state) || ensureTutorialAfterBaseline(state)) save();
+  const dashTab = document.querySelector('.tab[data-view="today"]');
   const invTab = document.querySelector('.tab[data-view="inventory"]');
   const rankTab = document.querySelector('.tab[data-view="rank"]');
+  if (dashTab) {
+    dashTab.classList.toggle('unlock-pulse', !!(state.progression && state.progression.nudgeDashboard));
+  }
   if (invTab) {
     invTab.classList.toggle('locked', !isInventoryTabUnlocked(state));
     invTab.classList.toggle('unlock-pulse', !!(state.progression && state.progression.nudgeInventory));
@@ -8502,7 +8510,7 @@ function isHarisOwnerProfile(s) {
   ];
   return names.some(n => {
     const x = String(n || '').toLowerCase().replace(/[^a-z]/g, '');
-    return x === 'haris' || x === 'theharislt';
+    return x === 'haris' || x === 'theharislt' || x === 'huz';
   });
 }
 function flattenAssignedExerciseIds(ex) {
@@ -8647,6 +8655,7 @@ function defaultProgression(unlocked) {
     nudgeInventory: false,
     nudgeEnchant: false,
     nudgeRank: false,
+    nudgeDashboard: false,
     nudgeEquip: false,
     equipTutorialDone: !!unlocked,
     baselineQuestDone: !!unlocked,
@@ -8695,45 +8704,88 @@ function hasNonStarterPermanentItems(s) {
 function hasPreTutorialProgress(s) {
   if (!s || s.__adminSandbox) return false;
   if (s.progression && s.progression.grandfathered) return true;
-  // A counted workout is veteran progress. In-progress baseline points/sets
-  // are the tutorial itself and must not skip the First Victory Box.
-  if (countCompletedWorkouts(s) > 0) return true;
-  if (hasNonStarterPermanentItems(s)) return true;
+  if (countCompletedWorkouts(s) > 0 && hasActuallyCompletedBaseline(s)) return true;
+  if (hasNonStarterPermanentItems(s) && hasActuallyCompletedBaseline(s)) return true;
   return false;
+}
+function hasBaselineQuestSession(s) {
+  return Object.values((s && s.workoutLog) || {}).some(sess => !!(sess && sess.baselineQuest && sess.completed));
+}
+function hasFinishedBaselineQuestRecord(s) {
+  const rec = s && s.baselineQuest;
+  if (!rec || !Array.isArray(rec.signalIds) || !rec.signalIds.length) return false;
+  const sets = rec.sets && typeof rec.sets === 'object' ? rec.sets : {};
+  return rec.signalIds.every(id => {
+    const reps = sets[id];
+    return Array.isArray(reps) && reps.filter(r => r !== null && r !== undefined).length >= 3;
+  });
+}
+function hasActuallyCompletedBaseline(s) {
+  return hasBaselineQuestSession(s) || hasFinishedBaselineQuestRecord(s);
+}
+function wasBaselineSkippedWithoutDoingIt(s) {
+  if (!s || s.__adminSandbox) return false;
+  if (hasActuallyCompletedBaseline(s)) return false;
+  const p = s.progression;
+  if (!p || p.baselineQuestDone !== true) return false;
+  if (p.grandfathered) return false;
+  if (isHarisOwnerProfile(s)) return true;
+  return hasAssignedWorkoutPlan(s);
 }
 function shouldSkipBaselineTutorial(s) {
   if (!s || s.__adminSandbox) return true;
-  if (hasPreTutorialProgress(s)) return true;
-  // HTML-era custom plans were assigned before onboarding/baseline existed.
-  if (hasAssignedWorkoutPlan(s) && !s.onboarding) return true;
+  if (hasActuallyCompletedBaseline(s)) return true;
+  // Pre-tutorial veterans who already trained keep the full app. The owner
+  // account still gets Set Your Baseline so the assigned plan can receive
+  // real targets without being replaced.
+  if (s.progression && s.progression.grandfathered && countCompletedWorkouts(s) > 0 && !isHarisOwnerProfile(s)) return true;
   return false;
+}
+function isTutorialFullyFinished(s) {
+  if (!s || s.__adminSandbox) return true;
+  const p = s.progression || {};
+  if (p.grandfathered && !isHarisOwnerProfile(s) && !needsBaselineQuest(s)) return true;
+  return hasActuallyCompletedBaseline(s) && p.rankWalkthroughDone === true;
 }
 function shouldHideDashboardExtras(s) {
   if (s && s.__adminSandbox) return false;
-  if (shouldSkipBaselineTutorial(s)) return false;
-  return countCompletedWorkouts(s) === 0;
+  return !isTutorialFullyFinished(s);
 }
 function needsBaselineQuest(s) {
   if (!s || s.__adminSandbox) return false;
+  if (hasActuallyCompletedBaseline(s)) return false;
   if (shouldSkipBaselineTutorial(s)) return false;
   const p = s.progression;
   if (!p) return true;
+  if (wasBaselineSkippedWithoutDoingIt(s)) return true;
   return p.baselineQuestDone !== true;
 }
 function ensureBaselineQuestFlags(s) {
   const p = s && s.progression;
   if (!p || typeof p !== 'object') return false;
   let changed = false;
-  if (shouldSkipBaselineTutorial(s) && p.baselineQuestDone !== true) {
+  if (hasActuallyCompletedBaseline(s) && p.baselineQuestDone !== true) {
+    p.baselineQuestDone = true;
+    p.baselineIntroSeen = true;
+    changed = true;
+  } else if (wasBaselineSkippedWithoutDoingIt(s)) {
+    p.baselineQuestDone = false;
+    p.baselineIntroSeen = false;
+    changed = true;
+  } else if (shouldSkipBaselineTutorial(s) && p.baselineQuestDone !== true) {
     p.baselineQuestDone = true;
     p.baselineIntroSeen = true;
     changed = true;
   } else if (p.baselineQuestDone !== true && p.baselineQuestDone !== false) {
-    p.baselineQuestDone = !!(p.grandfathered || p.inventoryUnlocked || countCompletedWorkouts(s) > 0);
+    p.baselineQuestDone = !!(p.grandfathered && !isHarisOwnerProfile(s));
+    changed = true;
+  }
+  if (p.nudgeDashboard !== true && p.nudgeDashboard !== false) {
+    p.nudgeDashboard = false;
     changed = true;
   }
   if (p.baselineIntroSeen !== true && p.baselineIntroSeen !== false) {
-    p.baselineIntroSeen = p.baselineQuestDone === true;
+    p.baselineIntroSeen = p.baselineQuestDone === true && hasActuallyCompletedBaseline(s);
     changed = true;
   }
   return changed;
@@ -8742,11 +8794,7 @@ function ensureTutorialAfterBaseline(s) {
   if (!s || !s.progression || s.__adminSandbox) return false;
   if (s.progression.starterBoxGranted || s.progression.inventoryUnlocked) return false;
   if (s.progression.grandfathered) return false;
-  if (hasNonStarterPermanentItems(s)) return false;
-  const finishedOrMarkedDone = s.progression.baselineQuestDone === true
-    || countCompletedWorkouts(s) > 0
-    || !!(s.workoutLog && Object.values(s.workoutLog).some(sess => sess && sess.baselineQuest));
-  if (!finishedOrMarkedDone) return false;
+  if (!hasActuallyCompletedBaseline(s)) return false;
   return grantStarterVictoryBox(s);
 }
 function grantStarterVictoryBox(s) {
@@ -8833,6 +8881,7 @@ function markRankWalkthroughDone(s) {
   if (!s || !s.progression || s.progression.rankWalkthroughDone) return null;
   s.progression.rankWalkthroughDone = true;
   s.progression.nudgeRank = false;
+  if (hasActuallyCompletedBaseline(s)) s.progression.nudgeDashboard = true;
   return { gold: RANK_WALKTHROUGH_GOLD, gems: RANK_WALKTHROUGH_GEMS };
 }
 function itemBonusPercent(tmpl, star) {
@@ -10285,6 +10334,10 @@ function completeBaselineQuest() {
   // anything in this path tried to regenerate exercise selections.
   state.customExercises = preservedPlan ? JSON.parse(JSON.stringify(preservedPlan)) : preservedPlan;
   state.customDaySchedule = preservedSchedule ? JSON.parse(JSON.stringify(preservedSchedule)) : preservedSchedule;
+  restoreHarisHtmlPlan(state);
+  if (state.progression && state.progression.rankWalkthroughDone) {
+    state.progression.nudgeDashboard = true;
+  }
   window.__activeInstance = null;
   resetDashboardChrome();
   save();
@@ -10561,6 +10614,12 @@ function renderToday() {
     syncQuickLogFab();
     return;
   }
+  if (shouldHideDashboardExtras(state)) {
+    if (workoutHead) workoutHead.innerHTML = '';
+    container.innerHTML = '';
+    syncQuickLogFab();
+    return;
+  }
   if (workoutHead) workoutHead.innerHTML = `<div class="section-title" style="display:flex; align-items:center; gap:7px; margin-top:18px;"><span class="dash-sec-ic">${DASH_WORKOUT_ICON}</span>Workout</div>`;
 
   if (!dayType) {
@@ -10625,7 +10684,7 @@ function renderToday() {
     document.getElementById('workoutInfoCard').addEventListener('click', () => { window.__workoutOpened = false; renderToday(); });
     document.getElementById('workoutStartBtn').addEventListener('click', (e) => {
       e.stopPropagation();
-      if (shouldHideDashboardExtras(state) && state.progression && !state.progression.warmupIntroSeen) {
+      if (state.progression && !state.progression.warmupIntroSeen) {
         showWarmupIntro();
         return;
       }
@@ -10976,7 +11035,7 @@ function syncQuickLogFab() {
   const fab = document.getElementById('quickLogFab');
   if (!fab) return;
   const onDash = document.getElementById('view-today') && document.getElementById('view-today').classList.contains('active');
-  fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen && !needsBaselineQuest(state));
+  fab.hidden = !(onDash && !window.__activeInstance && !window.__quickLogOpen && !needsBaselineQuest(state) && !shouldHideDashboardExtras(state));
 }
 function closeQuickLog(silent) {
   const earned = window.__quickLogSessionPoints || 0;
