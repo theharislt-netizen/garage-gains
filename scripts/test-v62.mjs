@@ -102,16 +102,18 @@ assert(shouldTutorialGuideEnchant(boxed) === false, 'Enchant does not glow befor
 const loot = openStarterVictoryBox(boxed);
 assert(loot && loot.relicInst, 'opening the box grants the relic');
 assert(shouldTutorialGuideEnchant(boxed) === true, 'Enchant glows once the box is opened');
-assert(acknowledgeTutorialEnchantTap(boxed.progression) === true, 'Enchant tap consumes the glow');
-assert(shouldTutorialGuideEnchant(boxed) === false, 'Enchant glow is gone after the directed tap');
+assert(acknowledgeTutorialEnchantTap(boxed.progression) === false, 'opening Enchant does not consume the glow');
+assert(shouldTutorialGuideEnchant(boxed) === true, 'Enchant glow stays after visiting the table');
 assert(boxed.progression.enchantTutorialDone !== true, 'enchanting itself is still unfinished');
+boxed.progression.enchantTutorialDone = true;
+assert(shouldTutorialGuideEnchant(boxed) === false, 'Enchant glow clears only after the enchant step completes');
 
 const openEnchant = sliceFn('openEnchantModal', 'closeEnchantModal');
-assert(openEnchant.includes('acknowledgeTutorialEnchantTap(state.progression)'),
-  'opening Enchant clears the tutorial glow immediately');
-assert(openEnchant.includes("classList.remove('tutorial-guidance-glow'"),
-  'Enchant button class is stripped on the tap, not after a later render');
+assert(!openEnchant.includes('acknowledgeTutorialEnchantTap(state.progression)'),
+  'opening Enchant does not acknowledge the tutorial step');
+assert(!openEnchant.includes("classList.remove('tutorial-guidance-glow'"),
+  'Enchant button glow is not stripped just because the table opened');
 
 assert(html.includes('3.4.26'), 'About version bumped for v6.2');
 
-console.log('v6.2 tests ok — no Dashboard fade ghost, workout chrome resets, tutorial nav glows clear on tap');
+console.log('v6.2 tests ok — no Dashboard fade ghost, workout chrome resets, Enchant glow lasts until enchant completes');
