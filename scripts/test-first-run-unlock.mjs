@@ -104,7 +104,8 @@ assert(grantStarterVictoryBox(mid) === false, 'must not grant a second starter b
 
 const loot = openStarterVictoryBox(mid);
 assert(loot && loot.stoneAmount === 1, 'opening the box grants a stone');
-assert(mid.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID && x.star === 0), 'guaranteed 0-star relic');
+assert(mid.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID && x.star >= 2 && x.starCap >= 2 && x.starCap > x.star),
+  'guaranteed 2-star relic that can still be enchanted');
 assert(mid.inventory.stones.relic === 1, 'one enchantment stone');
 assert(mid.inventory.boxes.length === 0, 'opened box leaves inventory');
 assert(mid.progression.nudgeEnchant === true, 'Enchant is the next onboarding pulse');

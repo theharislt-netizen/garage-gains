@@ -2931,6 +2931,8 @@ function ensureBaselineQuestRecord(s) {
   return s.baselineQuest;
 }
 function applyForecastedBaselines(baselines, routineExercises, signalResults, dateKey) {
+  // Fill missing performance numbers for exercises the user already has.
+  // Never adds, removes, or reorders assigned workout-plan exercises.
   const out = baselines && typeof baselines === 'object' ? baselines : {};
   const signals = Array.isArray(signalResults) ? signalResults : [];
   (routineExercises || []).forEach(ex => {
@@ -3075,7 +3077,9 @@ function shouldTutorialGuideBox(s, boxItemId) {
 function shouldTutorialGuideEnchant(s) {
   const p = s && s.progression;
   if (!p || !p.starterBoxOpened || p.enchantTutorialDone) return false;
-  return p.nudgeEnchant !== false;
+  // Persist until the enchant step is actually completed. Opening the table
+  // and backing out must not clear the glow.
+  return true;
 }
 function acknowledgeTutorialNavTap(progression, view) {
   if (!progression || typeof progression !== 'object') return false;
@@ -3091,11 +3095,9 @@ function acknowledgeTutorialNavTap(progression, view) {
   return changed;
 }
 function acknowledgeTutorialEnchantTap(progression) {
+  // Visiting Enchant is not completing the tutorial step. Keep the glow.
   if (!progression || typeof progression !== 'object') return false;
-  if (!progression.starterBoxOpened || progression.enchantTutorialDone) return false;
-  if (progression.nudgeEnchant === false) return false;
-  progression.nudgeEnchant = false;
-  return true;
+  return false;
 }
 function viewTabFadeShouldReplay() {
   return false;
@@ -7659,9 +7661,8 @@ function getEnchantTable() {
 }
 function openEnchantModal() {
   ensureInventoryShape();
-  if (acknowledgeTutorialEnchantTap(state.progression)) save();
   const enchantEntry = document.getElementById('invEnchantEntry');
-  if (enchantEntry) enchantEntry.classList.remove('tutorial-guidance-glow', 'unlock-pulse');
+  if (enchantEntry) enchantEntry.classList.remove('unlock-pulse');
   const win = document.getElementById('enchantWindow');
   renderEnchantModal();
   win.classList.remove('book-open');
@@ -8466,7 +8467,77 @@ function clearTestingEconomyOnce(s) {
 /* === first-run-unlock-lib begin === */
 const PROGRESSION_VERSION = 40;
 const STARTER_RELIC_ID = 'wornCharm';
+const STARTER_RELIC_MIN_STAR = 2;
+const STARTER_RELIC_STAR_CAP = 4;
 const STARTER_BOX_ID = 'starterVictoryBox';
+// Hand-tailored HARIS plan from the pre-Android HTML backup (haris-backup.json).
+const HARIS_HTML_CUSTOM_EXERCISES = {
+  push: ['chairDips', 'handsElevatedPushup', 'standardPushup', 'pikePushup', 'ohPress'],
+  pull: ['dbRow', 'tableRow', 'dbCurl', 'hammerCurl', 'zottman', 'rearDelt'],
+  core: ['weightedCrunch', 'declineSitup', 'legRaise', 'plank', 'hollowHold']
+};
+const HARIS_HTML_DAY_SCHEDULE = { 0: null, 1: 'push', 2: 'pull', 3: 'core', 4: 'push', 5: 'pull', 6: null };
+const HARIS_HTML_PLAN_SIGNATURE = ['handsElevatedPushup', 'zottman', 'hammerCurl', 'chairDips'];
+function isHarisOwnerProfile(s) {
+  const names = [
+    s && s.profile && s.profile.displayName,
+    s && s.onboarding && s.onboarding.name
+  ];
+  return names.some(n => {
+    const x = String(n || '').toLowerCase().replace(/[^a-z]/g, '');
+    return x === 'haris' || x === 'theharislt';
+  });
+}
+function flattenAssignedExerciseIds(ex) {
+  if (!ex || typeof ex !== 'object') return [];
+  return ['push', 'pull', 'core'].reduce((ids, k) => ids.concat(Array.isArray(ex[k]) ? ex[k] : []), []);
+}
+function harisHtmlPlanIsIntact(s) {
+  const have = flattenAssignedExerciseIds(s && s.customExercises);
+  return HARIS_HTML_PLAN_SIGNATURE.every(id => have.includes(id));
+}
+function shouldRestoreHarisHtmlPlan(s) {
+  if (!s || s.__adminSandbox) return false;
+  if (!isHarisOwnerProfile(s)) return false;
+  return !harisHtmlPlanIsIntact(s);
+}
+function restoreHarisHtmlPlan(s) {
+  if (!shouldRestoreHarisHtmlPlan(s)) return false;
+  s.customExercises = {
+    push: HARIS_HTML_CUSTOM_EXERCISES.push.slice(),
+    pull: HARIS_HTML_CUSTOM_EXERCISES.pull.slice(),
+    core: HARIS_HTML_CUSTOM_EXERCISES.core.slice()
+  };
+  const sched = s.customDaySchedule;
+  const hasDays = sched && typeof sched === 'object' && Object.values(sched).some(v => v);
+  if (!hasDays) {
+    s.customDaySchedule = Object.assign({}, HARIS_HTML_DAY_SCHEDULE);
+  }
+  s.harisHtmlPlanRestored = true;
+  return true;
+}
+function ensureStarterRelicEnchantable(s) {
+  const inst = s && s.inventory && Array.isArray(s.inventory.permanent)
+    ? s.inventory.permanent.find(x => x && x.itemId === STARTER_RELIC_ID)
+    : null;
+  if (!inst) return false;
+  let changed = false;
+  const cap = Number(inst.starCap);
+  if (!Number.isFinite(cap) || cap < STARTER_RELIC_MIN_STAR) {
+    inst.starCap = STARTER_RELIC_STAR_CAP;
+    changed = true;
+  }
+  const star = Number(inst.star) || 0;
+  if (star < STARTER_RELIC_MIN_STAR) {
+    inst.star = STARTER_RELIC_MIN_STAR;
+    changed = true;
+  }
+  if ((Number(inst.starCap) || 0) <= (Number(inst.star) || 0)) {
+    inst.starCap = Math.max(STARTER_RELIC_STAR_CAP, (Number(inst.star) || 0) + 1);
+    changed = true;
+  }
+  return changed;
+}
 const STARTER_BOX_TMPL = {
   id: STARTER_BOX_ID,
   name: 'First Victory Box',
@@ -8584,11 +8655,41 @@ function isInventoryTabUnlocked(s) {
 function isRankTabUnlocked(s) {
   return !!(s && s.progression && s.progression.rankUnlocked);
 }
+function hasAssignedWorkoutPlan(s) {
+  const ex = s && s.customExercises;
+  if (!ex || typeof ex !== 'object') return false;
+  return ['push', 'pull', 'core'].some(k => Array.isArray(ex[k]) && ex[k].length > 0);
+}
+function hasLoggedWorkoutSets(s) {
+  return Object.values((s && s.workoutLog) || {}).some(sess => {
+    if (!sess || !sess.sets || typeof sess.sets !== 'object') return false;
+    return Object.values(sess.sets).some(reps => Array.isArray(reps) && reps.some(r => r !== null && r !== undefined));
+  });
+}
+function hasPreTutorialProgress(s) {
+  if (!s || s.__adminSandbox) return false;
+  if (countCompletedWorkouts(s) > 0) return true;
+  if ((Number(s.totalPoints) || 0) > 0) return true;
+  if (hasLoggedWorkoutSets(s)) return true;
+  const perm = s.inventory && Array.isArray(s.inventory.permanent) ? s.inventory.permanent : [];
+  if (perm.some(x => x && x.itemId && x.itemId !== STARTER_RELIC_ID)) return true;
+  return false;
+}
+function shouldSkipBaselineTutorial(s) {
+  if (!s || s.__adminSandbox) return true;
+  if (hasPreTutorialProgress(s)) return true;
+  // HTML-era custom plans were assigned before onboarding/baseline existed.
+  if (hasAssignedWorkoutPlan(s) && !s.onboarding) return true;
+  return false;
+}
 function shouldHideDashboardExtras(s) {
-  return countCompletedWorkouts(s) === 0 && !(s && s.__adminSandbox);
+  if (s && s.__adminSandbox) return false;
+  if (shouldSkipBaselineTutorial(s)) return false;
+  return countCompletedWorkouts(s) === 0;
 }
 function needsBaselineQuest(s) {
   if (!s || s.__adminSandbox) return false;
+  if (shouldSkipBaselineTutorial(s)) return false;
   const p = s.progression;
   if (!p) return true;
   return p.baselineQuestDone !== true;
@@ -8597,7 +8698,11 @@ function ensureBaselineQuestFlags(s) {
   const p = s && s.progression;
   if (!p || typeof p !== 'object') return false;
   let changed = false;
-  if (p.baselineQuestDone !== true && p.baselineQuestDone !== false) {
+  if (shouldSkipBaselineTutorial(s) && p.baselineQuestDone !== true) {
+    p.baselineQuestDone = true;
+    p.baselineIntroSeen = true;
+    changed = true;
+  } else if (p.baselineQuestDone !== true && p.baselineQuestDone !== false) {
     p.baselineQuestDone = !!(p.grandfathered || p.inventoryUnlocked || countCompletedWorkouts(s) > 0);
     changed = true;
   }
@@ -8634,8 +8739,14 @@ function openStarterVictoryBox(s) {
   box.opened = true;
   s.inventory.boxes = s.inventory.boxes.filter(b => !b.opened);
   if (!s.inventory.permanent.some(x => x.itemId === STARTER_RELIC_ID)) {
-    s.inventory.permanent.push({ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0, starCap: 0 });
+    s.inventory.permanent.push({
+      instanceId: 'i-starter-relic',
+      itemId: STARTER_RELIC_ID,
+      star: STARTER_RELIC_MIN_STAR,
+      starCap: STARTER_RELIC_STAR_CAP
+    });
   }
+  ensureStarterRelicEnchantable(s);
   s.inventory.stones.relic = (s.inventory.stones.relic || 0) + 1;
   if (typeof noteItemTypeGranted === 'function' && typeof itemTypeKey === 'function') {
     noteItemTypeGranted(s, itemTypeKey('item', STARTER_RELIC_ID));
@@ -8880,6 +8991,8 @@ function load() {
       const fresh = defaultState();
       clearTestingEconomyOnce(fresh);
       ensureProgressionUnlock(fresh);
+      restoreHarisHtmlPlan(fresh);
+      ensureStarterRelicEnchantable(fresh);
       ensureFeatureIntroFlags(fresh);
       ensureEquipTutorialFlags(fresh);
       ensureBaselineQuestFlags(fresh);
@@ -8908,7 +9021,9 @@ function load() {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('progression save failed', e); }
     }
-    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensureBaselineQuestFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged)) {
+    const restoredPlan = restoreHarisHtmlPlan(merged);
+    const relicFixed = ensureStarterRelicEnchantable(merged);
+    if (ensureFeatureIntroFlags(merged) || ensureEquipTutorialFlags(merged) || ensureBaselineQuestFlags(merged) || ensurePendingProgressClaims(merged) || ensureSeenItemTypes(merged) || restoredPlan || relicFixed) {
       try { localStorage.setItem(profileStorageKey(registry.currentId), JSON.stringify(merged)); }
       catch (e) { console.error('v42 flag save failed', e); }
     }
@@ -9614,6 +9729,9 @@ function exercisesForDayType(dayType, equipment, focus) {
   return pool.slice(0, 5).map(e => e.id);
 }
 function generateRoutine(onboarding) {
+  // Onboarding / Settings equipment editor only. Baseline collection must never
+  // call this — existing assigned plans stay as the user (or a prior custom
+  // setup) chose them.
   const equipment = onboarding.equipment || [];
   state.customDaySchedule = buildDaySchedule(onboarding.freq);
   state.customExercises = {
@@ -10037,7 +10155,7 @@ function showBaselineIntro() {
   if (!overlay) { beginBaselineInstance(false); return; }
   overlay.innerHTML = `<div class="warmup-intro-card" role="dialog" aria-labelledby="baselineIntroTitle">
     <h3 id="baselineIntroTitle">Day One: Setting Your Baseline.</h3>
-    <div style="font-size:14.5px; line-height:1.55; margin-bottom:16px;">You'll max out a few signal lifts. We'll estimate the rest of your routine from those, so every exercise has a real starting target today — not after a week of guesswork.</div>
+    <div style="font-size:14.5px; line-height:1.55; margin-bottom:16px;">You'll max out a few signal lifts. Those numbers fill in starting targets for the exercises you already have — they never replace your assigned workout plan.</div>
     <button class="btn admin-mode" id="baselineIntroGo" style="margin-top:0;">Let's go</button>
   </div>`;
   overlay.classList.add('show');
@@ -10074,6 +10192,8 @@ function completeBaselineQuest() {
   const rec = ensureBaselineQuestRecord(state);
   const questList = buildBaselineQuestExercises(state);
   if (!baselineQuestIsFinished(questList, rec.sets)) return;
+  const preservedPlan = state.customExercises ? JSON.parse(JSON.stringify(state.customExercises)) : null;
+  const preservedSchedule = state.customDaySchedule ? JSON.parse(JSON.stringify(state.customDaySchedule)) : null;
   const dateKey = todayStr();
   const catalog = getAllExercises();
   rec.signalIds.forEach(id => {
@@ -10123,6 +10243,10 @@ function completeBaselineQuest() {
     feedbackBoxReceived();
   }
   queueReward({ kind:'workout', title:'Baseline Complete', subtitle: rec.signalIds.length + ' test lifts logged', lines: rewardLines });
+  // Baseline only writes performance numbers. Restore the assigned plan in case
+  // anything in this path tried to regenerate exercise selections.
+  state.customExercises = preservedPlan ? JSON.parse(JSON.stringify(preservedPlan)) : preservedPlan;
+  state.customDaySchedule = preservedSchedule ? JSON.parse(JSON.stringify(preservedSchedule)) : preservedSchedule;
   window.__activeInstance = null;
   resetDashboardChrome();
   save();
