@@ -3386,8 +3386,8 @@ function itemStarCap(tmpl, inst) {
   // Tutorial relic used to spawn at starCap 0, which hid stars AND blocked
   // enchant ("already at max"). Treat that as an unset cap.
   if (tmpl.starterOnly || tmpl.id === 'wornCharm') {
-    const cap = inst && inst.starCap != null ? Number(inst.starCap) : REGULAR_MAX_STAR;
-    if (!Number.isFinite(cap) || cap < 2) return REGULAR_MAX_STAR;
+    const cap = inst && inst.starCap != null ? Number(inst.starCap) : 2;
+    if (!Number.isFinite(cap) || cap < 2) return 2;
     return Math.min(REGULAR_MAX_STAR, Math.max(2, Math.round(cap)));
   }
   if (inst && inst.starCap != null) return normalizeStarCap(inst.starCap, tmpl);
@@ -4652,8 +4652,7 @@ function ensureInventoryShape() {
       return;
     }
     if (t.starterOnly || t.id === 'wornCharm') {
-      if (!Number.isFinite(Number(inst.starCap)) || Number(inst.starCap) < 2) inst.starCap = REGULAR_MAX_STAR;
-      if ((Number(inst.star) || 0) < 2) inst.star = 2;
+      if (!Number.isFinite(Number(inst.starCap)) || Number(inst.starCap) < 2) inst.starCap = 2;
       inst.star = Math.min(Math.max(0, Number(inst.star) || 0), inst.starCap);
       return;
     }
@@ -8485,8 +8484,7 @@ function clearTestingEconomyOnce(s) {
 /* === first-run-unlock-lib begin === */
 const PROGRESSION_VERSION = 40;
 const STARTER_RELIC_ID = 'wornCharm';
-const STARTER_RELIC_MIN_STAR = 2;
-const STARTER_RELIC_STAR_CAP = 4;
+const STARTER_RELIC_STAR_CAP = 2;
 const STARTER_BOX_ID = 'starterVictoryBox';
 // Hand-tailored HARIS plan from the pre-Android HTML backup (haris-backup.json).
 const HARIS_HTML_CUSTOM_EXERCISES = {
@@ -8540,18 +8538,23 @@ function ensureStarterRelicEnchantable(s) {
     : null;
   if (!inst) return false;
   let changed = false;
-  const cap = Number(inst.starCap);
-  if (!Number.isFinite(cap) || cap < STARTER_RELIC_MIN_STAR) {
+  const tutorialOpen = !s.progression || !s.progression.enchantTutorialDone;
+  let cap = Number(inst.starCap);
+  let star = Number(inst.star) || 0;
+  // A "2-star" drop is cap 2 with zero filled stars. Never pre-enchant.
+  if (!Number.isFinite(cap) || cap < STARTER_RELIC_STAR_CAP) {
+    inst.starCap = STARTER_RELIC_STAR_CAP;
+    cap = STARTER_RELIC_STAR_CAP;
+    changed = true;
+  }
+  if (tutorialOpen && star >= 2) {
+    inst.star = 0;
     inst.starCap = STARTER_RELIC_STAR_CAP;
     changed = true;
   }
-  const star = Number(inst.star) || 0;
-  if (star < STARTER_RELIC_MIN_STAR) {
-    inst.star = STARTER_RELIC_MIN_STAR;
-    changed = true;
-  }
-  if ((Number(inst.starCap) || 0) <= (Number(inst.star) || 0)) {
-    inst.starCap = Math.max(STARTER_RELIC_STAR_CAP, (Number(inst.star) || 0) + 1);
+  if (tutorialOpen && (Number(inst.star) || 0) >= (Number(inst.starCap) || 0)) {
+    inst.star = 0;
+    inst.starCap = STARTER_RELIC_STAR_CAP;
     changed = true;
   }
   return changed;
@@ -8760,7 +8763,7 @@ function openStarterVictoryBox(s) {
     s.inventory.permanent.push({
       instanceId: 'i-starter-relic',
       itemId: STARTER_RELIC_ID,
-      star: STARTER_RELIC_MIN_STAR,
+      star: 0,
       starCap: STARTER_RELIC_STAR_CAP
     });
   }

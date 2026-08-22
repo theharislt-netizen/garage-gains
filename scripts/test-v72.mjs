@@ -61,18 +61,17 @@ const {
   itemStarsHtml,
 } = ctx;
 const STARTER_RELIC_ID = vm.runInContext('STARTER_RELIC_ID', ctx);
-const STARTER_RELIC_MIN_STAR = vm.runInContext('STARTER_RELIC_MIN_STAR', ctx);
 const STARTER_RELIC_STAR_CAP = vm.runInContext('STARTER_RELIC_STAR_CAP', ctx);
 const HARIS_HTML_CUSTOM_EXERCISES = vm.runInContext('HARIS_HTML_CUSTOM_EXERCISES', ctx);
 
-assert(STARTER_RELIC_MIN_STAR >= 2, 'tutorial relic is at least 2-star');
-assert(STARTER_RELIC_STAR_CAP > STARTER_RELIC_MIN_STAR, 'starter relic still has room to enchant');
-assert(itemStarCap({ id: 'wornCharm', permanent: true, starterOnly: true }, { star: 0, starCap: 0 }) === 4,
-  'a leftover 0-cap tutorial relic is treated as a 4-cap so Enchant is not "already maxed"');
-const visible = starRowHtml({ id: 'wornCharm', permanent: true, starterOnly: true }, 2, { star: 2, starCap: 4 });
-assert((visible.match(/star-on/g) || []).length === 2, 'tutorial prize shows two filled stars');
+assert(STARTER_RELIC_STAR_CAP === 2, 'a 2-star drop means cap 2, not two filled stars');
+assert(itemStarCap({ id: 'wornCharm', permanent: true, starterOnly: true }, { star: 0, starCap: 0 }) === 2,
+  'a leftover 0-cap tutorial relic is treated as a 2-star cap so Enchant is not already maxed');
+const dropRow = starRowHtml({ id: 'wornCharm', permanent: true, starterOnly: true }, 0, { star: 0, starCap: 2 });
+assert(!(dropRow.match(/star-on/g) || []).length, 'tutorial prize is unenchanted');
+assert((dropRow.match(/star-off/g) || []).length === 2, 'tutorial prize shows two empty headroom stars');
 assert(itemStarsHtml({ id: 'wornCharm', permanent: true, starterOnly: true }, { star: 0, starCap: 0 }).includes('star-row'),
-  '0-cap starter relic still renders a star row after the cap repair');
+  '0-cap starter relic still renders a 2-star row after the cap repair');
 assert(html.includes('id="boxPrizeStars"') && html.indexOf('id="boxPrizeStars"') > html.indexOf('id="boxPrizeIcon"')
   && html.indexOf('id="boxPrizeStars"') < html.indexOf('id="boxPrizeName"'),
   'victory-box stars sit under the art, not clipped inside the portrait');
@@ -80,8 +79,9 @@ const closeEnchant = sliceFn('closeEnchantModal', 'returnEnchantStoneIfNeeded');
 assert(closeEnchant.includes("classList.toggle('tutorial-guidance-glow', shouldTutorialGuideEnchant(state))"),
   'leaving Enchant without finishing puts the glow back immediately');
 const invShape = sliceFn('ensureInventoryShape', 'grantItem');
-assert(invShape.includes("t.id === 'wornCharm'") && invShape.includes('inst.star = 2'),
-  'inventory normalize upgrades a stuck 0-star tutorial relic');
+assert(invShape.includes("t.id === 'wornCharm'") && invShape.includes('inst.starCap = 2'),
+  'inventory normalize gives a stuck 0-cap tutorial relic a 2-star cap');
+assert(!invShape.includes('inst.star = 2'), 'inventory normalize does not pre-enchant the tutorial relic');
 
 const boxed = {
   progression: defaultProgression(false),
@@ -90,16 +90,23 @@ const boxed = {
 assert(grantStarterVictoryBox(boxed) === true, 'starter box grants');
 const loot = openStarterVictoryBox(boxed);
 assert(loot && loot.relicInst, 'opening grants the relic');
-assert(loot.relicInst.star >= 2, 'tutorial relic is at least 2-star, got ' + loot.relicInst.star);
-assert(loot.relicInst.starCap >= 2 && loot.relicInst.starCap > loot.relicInst.star,
-  'tutorial relic can still be enchanted');
+assert(loot.relicInst.star === 0, 'tutorial relic drops unenchanted, got star ' + loot.relicInst.star);
+assert(loot.relicInst.starCap === 2, 'tutorial relic is a 2-star cap item, got cap ' + loot.relicInst.starCap);
 
 const stuck = {
-  inventory: { permanent: [{ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0, starCap: 0 }] }
+  inventory: { permanent: [{ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 0, starCap: 0 }] },
+  progression: defaultProgression(false),
 };
 assert(ensureStarterRelicEnchantable(stuck) === true, 'existing 0-cap starter relic is repaired');
-assert(stuck.inventory.permanent[0].star >= 2 && stuck.inventory.permanent[0].starCap > stuck.inventory.permanent[0].star,
-  'repaired starter relic is enchantable');
+assert(stuck.inventory.permanent[0].star === 0 && stuck.inventory.permanent[0].starCap === 2,
+  'repaired starter relic is an unenchanted 2-star item');
+const prefilled = {
+  inventory: { permanent: [{ instanceId: 'i-starter-relic', itemId: STARTER_RELIC_ID, star: 2, starCap: 4 }] },
+  progression: defaultProgression(false),
+};
+assert(ensureStarterRelicEnchantable(prefilled) === true, 'mistaken pre-enchanted starter relic is undone');
+assert(prefilled.inventory.permanent[0].star === 0 && prefilled.inventory.permanent[0].starCap === 2,
+  'tutorial relic returns to a 0/2 drop so Enchant can run');
 
 assert(shouldTutorialGuideEnchant(boxed) === true, 'Enchant glows after the box opens');
 assert(acknowledgeTutorialEnchantTap(boxed.progression) === false, 'visiting the table is not completing the step');
