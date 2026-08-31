@@ -4052,7 +4052,8 @@ function renderClaimRewardsOverlay(reward) {
   }
 
   overlay.classList.add('show');
-  if (typeof renderHeader === 'function') renderHeader();
+  if (typeof updateLed === 'function') updateLed();
+  if (typeof refreshHeaderCurrency === 'function') refreshHeaderCurrency();
 }
 
 function renderProgressClaimDock() {
@@ -4163,26 +4164,51 @@ function grantGuaranteedPermanentItem(rankId) {
 // =========================================================
 const SEASON_LENGTH_DAYS = 56; // 8 weeks
 const SEASON_TIER_DROP = 3;    // soft reset: drop this many tiers at season end, never a full reset to Warrior
+function dateKeyTime(s) {
+  if (!s || typeof s !== 'string') return NaN;
+  const d = dateFromStr(s);
+  return d instanceof Date ? d.getTime() : NaN;
+}
 function ensureSeason() {
   const today = todayStr();
   if (!state.season) {
     state.season = { number: 1, startDate: today, endDate: addDays(today, SEASON_LENGTH_DAYS), points: 0 };
     return;
   }
-  // Handles the app being reopened after one or more full seasons have already
-  // elapsed unattended — rolls forward one season at a time rather than assuming
-  // only a single season could have passed.
-  while (dateFromStr(today) >= dateFromStr(state.season.endDate)) {
-    grantSeasonEndReward(getRank(state.season.points));
+  // Reward overlays used to call renderHeader, which re-entered this while()
+  // and blew the stack on the first launch after a season ended — splash logo
+  // stuck, Dashboard never painted. Roll dates first, then grant rewards.
+  if (window.__seasonRolling) return;
+  const todayMs = dateKeyTime(today);
+  const endMs = dateKeyTime(state.season.endDate);
+  if (!Number.isFinite(todayMs)) return;
+  if (!Number.isFinite(endMs)) {
+    state.season.endDate = addDays(today, SEASON_LENGTH_DAYS);
+    return;
+  }
+  const ended = [];
+  let guard = 0;
+  while (dateKeyTime(today) >= dateKeyTime(state.season.endDate) && guard++ < 40) {
+    const endDate = state.season.endDate;
+    ended.push(getRank(state.season.points));
     const prevIdx = RANKS.findIndex(r => r.id === getRank(state.season.points).id);
     const newIdx = Math.max(0, prevIdx - SEASON_TIER_DROP);
+    const nextEnd = addDays(endDate, SEASON_LENGTH_DAYS);
+    if (!nextEnd || nextEnd === endDate || !Number.isFinite(dateKeyTime(nextEnd))) {
+      state.season.endDate = addDays(today, SEASON_LENGTH_DAYS);
+      break;
+    }
     state.season = {
-      number: state.season.number + 1,
-      startDate: state.season.endDate,
-      endDate: addDays(state.season.endDate, SEASON_LENGTH_DAYS),
+      number: (state.season.number || 1) + 1,
+      startDate: endDate,
+      endDate: nextEnd,
       points: RANKS[newIdx].min
     };
   }
+  if (!ended.length) return;
+  window.__seasonRolling = true;
+  try { ended.forEach(rank => grantSeasonEndReward(rank)); }
+  finally { window.__seasonRolling = false; }
 }
 // Lighter than a Level-tier-up: no theme reskin (a resettable seasonal thing
 // shouldn't repaint the whole app), just a toast — the big celebratory moment
@@ -6116,7 +6142,8 @@ function pickMorningStretchTemplate() {
   return chosen;
 }
 function buildTodayMorningStretch() {
-  const tmpl = pickMorningStretchTemplate();
+  const tmpl = pickMorningStretchTemplate() || MORNING_STRETCH_TEMPLATES[0];
+  if (!tmpl) return null;
   return {
     date: todayStr(),
     templateId: tmpl.id,
@@ -6141,13 +6168,13 @@ function ensureMorningStretch() {
       return;
     }
     if (shouldRebuildMorningStretch(state.morningStretch)) {
-      state.morningStretch = buildTodayMorningStretch();
-      save();
+      const rebuilt = buildTodayMorningStretch();
+      if (rebuilt) { state.morningStretch = rebuilt; save(); }
     }
     return;
   }
-  state.morningStretch = buildTodayMorningStretch();
-  save();
+  const built = buildTodayMorningStretch();
+  if (built) { state.morningStretch = built; save(); }
 }
 function startMorningStretch() {
   if (!state.morningStretch || state.morningStretch.status !== 'available' || !isWithinMorningWindow()) return;
@@ -9481,6 +9508,7 @@ function feedbackRewardClaim() {
 let toastTimer;
 function showToast(msg, ms) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=> t.classList.remove('show'), ms || 2200);
@@ -9629,12 +9657,13 @@ function renderUpcoming() {
 function applyTheme(id) { document.body.setAttribute('data-theme', id); state.theme = id; save(); renderThemeGrid(); }
 function renderThemeGrid() {
   const grid = document.getElementById('themeGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   const swatchGrad = { rig:['#b455f5','#3ec6f0'], magenta:['#ff4fa3','#4fd8ff'], ember:['#ff9d3f','#b455f5'], verdant:['#38e29a','#3ec6f0'] };
   THEMES.forEach(t => {
     const el = document.createElement('div');
     el.className = 'theme-swatch' + (state.theme === t.id ? ' active' : '');
-    const c = swatchGrad[t.id];
+    const c = swatchGrad[t.id] || swatchGrad.rig;
     el.innerHTML = `<div class="dot" style="background:linear-gradient(135deg,${c[0]},${c[1]})"></div><div class="nm">${t.name}</div>`;
     el.addEventListener('click', () => applyTheme(t.id));
     grid.appendChild(el);
@@ -9836,7 +9865,9 @@ function regenerateFromCurrentEquipmentAndFocus() {
 
 function getTodayDayType() { return getDaySchedule()[new Date().getDay()]; }
 function getSessionData(dateKey) {
+  if (!state.workoutLog || typeof state.workoutLog !== 'object') state.workoutLog = {};
   if (!state.workoutLog[dateKey]) state.workoutLog[dateKey] = { day: getTodayDayType(), sets: {}, points: 0, completed: false };
+  if (!state.workoutLog[dateKey].sets || typeof state.workoutLog[dateKey].sets !== 'object') state.workoutLog[dateKey].sets = {};
   return state.workoutLog[dateKey];
 }
 function getExReps(session, exId) { return session.sets[exId] || []; }
@@ -9869,20 +9900,29 @@ function sameDayLastWeek(exId, dateKey) {
 }
 
 function renderHeader() {
+  if (window.__renderingHeader) return;
+  window.__renderingHeader = true;
+  try {
   ensureInventoryShape();
   ensureProfileShape();
   const now = new Date();
-  document.getElementById('dayName').textContent = WEEKDAY_NAMES[now.getDay()];
+  const dayNameEl = document.getElementById('dayName');
+  if (dayNameEl) dayNameEl.textContent = WEEKDAY_NAMES[now.getDay()];
   const dayType = getTodayDayType();
-  document.getElementById('dayBadge').textContent = dayType ? (DAY_NAMES[dayType] + ' Day') : 'Rest Day';
-  document.getElementById('nbNameText').textContent = state.profile.displayName;
+  const dayBadge = document.getElementById('dayBadge');
+  if (dayBadge) dayBadge.textContent = dayType ? (DAY_NAMES[dayType] + ' Day') : 'Rest Day';
+  const nameEl = document.getElementById('nbNameText');
+  if (nameEl) nameEl.textContent = (state.profile && state.profile.displayName) || '';
 
   const nbStreak = document.getElementById('nbStreak');
-  nbStreak.onclick = openStreakModal;
-  document.getElementById('nbStreakVal').textContent = state.streak.current;
-  const streakTier = getStreakTier(state.streak.current);
-  nbStreak.className = 'nb-streak' + (streakTier ? ' ' + streakTier.cls : '');
-  nbStreak.firstChild.textContent = (streakTier ? streakTier.icon : '🔥');
+  if (nbStreak) {
+    nbStreak.onclick = openStreakModal;
+    const streakVal = document.getElementById('nbStreakVal');
+    if (streakVal) streakVal.textContent = state.streak.current;
+    const streakTier = getStreakTier(state.streak.current);
+    nbStreak.className = 'nb-streak' + (streakTier ? ' ' + streakTier.cls : '');
+    if (nbStreak.firstChild) nbStreak.firstChild.textContent = (streakTier ? streakTier.icon : '🔥');
+  }
 
   // Header currency chips (v2.1.2): gold opens the shop directly, freezes shows
   // an info popup explaining what they do and how many are held. Inline-extension
@@ -9891,8 +9931,10 @@ function renderHeader() {
   if (nbGoldIcon && !nbGoldIcon.innerHTML) nbGoldIcon.innerHTML = GOLD_ICON_SVG;
   const nbFreezeIcon = document.getElementById('nbFreezeIcon');
   if (nbFreezeIcon && !nbFreezeIcon.innerHTML) nbFreezeIcon.innerHTML = FREEZE_ICON_SVG;
-  document.getElementById('nbGold').onclick = () => { closeFreezePopup(); openShopModal(); };
-  document.getElementById('nbFreeze').onclick = toggleFreezePopup;
+  const nbGold = document.getElementById('nbGold');
+  if (nbGold) nbGold.onclick = () => { closeFreezePopup(); openShopModal(); };
+  const nbFreeze = document.getElementById('nbFreeze');
+  if (nbFreeze) nbFreeze.onclick = toggleFreezePopup;
   refreshHeaderCurrency();
   ensureSeason();
   updateRankTabBadge();
@@ -9929,6 +9971,8 @@ function renderHeader() {
   renderProgressClaimDock();
   syncTabLocks();
   syncHeaderHeight();
+  } catch (e) { console.error('renderHeader failed', e); }
+  finally { window.__renderingHeader = false; }
 }
 
 // Level-progress bar populator (v2.2, repurposed from the old Rank-progress
@@ -10522,13 +10566,15 @@ function maybeAutoCommitFirstLoop(inst, dateKey) {
 }
 
 function renderToday() {
-  ensureInventoryShape();
-  ensureBosses();
-  ensureRestDayQuests();
-  ensureWarmupQuests();
-  ensureMobilityQuests();
-  ensureMorningStretch();
-  renderHeader();
+  try {
+    ensureInventoryShape();
+    ensureBosses();
+    ensureRestDayQuests();
+    ensureWarmupQuests();
+    ensureMobilityQuests();
+    ensureMorningStretch();
+  } catch (e) { console.error('dashboard ensure failed', e); }
+  try { renderHeader(); } catch (e) { console.error('header failed', e); }
 
   // v2.5: the header goal bar and session finalization must stay live
   // regardless of whether an instance is active or the plain Dashboard is
@@ -11845,6 +11891,7 @@ const OB_STEPS = ['name', 'weight', 'freq', 'equipment', 'goal', 'bodytype', 'fo
 function maybeShowOnboarding() {
   const meta = getCurrentProfileMeta();
   const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
   if (meta && !meta.onboarded) {
     switchView('today');
     window.__ob = { step: 0, data: { name:'', weightKg:null, freq:5, equipment:[], dumbbellMin:5, dumbbellMax:20, goal:null, bodyType:null, focus:'full' } };
@@ -12345,15 +12392,23 @@ const quickLogLeaveBtn = document.getElementById('quickLogLeaveBtn');
 if (quickLogLeaveBtn) quickLogLeaveBtn.addEventListener('click', () => closeQuickLog(false));
 
 function init() {
-  document.body.setAttribute('data-theme', state.theme || 'rig');
-  clearTestingEconomyOnAllProfiles();
-  renderThemeGrid();
-  renderToday();
-  renderProfilesList();
-  syncTabLocks();
-  syncHeaderHeight();
-  syncQuickLogFab();
-  maybeShowOnboarding();
+  try {
+    document.body.setAttribute('data-theme', (state && state.theme) || 'rig');
+    clearTestingEconomyOnAllProfiles();
+    renderThemeGrid();
+    renderToday();
+    renderProfilesList();
+    syncTabLocks();
+    syncHeaderHeight();
+    syncQuickLogFab();
+    maybeShowOnboarding();
+    if (typeof window.__rigcoreMarkReady === 'function') window.__rigcoreMarkReady();
+  } catch (e) {
+    console.error('init failed', e);
+    try { maybeShowOnboarding(); } catch (_) {}
+    try { showToast('Recovered from a startup error'); } catch (_) {}
+    if (typeof window.__rigcoreMarkReady === 'function') window.__rigcoreMarkReady();
+  }
 }
 
 // --- Header height sync: the header is `position:fixed` (out of normal document flow)
@@ -12387,7 +12442,12 @@ function syncHeaderHeight() {
 }
 window.syncHeaderHeight = syncHeaderHeight;
 window.addEventListener('resize', syncHeaderHeight);
-new MutationObserver(() => syncHeaderHeight()).observe(document.documentElement, {
+let __headerHeightTicking = false;
+new MutationObserver(() => {
+  if (__headerHeightTicking) return;
+  __headerHeightTicking = true;
+  requestAnimationFrame(() => { __headerHeightTicking = false; syncHeaderHeight(); });
+}).observe(document.documentElement, {
   attributes: true,
   attributeFilter: ['style'],
 });
