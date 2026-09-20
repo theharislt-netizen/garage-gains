@@ -54,8 +54,9 @@ Special cards can be played **on top of any card, regardless of rank**, and **at
 - Can be played on top of *any* card, at *any* time on your turn.
 - Playing a 5 also **resets the pile**, exactly like a 2.
 - **Bonus play:** immediately after playing the 5, you get to play **one additional card from your hand**, of **any rank you choose**.
-- Playing several 5s together as one set still grants **one bonus play total**, not one per 5. Special effects (2 / 5 / 10) resolve for the group as a whole.
-- **Hand-size floor:** if playing the 5 (and/or the bonus card) would drop your hand below **2 cards**, you draw back up from the draw pile **first**, so you always have at least 2 cards in hand to choose your bonus play from.
+- If that bonus card is **also a 5**, the pile resets again and you get **another** bonus play. This keeps chaining for as long as you keep choosing a 5 as the bonus card. The chain ends when you play a bonus card that is not a 5, or you run out of cards to play.
+- Playing several 5s together as one set still grants **one bonus play for the group**, not one per 5. If that bonus card is a 5, the chain continues as usual. Special effects (2 / 5 / 10) resolve for the group as a whole.
+- **Hand-size floor:** after every 5 in the sequence (opening play or bonus), if your hand would drop below **2 cards**, you draw back up from the draw pile **first**, so you always have at least 2 cards in hand to choose the next bonus play from.
 
 ### 🃏 10 — Burn
 
@@ -89,7 +90,7 @@ Special cards can be played **on top of any card, regardless of rank**, and **at
 | Card | Effect | When playable |
 |---|---|---|
 | **2** | Resets the pile — next player can play anything | Anytime, on any card |
-| **5** | Resets the pile + **one** bonus card from hand (still one bonus if several 5s are played together) | Anytime, on any card |
+| **5** | Resets the pile + **one** bonus card (chains if that bonus is also a 5; several 5s together still grant one bonus for the group) | Anytime, on any card |
 | **10** | Burns the pile completely out of the game; turn then passes | Anytime, on any card |
 | Any other card | Must be equal or higher rank than the top card | Only if it beats the top card |
 | 4-of-a-kind completed on pile | Burns the pile (same as a 10) | — |

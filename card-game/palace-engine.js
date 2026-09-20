@@ -1,6 +1,6 @@
 /**
  * PALACE / Shithead rules engine (pure state, no DOM).
- * Specials: 2 reset, 5 reset+bonus, 10 burn, four-of-a-kind burn.
+ * Specials: 2 reset, 5 reset+bonus (bonus 5s chain), 10 burn, four-of-a-kind burn.
  */
 (function (root, factory) {
   const engine = factory();
@@ -292,11 +292,9 @@
 
     // Stage 1→2 scoop, then Stage 3 auto-pick, BEFORE the 5 bonus / draw-up-to-2 check.
     pickupFaceUpIfStageTwo(match, player, events);
-    if (rank === '5' && !opts.bonus && !burn) {
+    // Every 5 — opening play or bonus card — resets and grants another bonus play.
+    if (rank === '5' && !burn) {
       pickupOneDownIfStageThree(match, player, events);
-    }
-
-    if (rank === '5' && !opts.bonus && !burn) {
       drawFloorBeforeFive(match, player, 0, events);
       if (zoneCards(player).length) {
         match.phase = 'bonus';
