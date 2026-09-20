@@ -2065,6 +2065,23 @@ async function animateEvents(events) {
     } else if (ev.type === 'flip') {
       playTone(440, 0.1);
       await sleep(280);
+    } else if (ev.type === 'stageUp') {
+      const dest = seatDestRect(ev.seat);
+      await Promise.all((ev.cards || []).map((card, i) => {
+        const src = document.querySelector('#seat-' + ev.seat + ' [data-id="' + card.id + '"]')
+          || document.querySelector('[data-id="' + card.id + '"]');
+        const from = src ? src.getBoundingClientRect() : dest;
+        if (src) src.classList.add('ghost');
+        return flyArc(from || dest, dest, cardFaceHtml(card), {
+          duration: 480,
+          spin: 80 + i * 24,
+          comet: false,
+          curveX: (i - 1) * 28,
+        });
+      }));
+      updateSeatHud(ev.seat);
+      playTone(400, 0.1);
+      flashBanner('Face-up cards to hand');
     } else if (ev.type === 'reset') {
       flashBanner(ev.rank === '5' ? '5 — bonus play' : '2 — pile reset');
     } else if (ev.type === 'out') {

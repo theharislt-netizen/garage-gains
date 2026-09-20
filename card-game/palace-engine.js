@@ -145,7 +145,18 @@
     return took;
   }
 
+  function pickupFaceUpIfStageTwo(match, player, events) {
+    if (!player || player.out) return false;
+    if (player.hand.length || match.draw.length || !player.up.length) return false;
+    const cards = player.up.splice(0, player.up.length);
+    player.hand.push(...cards);
+    player.hand = sortHand(player.hand);
+    if (events) events.push({ type: 'stageUp', seat: player.seat, cards: cards.map(cloneCard) });
+    return true;
+  }
+
   function drawUp(match, player, events) {
+    pickupFaceUpIfStageTwo(match, player, events);
     if (activeZone(player) !== 'hand' && player.hand.length === 0) return;
     const need = HAND_SIZE - player.hand.length;
     if (need > 0) drawFromPile(match, player, need, events);
@@ -263,8 +274,11 @@
       return events;
     }
 
+    // Stage 1→2: scoop all face-up cards into hand BEFORE the 5 bonus / draw-up-to-2 check.
+    pickupFaceUpIfStageTwo(match, player, events);
+
     if (rank === '5' && !opts.bonus && !burn) {
-      while (player.hand.length < HAND_SIZE && match.draw.length) drawFromPile(match, player, 1, events);
+      drawFloorBeforeFive(match, player, 0, events);
       if (zoneCards(player).length) {
         match.phase = 'bonus';
         return events;
@@ -327,9 +341,6 @@
       if (bonus && cards.length !== 1) {
         player[useZone === 'up' ? 'up' : 'hand'].push(...cards);
         return events;
-      }
-      if (cards[0].rank === '5' && !bonus && useZone === 'hand') {
-        drawFloorBeforeFive(match, player, 0, events);
       }
       if (!canPlayCards(match, cards, bonus)) {
         const dest = useZone === 'up' ? player.up : player.hand;
