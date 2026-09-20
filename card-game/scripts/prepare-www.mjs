@@ -128,6 +128,7 @@ await bundleNativeBridge();
 const src = join(root, 'card-game.html');
 const html = patchHtml(await readFile(src, 'utf8'));
 await writeFile(join(www, 'index.html'), html);
+await copyFile(join(root, 'palace-engine.js'), join(www, 'palace-engine.js'));
 await writeFile(join(www, '.nojekyll'), '');
 await writeFile(
   join(www, 'manifest.webmanifest'),

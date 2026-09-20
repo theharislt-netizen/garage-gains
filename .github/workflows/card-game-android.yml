@@ -39,6 +39,7 @@ jobs:
       - name: Verify live-update zip
         run: |
           npm run test:setup
+          npm run test:game
           npm run prepare:www
           python3 - <<'PY'
           import json, zipfile

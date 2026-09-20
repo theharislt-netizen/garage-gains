@@ -123,6 +123,254 @@
   .mode-card h3 { font-size: 22px; }
   .mode-card p { margin: 6px 0 0; color: var(--text-dim); font-size: 13px; line-height: 1.4; }
   .mode-card.locked { opacity: 0.55; }
+  .play-hand {
+    display: flex; justify-content: center; align-items: flex-end;
+    height: 250px; margin: 8px 0 18px; padding: 0 8px;
+  }
+  .play-card {
+    width: 118px; height: 176px; margin-left: -42px; border: 0; padding: 0;
+    border-radius: 12px; cursor: pointer; position: relative;
+    background:
+      linear-gradient(180deg, #fffdf8 0%, #efe6d6 100%);
+    box-shadow: 0 14px 24px rgba(0,0,0,0.45), inset 0 0 0 3px #1b1524;
+    color: #1b1524; transform-origin: bottom center;
+    transition: transform 0.22s ease, z-index 0s;
+    font-family: 'Barlow Condensed';
+  }
+  .play-card:first-child { margin-left: 0; }
+  .play-card:nth-child(1) { transform: rotate(-16deg) translateY(22px); z-index: 1; }
+  .play-card:nth-child(2) { transform: rotate(-6deg) translateY(6px); z-index: 2; }
+  .play-card:nth-child(3) { transform: rotate(6deg) translateY(6px); z-index: 3; }
+  .play-card:nth-child(4) { transform: rotate(16deg) translateY(22px); z-index: 4; }
+  .play-card:active, .play-card.lift {
+    transform: rotate(0) translateY(-28px) scale(1.06); z-index: 8;
+  }
+  .play-card .pc-rank {
+    position: absolute; top: 8px; left: 10px; font-size: 22px; font-weight: 800; line-height: 1;
+  }
+  .play-card .pc-suit { position: absolute; top: 30px; left: 11px; font-size: 16px; }
+  .play-card .pc-center {
+    position: absolute; inset: 42px 12px 36px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  .play-card .pc-center h3 { font-size: 22px; letter-spacing: 0.04em; color: #1b1524; }
+  .play-card .pc-center p { margin: 4px 0 0; font-size: 10px; line-height: 1.25; color: #5c5368; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 500; }
+  .play-card .pc-pip-lg { font-size: 36px; line-height: 1; margin-bottom: 4px; }
+  .play-card.red .pc-rank, .play-card.red .pc-suit, .play-card.red .pc-pip-lg { color: #c62828; }
+  .play-card.locked { filter: grayscale(0.55) brightness(0.86); }
+  .play-card .lock-ribbon {
+    position: absolute; bottom: 10px; left: 8px; right: 8px;
+    background: #1b1524; color: #efe6d6; font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; border-radius: 100px; padding: 4px 0;
+  }
+  .pcard {
+    position: relative; width: 58px; height: 86px; border-radius: 8px;
+    background: linear-gradient(180deg, #fffdf8, #efe6d6);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.35), inset 0 0 0 2px #1b1524;
+    color: #1b1524; flex-shrink: 0;
+  }
+  .pcard.red { color: #c62828; }
+  .pcard .pc-corner {
+    position: absolute; top: 4px; left: 5px; font-family: 'Barlow Condensed';
+    font-weight: 800; font-size: 13px; line-height: 1; text-align: center;
+  }
+  .pcard .pc-corner span { display: block; font-size: 11px; }
+  .pcard .pc-corner.br { top: auto; left: auto; bottom: 4px; right: 5px; transform: rotate(180deg); }
+  .pcard .pc-pip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .pcard.back {
+    background:
+      repeating-linear-gradient(45deg, rgba(180,85,245,0.35) 0 6px, rgba(62,198,240,0.18) 6px 12px),
+      linear-gradient(180deg, #2a1f3d, #120e1c);
+    color: var(--gain);
+  }
+  .pcard.back .pc-pip { font-family: 'Barlow Condensed'; font-weight: 800; letter-spacing: 0.08em; font-size: 11px; }
+  .pcard.legal { box-shadow: 0 0 0 2px var(--a2), 0 8px 16px rgba(0,0,0,0.4); }
+  .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
+  .pcard.tiny { width: 36px; height: 52px; border-radius: 6px; }
+  .pcard.tiny .pc-corner { font-size: 10px; }
+  .pcard.tiny .pc-pip { font-size: 14px; }
+  .pcard.mini { width: 28px; height: 40px; }
+  .pcard.mini .pc-corner { font-size: 8px; top: 2px; left: 3px; }
+  .pcard.mini .pc-pip { font-size: 12px; }
+  .inv-slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .inv-slot {
+    position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); background: var(--panel);
+    border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; padding: 4px; gap: 2px;
+  }
+  .inv-slot.equipped-slot { border-color: var(--gain); box-shadow: 0 0 0 1px rgba(255,182,72,0.3); }
+  .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
+  .inv-slot.new-item-glow {
+    animation: newItemGlowPulse 1.15s ease-in-out infinite;
+    border-color: rgba(var(--a2-rgb), 0.85);
+  }
+  @keyframes newItemGlowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--a2-rgb), 0.0); }
+    50% { box-shadow: 0 0 14px 3px rgba(var(--a2-rgb), 0.58); }
+  }
+  .pile-stack .pcard:nth-child(1) { transform: rotate(-8deg) translate(-4px, 2px); }
+  .pile-stack .pcard:nth-child(2) { transform: rotate(2deg); }
+  .pile-stack .pcard:nth-child(3) { transform: rotate(9deg) translate(5px, -2px); }
+  .inv-slot-icon { font-size: 26px; line-height: 1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; }
+  .inv-slot-icon svg { width: 28px; height: 28px; display: block; }
+  .inv-slot-count { position: absolute; bottom: 3px; right: 5px; font-family: 'JetBrains Mono'; font-size: 9px; color: var(--text-dim); }
+  .inv-slot .star-row { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 8px; letter-spacing: 0.3px; }
+  .star-on { color: var(--gain); }
+  .star-off { color: #3a3348; }
+  .item-detail-icon { width: 88px; height: 88px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; }
+  .item-detail-icon svg { width: 48px; height: 48px; }
+  #itemDetailPopupBackdrop { position: fixed; inset: 0; z-index: 249; background: transparent; display: none; }
+  #itemDetailPopup {
+    position: fixed; z-index: 250; max-width: 280px; min-width: 210px; display: none;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    max-height: calc(100dvh - 120px); overflow-y: auto;
+  }
+  .craft-stone-grid { display: flex; flex-direction: column; gap: 12px; }
+  .craft-stone-card {
+    display: grid; grid-template-columns: 52px 1fr auto; gap: 12px;
+    align-items: center; padding: 14px; border-radius: 14px;
+    background: var(--bg); border: 1px solid var(--line);
+  }
+  .craft-stone-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 26px;
+    background: rgba(180,85,245,0.12); border: 1px solid rgba(180,85,245,0.35); color: var(--a1);
+  }
+  .craft-stone-icon svg { width: 28px; height: 28px; }
+  .craft-stone-name { font-family: 'Barlow Condensed'; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .craft-stone-count { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .craft-stone-result { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .craft-stone-track { height: 7px; border-radius: 100px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; margin-top: 8px; }
+  .craft-stone-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #b455f5, var(--a2)); }
+  .enchant-table {
+    position: relative; margin-top: 8px; padding: 22px 16px 18px; border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(255, 215, 0, 0.28);
+    background:
+      radial-gradient(circle at 50% 38%, rgba(255,215,0,0.10), transparent 58%),
+      linear-gradient(180deg, rgba(24,18,36,0.96), rgba(8,7,13,0.98));
+    box-shadow: 0 0 42px rgba(180,85,245,0.16), inset 0 0 48px rgba(0,0,0,0.4);
+  }
+  .enchant-table-title {
+    position: relative; text-align: center; font-family: 'Barlow Condensed'; font-size: 22px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: #ffd27a; margin-bottom: 4px;
+  }
+  .enchant-table-sub { position: relative; text-align: center; font-size: 12.5px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.45; }
+  .enchant-slots { position: relative; display: flex; justify-content: center; align-items: center; gap: 16px; margin: 8px 0 18px; }
+  .enchant-plus { font-size: 22px; color: rgba(255,215,0,0.55); }
+  .enchant-drop {
+    width: 102px; height: 118px; border-radius: 18px; cursor: pointer;
+    border: 2px dashed rgba(255,255,255,0.22); background: rgba(0,0,0,0.38);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .enchant-drop.filled { border-style: solid; border-color: var(--a2); background: rgba(var(--a2-rgb),0.10); }
+  .enchant-drop-ic { font-size: 28px; line-height: 1; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
+  .enchant-drop-lab { font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+  .enchant-cast-btn {
+    position: relative; display: block; width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-family: 'Barlow Condensed'; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800;
+    background: linear-gradient(90deg, #b455f5, #ffd27a); color: #120c18; cursor: pointer;
+  }
+  .enchant-cast-btn:disabled { opacity: 0.32; filter: grayscale(0.4); cursor: default; }
+  .enchant-chance { text-align: center; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-dim); margin: 10px 0 4px; }
+  .enchant-picker {
+    position: absolute; inset: 0; background: rgba(7,6,12,0.88); padding: 18px 14px; overflow-y: auto;
+    display: none; z-index: 3;
+  }
+  .enchant-picker.show { display: block; }
+  .enchant-fx { position: absolute; inset: 0; display: none; z-index: 4; pointer-events: none; align-items: center; justify-content: center; }
+  .enchant-fx.show { display: flex; }
+  .enchant-fx-ring {
+    width: 160px; height: 160px; border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(180,85,245,0.45), 0 0 28px rgba(255,215,0,0.35);
+    animation: enchantRing 1.4s ease-in-out forwards;
+  }
+  @keyframes enchantRing {
+    0% { transform: scale(0.4) rotate(0deg); opacity: 0; }
+    35% { opacity: 1; }
+    100% { transform: scale(1.15) rotate(220deg); opacity: 0.15; }
+  }
+  body.in-match { padding-bottom: 0; }
+  body.in-match .tabbar, body.in-match .sticky-header, body.in-match main { display: none !important; }
+  #tableWindow {
+    position: fixed; inset: 0; z-index: 280; display: none; flex-direction: column;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(46, 110, 72, 0.55), transparent 55%),
+      radial-gradient(circle at 50% 100%, rgba(0,0,0,0.45), transparent 45%),
+      #0c3b28;
+    overflow: hidden;
+  }
+  #tableWindow.show { display: flex; }
+  .table-topbar {
+    display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 12px 8px;
+    z-index: 2;
+  }
+  .table-felt { flex: 1; position: relative; min-height: 0; }
+  .table-center {
+    position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: 18px; z-index: 2;
+  }
+  .pile-stack, .draw-stack { position: relative; width: 64px; height: 94px; }
+  .pile-stack .pcard, .draw-stack .pcard { position: absolute; inset: 0; width: 64px; height: 94px; }
+  .pile-stack.burn .pcard {
+    animation: burnUp 0.55s ease-in forwards;
+  }
+  @keyframes burnUp {
+    0% { transform: translateY(0) scale(1); opacity: 1; filter: none; }
+    40% { transform: translateY(-18px) scale(1.08) rotate(8deg); filter: saturate(2) hue-rotate(-20deg); }
+    100% { transform: translateY(-70px) scale(0.4); opacity: 0; }
+  }
+  .seat {
+    position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    z-index: 1;
+  }
+  .seat.south { bottom: 122px; left: 50%; transform: translateX(-50%); }
+  .seat.north { top: 6px; left: 50%; transform: translateX(-50%); }
+  .seat.east { right: 8px; top: 36%; }
+  .seat.west { left: 8px; top: 36%; }
+  .seat-name {
+    font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 100px;
+  }
+  .seat.active .seat-name { background: var(--gain); color: #120c18; }
+  .seat-row { display: flex; gap: 4px; }
+  .human-hand {
+    position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
+    height: 118px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
+    padding: 0 8px;
+  }
+  .human-hand .pcard { margin-left: -18px; cursor: pointer; transition: transform 0.16s ease; }
+  .human-hand .pcard:first-child { margin-left: 0; }
+  .table-actions {
+    position: absolute; right: 10px; bottom: calc(128px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 8px; z-index: 6;
+  }
+  .table-actions .btn { width: auto; padding: 10px 14px; margin: 0; }
+  .turn-banner {
+    position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%);
+    font-family: 'Barlow Condensed'; letter-spacing: 0.12em; text-transform: uppercase;
+    background: rgba(0,0,0,0.45); padding: 8px 14px; border-radius: 100px; pointer-events: none;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .turn-banner.show { opacity: 1; }
+  .match-over {
+    position: absolute; inset: 0; background: rgba(6,8,10,0.72); z-index: 8;
+    display: none; align-items: center; justify-content: center; padding: 18px;
+  }
+  .match-over.show { display: flex; }
+  #flyLayer { position: fixed; inset: 0; z-index: 360; pointer-events: none; }
+  .fly-card {
+    position: fixed; transform-origin: top left;
+    transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .count-chip {
+    display: inline-flex; gap: 6px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 100px; padding: 6px 8px;
+  }
+  .count-chip button {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); font-weight: 700; cursor: pointer;
+  }
   .tier-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .tier-chip { flex: 1; min-width: 72px; text-align: center; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
   .tier-chip .n { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--gain); }
@@ -198,27 +446,28 @@
 
 <main>
   <section id="view-home" class="view active">
-    <div class="section-title" style="margin-top:0;">Play</div>
-    <div class="mode-card" data-mode="standard">
-      <div class="kicker">Quick play</div>
-      <h3>Standard</h3>
-      <p>Pick a stake. Bots fill empty seats at that tier’s difficulty.</p>
+    <div class="section-title" style="margin-top:0;">Play — pick a card</div>
+    <div class="play-hand" id="modeHand">
+      <button type="button" class="play-card red" data-mode="standard">
+        <div class="pc-rank">S</div><div class="pc-suit">♥</div>
+        <div class="pc-center"><div class="pc-pip-lg">♥</div><h3>Standard</h3><p>Buy-in table vs bots</p></div>
+      </button>
+      <button type="button" class="play-card locked" data-mode="ranked">
+        <div class="pc-rank">R</div><div class="pc-suit">♠</div>
+        <div class="pc-center"><div class="pc-pip-lg">♠</div><h3>Ranked</h3><p>Built last</p></div>
+        <div class="lock-ribbon">Locked</div>
+      </button>
+      <button type="button" class="play-card red" data-mode="practice">
+        <div class="pc-rank">P</div><div class="pc-suit">♦</div>
+        <div class="pc-center"><div class="pc-pip-lg">♦</div><h3>Practice</h3><p>Bots · no coin risk</p></div>
+      </button>
+      <button type="button" class="play-card locked" data-mode="custom">
+        <div class="pc-rank">C</div><div class="pc-suit">♣</div>
+        <div class="pc-center"><div class="pc-pip-lg">♣</div><h3>Custom</h3><p>Later placeholder</p></div>
+        <div class="lock-ribbon">Locked</div>
+      </button>
     </div>
-    <div class="mode-card locked" data-mode="ranked">
-      <div class="kicker">Later</div>
-      <h3>Ranked</h3>
-      <p>Placeholder — built last, after the rest of the game.</p>
-    </div>
-    <div class="mode-card" data-mode="practice">
-      <div class="kicker">Bots only</div>
-      <h3>Practice</h3>
-      <p>Standard, one-on-one, or custom table vs bots. No coin risk.</p>
-    </div>
-    <div class="mode-card locked" data-mode="custom">
-      <div class="kicker">Later</div>
-      <h3>Custom</h3>
-      <p>Placeholder — same treatment as the shop content pass.</p>
-    </div>
+    <p class="empty" style="padding-top:0;">Tap a card the way you would in UNO. Ranked and Custom stay face-down for now.</p>
   </section>
 
   <section id="view-shop" class="view">
@@ -247,7 +496,7 @@
       </div>
     </div>
     <div class="inv-filter-row" id="invFilterRow"></div>
-    <div class="card" id="invItemList"></div>
+    <div id="invItemList"></div>
   </section>
 
   <section id="view-subscription" class="view">
@@ -356,6 +605,22 @@
   <div id="modeBody"></div>
 </div>
 
+<div id="tableWindow">
+  <div class="table-topbar">
+    <button class="instance-leave-btn" id="tableLeaveBtn">‹ Leave</button>
+    <div>
+      <div class="instance-title" id="tableTitle">Palace</div>
+      <div class="l2" id="tableSub" style="color:var(--text-dim); font-size:12px;"></div>
+    </div>
+  </div>
+  <div class="table-felt" id="tableFelt"></div>
+  <div class="match-over" id="matchOver"></div>
+</div>
+
+<div id="itemDetailPopupBackdrop"></div>
+<div id="itemDetailPopup"><div id="itemDetailModalBody"></div></div>
+<div id="flyLayer"></div>
+
 <nav class="tabbar">
   <button class="tab active" data-view="home">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
@@ -385,9 +650,10 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="palace-engine.js"></script>
 <script>
 /* =========================================================
-   PALACE (card-game.html) — card-game shell.
+   PALACE (card-game.html) — playable table + Rigcore inventory.
    Progress is localStorage key palaceCards_v1. Never rename it.
    Never use garageGains_v1 — that belongs to RIGCORE.
    ========================================================= */
@@ -396,6 +662,7 @@ const STORE_KEY = 'palaceCards_v1';
 const STARTING_COINS = 400;
 const DAILY_LOGIN_COINS = 50;
 const SHARDS_PER_STONE = 10;
+const INV_GRID_COLUMNS = 4;
 const SHOP_TABS = [
   { id: 'skins', label: 'Card skins' },
   { id: 'tables', label: 'Tables' },
@@ -416,6 +683,26 @@ const THEMES = [
   { id: 'ember', name: 'Ember', a: '#ff9d3f', b: '#b455f5' },
   { id: 'verdant', name: 'Verdant', a: '#38e29a', b: '#3ec6f0' },
 ];
+const COSMETIC_CATALOG = [
+  { id: 'skin_classic', name: 'Palace Classic', slot: 'cardSkin', upgradable: false, stars: 1, icon: '🃏', desc: 'The house deck. Clean cream faces, night-violet backs.' },
+  { id: 'skin_ember', name: 'Ember Back', slot: 'cardSkin', upgradable: true, stars: 2, icon: '🜂', desc: 'Warm foil on the card back. Enchanting adds a brighter burn.' },
+  { id: 'table_velvet', name: 'Velvet Felt', slot: 'tableTheme', upgradable: true, stars: 2, icon: '🟩', desc: 'Deep club felt. Higher tiers add a gold rail glow.' },
+  { id: 'border_crown', name: 'Crown Border', slot: 'profileBorder', upgradable: true, stars: 3, icon: '👑', desc: 'A gilded frame for your profile badge.' },
+  { id: 'emote_wave', name: 'Wave', slot: 'emote', upgradable: false, stars: 1, icon: '👋', desc: 'A simple hello you can fire at the table later.' },
+  { id: 'bubble_ink', name: 'Ink Bubble', slot: 'chatBubble', upgradable: true, stars: 2, icon: '💬', desc: 'Hand-inked chat bubble for in-match talk.' },
+];
+const SLOT_TO_EQUIP = {
+  cardSkin: 'cardSkin',
+  tableTheme: 'tableTheme',
+  emote: 'emote',
+  chatBubble: 'chatBubble',
+  profileBorder: 'profileBorder',
+};
+const SEAT_POS = {
+  2: ['south', 'north'],
+  3: ['south', 'east', 'west'],
+  4: ['south', 'east', 'north', 'west'],
+};
 
 function todayStamp() {
   const d = new Date();
@@ -437,22 +724,70 @@ function defaultState() {
     stats: { matches: 0, wins: 0 },
     shopTab: 'skins',
     invFilter: 'all',
+    unlocks: { medium: 0, hard: -1, expert: -1 },
+    cosmeticsSeeded: false,
   };
 }
 
 function getLevel(xp) { return 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 50)); }
 
+function catalogItem(id) {
+  return COSMETIC_CATALOG.find((c) => c.id === id) || null;
+}
+
+function seedCosmetics(s) {
+  if (s.cosmeticsSeeded && (s.inventory.items || []).length) return s;
+  if ((s.inventory.items || []).length) {
+    s.cosmeticsSeeded = true;
+    return s;
+  }
+  const items = COSMETIC_CATALOG.map((c, i) => ({
+    id: 'i_' + c.id,
+    catalogId: c.id,
+    name: c.name,
+    slot: c.slot,
+    tier: 0,
+    upgradable: !!c.upgradable,
+    new: i > 0,
+  }));
+  s.inventory.items = items;
+  s.inventory.shards.cosmetic = Math.max(s.inventory.shards.cosmetic || 0, 14);
+  s.inventory.stones.cosmetic = Math.max(s.inventory.stones.cosmetic || 0, 1);
+  s.equipped.cardSkin = 'i_skin_classic';
+  s.equipped.tableTheme = 'i_table_velvet';
+  s.cosmeticsSeeded = true;
+  return s;
+}
+
 let state = defaultState();
+let match = null;
+let uiBusy = false;
+let selectedIds = [];
+let enchantSel = { itemId: null, stone: false };
+let pendingCfg = null;
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return defaultState();
+    if (!raw) return seedCosmetics(defaultState());
     const parsed = JSON.parse(raw);
     const src = parsed && parsed.app === 'palace' && parsed.state ? parsed.state : parsed;
-    return { ...defaultState(), ...src, inventory: { ...defaultState().inventory, ...(src.inventory || {}) }, equipped: { ...defaultState().equipped, ...(src.equipped || {}) }, settings: { ...defaultState().settings, ...(src.settings || {}) }, profile: { ...defaultState().profile, ...(src.profile || {}) }, stats: { ...defaultState().stats, ...(src.stats || {}) } };
+    const merged = {
+      ...defaultState(),
+      ...src,
+      inventory: { ...defaultState().inventory, ...(src.inventory || {}) },
+      equipped: { ...defaultState().equipped, ...(src.equipped || {}) },
+      settings: { ...defaultState().settings, ...(src.settings || {}) },
+      profile: { ...defaultState().profile, ...(src.profile || {}) },
+      stats: { ...defaultState().stats, ...(src.stats || {}) },
+      unlocks: { ...defaultState().unlocks, ...(src.unlocks || {}) },
+    };
+    merged.inventory.shards = { cosmetic: 0, ...(merged.inventory.shards || {}) };
+    merged.inventory.stones = { cosmetic: 0, ...(merged.inventory.stones || {}) };
+    merged.inventory.items = Array.isArray(merged.inventory.items) ? merged.inventory.items : [];
+    return seedCosmetics(merged);
   } catch (_) {
-    return defaultState();
+    return seedCosmetics(defaultState());
   }
 }
 
@@ -476,7 +811,11 @@ function applyImportedBackupText(text) {
     const src = parsed && parsed.app === 'palace' && parsed.state ? parsed.state : parsed;
     if (!src || typeof src !== 'object') throw new Error('bad');
     if (parsed && parsed.app && parsed.app !== 'palace') throw new Error('wrong app');
-    state = { ...defaultState(), ...src, inventory: { ...defaultState().inventory, ...(src.inventory || {}) } };
+    state = seedCosmetics({
+      ...defaultState(),
+      ...src,
+      inventory: { ...defaultState().inventory, ...(src.inventory || {}) },
+    });
     saveState();
     renderAll();
     showToast('Backup restored');
@@ -547,6 +886,100 @@ function renderShop() {
   }
 }
 
+function itemIconSvg(slot) {
+  if (slot === 'cardSkin') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6"/></svg>';
+  if (slot === 'tableTheme') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="9" ry="5"/><path d="M3 12v3c0 2.2 4 4 9 4s9-1.8 9-4v-3"/></svg>';
+  if (slot === 'profileBorder') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>';
+  if (slot === 'emote') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01M8 15c1.2 1.3 2.6 2 4 2s2.8-.7 4-2"/></svg>';
+  if (slot === 'chatBubble') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14v10H8l-3 3V6z"/></svg>';
+  if (slot === 'shards') return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l6 8-6 12L6 10z"/></svg>';
+  if (slot === 'stones') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12,3 20,8 20,16 12,21 4,16 4,8"/></svg>';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/></svg>';
+}
+
+function starRowHtml(tier, cap) {
+  const max = Math.max(1, cap || 4);
+  const filled = Math.max(0, Math.min(max, tier || 0));
+  let row = '<div class="star-row">';
+  for (let i = 0; i < max; i++) row += i < filled ? '<span class="star-on">★</span>' : '<span class="star-off">☆</span>';
+  return row + '</div>';
+}
+
+function closeItemDetail() {
+  document.getElementById('itemDetailPopup').style.display = 'none';
+  document.getElementById('itemDetailPopupBackdrop').style.display = 'none';
+}
+
+function openItemDetail(kind, key, anchor) {
+  const pop = document.getElementById('itemDetailPopup');
+  const body = document.getElementById('itemDetailModalBody');
+  const backdrop = document.getElementById('itemDetailPopupBackdrop');
+  let html = '';
+  if (kind === 'item') {
+    const inst = (state.inventory.items || []).find((i) => i.id === key);
+    const cat = inst ? catalogItem(inst.catalogId) : null;
+    if (!inst || !cat) return;
+    inst.new = false;
+    saveState();
+    const eqKey = SLOT_TO_EQUIP[inst.slot];
+    const equipped = eqKey && state.equipped[eqKey] === inst.id;
+    html = `
+      <div class="item-detail-icon" style="color:var(--a1)">${itemIconSvg(inst.slot)}</div>
+      <h3 style="text-align:center; font-size:20px;">${inst.name}</h3>
+      ${inst.upgradable ? starRowHtml(inst.tier + 1, 4) : ''}
+      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">${cat.desc}</p>
+      <div class="settings-row"><div>Slot</div><div class="l2">${inst.slot}</div></div>
+      <div class="settings-row"><div>Tier</div><div class="l2 mono">${inst.tier} / 3</div></div>
+      <button class="btn primary" id="detailEquipBtn">${equipped ? 'Equipped' : 'Equip'}</button>
+      ${inst.upgradable ? '<button class="btn" id="detailEnchantBtn">Enchant</button>' : ''}`;
+    body.innerHTML = html;
+    document.getElementById('detailEquipBtn').addEventListener('click', () => {
+      if (eqKey) state.equipped[eqKey] = inst.id;
+      saveState();
+      closeItemDetail();
+      renderInventory();
+      showToast('Equipped ' + inst.name);
+    });
+    const en = document.getElementById('detailEnchantBtn');
+    if (en) en.addEventListener('click', () => {
+      closeItemDetail();
+      enchantSel.itemId = inst.id;
+      openEnchant();
+    });
+  } else if (kind === 'shards') {
+    html = `
+      <div class="item-detail-icon" style="color:var(--a1)">${itemIconSvg('shards')}</div>
+      <h3 style="text-align:center; font-size:20px;">Cosmetic Shards</h3>
+      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">${SHARDS_PER_STONE} shards craft 1 enchantment stone.</p>
+      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.shards.cosmetic || 0}</div></div>
+      <button class="btn primary" id="detailCraftBtn">Open Craft</button>`;
+    body.innerHTML = html;
+    document.getElementById('detailCraftBtn').addEventListener('click', () => { closeItemDetail(); openCraft(); });
+  } else if (kind === 'stones') {
+    html = `
+      <div class="item-detail-icon" style="color:var(--gain)">${itemIconSvg('stones')}</div>
+      <h3 style="text-align:center; font-size:20px;">Enchantment Stone</h3>
+      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">Spent at the Enchanting Table to regrade an upgradable cosmetic.</p>
+      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.stones.cosmetic || 0}</div></div>
+      <button class="btn primary" id="detailEnBtn">Open Enchant</button>`;
+    body.innerHTML = html;
+    document.getElementById('detailEnBtn').addEventListener('click', () => { closeItemDetail(); openEnchant(); });
+  }
+  pop.style.display = 'block';
+  backdrop.style.display = 'block';
+  const r = anchor.getBoundingClientRect();
+  const w = Math.min(280, window.innerWidth - 24);
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(12, Math.min(window.innerWidth - w - 12, left));
+  let top = r.bottom + 8;
+  pop.style.width = w + 'px';
+  pop.style.left = left + 'px';
+  pop.style.top = '0px';
+  const h = pop.offsetHeight;
+  if (top + h > window.innerHeight - 96) top = Math.max(12, r.top - h - 8);
+  pop.style.top = top + 'px';
+}
+
 function renderInventory() {
   document.getElementById('invGoldGems').textContent = state.coins + ' coins';
   document.getElementById('invGemsCount').textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
@@ -565,33 +998,116 @@ function renderInventory() {
   const showItems = state.invFilter === 'all' || state.invFilter === 'cosmetics';
   const showShards = state.invFilter === 'all' || state.invFilter === 'shards';
   const showStones = state.invFilter === 'all' || state.invFilter === 'stones';
-  let html = '';
-  if (showItems && items.length) {
-    html += items.map((it) => `<div class="inv-item-row"><div>${it.name}</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${it.slot || 'cosmetic'} · t${it.tier || 0}</div></div>`).join('');
-  } else if (showItems && state.invFilter === 'cosmetics') {
-    html += `<div class="empty"><div class="big">No cosmetics yet</div>Owned skins, borders, and emotes land here.</div>`;
+  const slots = [];
+  if (showItems) {
+    items.forEach((it) => {
+      const eqKey = SLOT_TO_EQUIP[it.slot];
+      const equipped = eqKey && state.equipped[eqKey] === it.id;
+      const glow = it.new ? ' new-item-glow' : '';
+      slots.push(`<div class="inv-slot${equipped ? ' equipped-slot' : ''}${glow}" data-slot-item="${it.id}">
+        <div class="inv-slot-icon" style="color:${equipped ? 'var(--gain)' : 'var(--a1)'}">${itemIconSvg(it.slot)}</div>
+        ${it.upgradable ? starRowHtml(it.tier + 1, 4) : ''}
+      </div>`);
+    });
   }
-  if (showShards) html += `<div class="inv-item-row"><div>Cosmetic Shards</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${shards} · ${SHARDS_PER_STONE} craft 1 stone</div></div>`;
-  if (showStones) html += `<div class="inv-item-row"><div>Cosmetic Enchantment Stone</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${stones} · spent at the Enchanting Table</div></div>`;
-  if (!html) html = `<div class="empty"><div class="big">Inventory is empty</div>Same layout as RIGCORE — items fill in with the content pass.</div>`;
-  list.innerHTML = html;
+  if (showShards) {
+    slots.push(`<div class="inv-slot" data-slot-mat="shards">
+      <div class="inv-slot-icon" style="color:var(--a1)">${itemIconSvg('shards')}</div>
+      <div class="inv-slot-count">x${shards}</div>
+    </div>`);
+  }
+  if (showStones) {
+    slots.push(`<div class="inv-slot" data-slot-mat="stones">
+      <div class="inv-slot-icon" style="color:var(--gain)">${itemIconSvg('stones')}</div>
+      <div class="inv-slot-count">x${stones}</div>
+    </div>`);
+  }
+  const filled = slots.length;
+  const total = Math.max(INV_GRID_COLUMNS * 2, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) * INV_GRID_COLUMNS);
+  for (let i = filled; i < total; i++) slots.push('<div class="inv-slot empty"></div>');
+  list.innerHTML = `<div class="inv-slot-grid">${slots.join('')}</div>`;
+  list.querySelectorAll('[data-slot-item]').forEach((el) => el.addEventListener('click', () => openItemDetail('item', el.dataset.slotItem, el)));
+  list.querySelectorAll('[data-slot-mat]').forEach((el) => el.addEventListener('click', () => openItemDetail(el.dataset.slotMat, el.dataset.slotMat, el)));
+}
+
+function enchantChance(tier) {
+  return [0.8, 0.55, 0.28][tier] || 0;
+}
+
+function renderEnchantTable() {
+  const inst = (state.inventory.items || []).find((i) => i.id === enchantSel.itemId);
+  const stones = state.inventory.stones.cosmetic || 0;
+  const itemHtml = inst
+    ? `<div class="enchant-drop filled" id="enchantItemSlot"><div class="enchant-drop-ic" style="color:var(--a1)">${itemIconSvg(inst.slot)}</div><div class="enchant-drop-lab">${inst.name}</div></div>`
+    : `<div class="enchant-drop" id="enchantItemSlot"><div class="enchant-drop-ic">◇</div><div class="enchant-drop-lab">Item</div></div>`;
+  const stoneHtml = enchantSel.stone
+    ? `<div class="enchant-drop filled" id="enchantStoneSlot"><div class="enchant-drop-ic" style="color:var(--gain)">${itemIconSvg('stones')}</div><div class="enchant-drop-lab">Stone</div></div>`
+    : `<div class="enchant-drop" id="enchantStoneSlot"><div class="enchant-drop-ic">◇</div><div class="enchant-drop-lab">Stone</div></div>`;
+  const chance = inst && inst.upgradable && inst.tier < 3 ? Math.round(enchantChance(inst.tier) * 100) : 0;
+  const canCast = !!(inst && inst.upgradable && inst.tier < 3 && enchantSel.stone);
+  document.getElementById('enchantWindowBody').innerHTML = `
+    <div class="enchant-table" id="enchantTable">
+      <div class="enchant-table-title">Enchanting Table</div>
+      <div class="enchant-table-sub">Preview a cosmetic, spend a stone, and roll the next visual tier.</div>
+      <div class="enchant-slots">${itemHtml}<div class="enchant-plus">+</div>${stoneHtml}</div>
+      <div class="enchant-chance">${inst ? (inst.upgradable ? 'Success ' + chance + '% · t' + inst.tier + ' → t' + Math.min(3, inst.tier + 1) : 'This item cannot be enchanted') : 'Tap the item slot'}</div>
+      <button class="enchant-cast-btn" id="enchantCastBtn" ${canCast ? '' : 'disabled'}>Enchant</button>
+      <div class="enchant-fx" id="enchantFx"><div class="enchant-fx-ring"></div><div class="enchant-fx-burst"></div></div>
+      <div class="enchant-picker" id="enchantPicker"></div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div class="settings-row"><div>Stones ready</div><div class="l2 mono">${stones}</div></div>
+    </div>`;
+  document.getElementById('enchantItemSlot').addEventListener('click', () => {
+    const picker = document.getElementById('enchantPicker');
+    const ups = (state.inventory.items || []).filter((i) => i.upgradable);
+    picker.innerHTML = `<div class="section-title" style="margin-top:0;">Choose item</div>` +
+      (ups.length ? `<div class="inv-slot-grid">${ups.map((i) => `<div class="inv-slot" data-pick="${i.id}"><div class="inv-slot-icon" style="color:var(--a1)">${itemIconSvg(i.slot)}</div></div>`).join('')}</div>` : '<div class="empty">No upgradable cosmetics</div>');
+    picker.classList.add('show');
+    picker.querySelectorAll('[data-pick]').forEach((el) => el.addEventListener('click', () => {
+      enchantSel.itemId = el.dataset.pick;
+      picker.classList.remove('show');
+      renderEnchantTable();
+    }));
+  });
+  document.getElementById('enchantStoneSlot').addEventListener('click', () => {
+    if ((state.inventory.stones.cosmetic || 0) < 1) return showToast('No stones — craft shards first');
+    enchantSel.stone = !enchantSel.stone;
+    renderEnchantTable();
+  });
+  document.getElementById('enchantCastBtn').addEventListener('click', () => {
+    if (!canCast) return;
+    const item = (state.inventory.items || []).find((i) => i.id === enchantSel.itemId);
+    if (!item) return;
+    state.inventory.stones.cosmetic -= 1;
+    enchantSel.stone = false;
+    const ok = Math.random() < enchantChance(item.tier);
+    const fx = document.getElementById('enchantFx');
+    fx.classList.add('show', ok ? 'success' : 'fail');
+    setTimeout(() => {
+      fx.classList.remove('show', 'success', 'fail');
+      if (ok) {
+        item.tier = Math.min(3, item.tier + 1);
+        showToast('Enchant success · t' + item.tier);
+      } else if (item.tier === 2 && Math.random() < 0.5) {
+        item.tier = 1;
+        showToast('Enchant failed — knocked back to t1');
+      } else {
+        showToast('Enchant failed');
+      }
+      saveState();
+      renderEnchantTable();
+      renderInventory();
+      renderHeader();
+    }, 1200);
+  });
 }
 
 function openEnchant() {
   const el = document.getElementById('enchantWindow');
   el.style.display = 'block';
   el.classList.add('book-open');
-  document.getElementById('enchantWindowBody').innerHTML = `
-    <div class="card">
-      <div class="section-title" style="margin-top:0;">Slot</div>
-      <div class="empty"><div class="big">No item selected</div>Upgradable cosmetics preview all four tiers here, then spend stones on a regrade roll — same RIGCORE enchant table flow.</div>
-    </div>
-    <div class="card">
-      <div class="settings-row"><div>Stones ready</div><div class="l2 mono">${state.inventory.stones.cosmetic || 0}</div></div>
-      <button class="btn" id="enchantAttemptBtn" ${state.inventory.stones.cosmetic < 1 ? 'disabled' : ''}>Enchant</button>
-    </div>`;
-  const btn = document.getElementById('enchantAttemptBtn');
-  if (btn) btn.addEventListener('click', () => showToast('Need an upgradable item first'));
+  renderEnchantTable();
 }
 
 function closeEnchant() {
@@ -605,10 +1121,19 @@ function openCraft() {
   el.style.display = 'block';
   el.classList.add('book-open');
   const shards = state.inventory.shards.cosmetic || 0;
+  const pct = Math.min(100, Math.round((shards % SHARDS_PER_STONE) / SHARDS_PER_STONE * 100));
   document.getElementById('craftWindowBody').innerHTML = `
-    <div class="card">
-      <div class="settings-row"><div>Cosmetic Shards<div class="l2">${SHARDS_PER_STONE} shards → 1 enchantment stone</div></div><div class="l2 mono">${shards}</div></div>
-      <button class="btn primary" id="craftStoneBtn" ${shards < SHARDS_PER_STONE ? 'disabled' : ''}>Craft Stone</button>
+    <div class="craft-stone-grid">
+      <div class="craft-stone-card">
+        <div class="craft-stone-icon">${itemIconSvg('shards')}</div>
+        <div>
+          <div class="craft-stone-name">Cosmetic Stone</div>
+          <div class="craft-stone-count">${shards} shards</div>
+          <div class="craft-stone-result">${SHARDS_PER_STONE} shards → 1 enchantment stone</div>
+          <div class="craft-stone-track"><div class="craft-stone-fill" style="width:${pct}%"></div></div>
+        </div>
+        <button class="btn primary craft-btn" id="craftStoneBtn" ${shards < SHARDS_PER_STONE ? 'disabled' : ''}>Craft</button>
+      </div>
     </div>`;
   const btn = document.getElementById('craftStoneBtn');
   if (btn) btn.addEventListener('click', () => {
@@ -631,6 +1156,11 @@ function closeCraft() {
 
 function openProfile() {
   document.getElementById('profileOverlay').style.display = 'block';
+  const eqName = (key) => {
+    const id = state.equipped[key];
+    const it = (state.inventory.items || []).find((i) => i.id === id);
+    return it ? it.name : 'Default';
+  };
   document.getElementById('profileBody').innerHTML = `
     <div class="card">
       <div class="settings-row"><div>Name</div><div class="l2">${state.profile.name}</div></div>
@@ -640,14 +1170,388 @@ function openProfile() {
     </div>
     <div class="section-title">Cosmetics</div>
     <div class="cosmetic-grid">
-      <div class="cosmetic-slot"><div class="l">Card skin</div><div class="n">${state.equipped.cardSkin || 'Default'}</div></div>
-      <div class="cosmetic-slot"><div class="l">Chat bubble</div><div class="n">${state.equipped.chatBubble || 'Default'}</div></div>
-      <div class="cosmetic-slot"><div class="l">Profile border</div><div class="n">${state.equipped.profileBorder || 'Default'}</div></div>
-      <div class="cosmetic-slot"><div class="l">Emotes</div><div class="n">${state.equipped.emote || 'Default set'}</div></div>
+      <div class="cosmetic-slot"><div class="l">Card skin</div><div class="n">${eqName('cardSkin')}</div></div>
+      <div class="cosmetic-slot"><div class="l">Chat bubble</div><div class="n">${eqName('chatBubble')}</div></div>
+      <div class="cosmetic-slot"><div class="l">Profile border</div><div class="n">${eqName('profileBorder')}</div></div>
+      <div class="cosmetic-slot"><div class="l">Emotes</div><div class="n">${eqName('emote')}</div></div>
     </div>`;
 }
 
 function closeProfile() { document.getElementById('profileOverlay').style.display = 'none'; }
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function cardFaceHtml(card, extra) {
+  if (!card) return '';
+  const red = PalaceEngine.isRed(card.suit) ? ' red' : '';
+  const g = PalaceEngine.suitGlyph(card.suit);
+  return `<div class="pcard${red} ${extra || ''}" data-id="${card.id}">
+    <div class="pc-corner">${card.rank}<span>${g}</span></div>
+    <div class="pc-pip">${g}</div>
+    <div class="pc-corner br">${card.rank}<span>${g}</span></div>
+  </div>`;
+}
+
+function cardBackHtml(extra, id) {
+  return `<div class="pcard back ${extra || ''}" ${id ? 'data-id="' + id + '"' : ''}><div class="pc-pip">P</div></div>`;
+}
+
+function flyFromTo(fromRect, toRect, html) {
+  return new Promise((resolve) => {
+    if (!fromRect || !toRect) { resolve(); return; }
+    const layer = document.getElementById('flyLayer');
+    const wrap = document.createElement('div');
+    wrap.className = 'fly-card';
+    wrap.style.left = fromRect.left + 'px';
+    wrap.style.top = fromRect.top + 'px';
+    wrap.style.width = fromRect.width + 'px';
+    wrap.style.height = fromRect.height + 'px';
+    wrap.innerHTML = html;
+    const inner = wrap.firstElementChild;
+    if (inner) {
+      inner.style.width = '100%';
+      inner.style.height = '100%';
+    }
+    layer.appendChild(wrap);
+    const dx = toRect.left - fromRect.left;
+    const dy = toRect.top - fromRect.top;
+    const sx = toRect.width / Math.max(1, fromRect.width);
+    const sy = toRect.height / Math.max(1, fromRect.height);
+    requestAnimationFrame(() => {
+      wrap.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    });
+    setTimeout(() => { wrap.remove(); resolve(); }, 430);
+  });
+}
+
+function pileRect() {
+  const el = document.getElementById('discardPile');
+  return el ? el.getBoundingClientRect() : null;
+}
+function drawRect() {
+  const el = document.getElementById('drawPile');
+  return el ? el.getBoundingClientRect() : null;
+}
+
+function renderTable(opts) {
+  if (!match) return;
+  const felt = document.getElementById('tableFelt');
+  const n = match.players.length;
+  const pos = SEAT_POS[n] || SEAT_POS[4];
+  const human = match.players[match.humanSeat];
+  const zone = PalaceEngine.activeZone(human);
+  const legal = (!uiBusy && match.turn === match.humanSeat && !match.ended) ? PalaceEngine.legalMoves(match, match.humanSeat) : [];
+  const legalIds = new Set();
+  legal.filter((m) => m.type === 'play').forEach((m) => m.cardIds.forEach((id) => legalIds.add(id)));
+  const canPickup = legal.some((m) => m.type === 'pickup');
+  const top = PalaceEngine.topCard(match);
+  const pileCards = match.pile.slice(-3);
+  const seatsHtml = match.players.map((p) => {
+    const place = pos[p.seat] || 'south';
+    const isHuman = p.seat === match.humanSeat;
+    if (isHuman) {
+      return `<div class="seat south ${match.turn === p.seat ? 'active' : ''}" id="seat-${p.seat}">
+        <div class="seat-row" id="humanTableCards">
+          ${p.up.map((c) => cardFaceHtml(c, 'tiny' + (zone === 'up' && match.turn === p.seat && !uiBusy && legalIds.has(c.id) ? ' legal' : ''))).join('')}
+          ${p.down.map((c, i) => cardBackHtml('tiny' + (zone === 'down' && match.turn === p.seat && !uiBusy ? ' legal' : ''), 'down-' + i)).join('')}
+        </div>
+        <div class="seat-name">${p.name}</div>
+      </div>`;
+    }
+    return `<div class="seat ${place} ${match.turn === p.seat ? 'active' : ''}" id="seat-${p.seat}">
+      <div class="seat-name">${p.out ? 'Out · ' + p.place : p.name}</div>
+      <div class="seat-row">
+        ${p.up.map((c) => cardFaceHtml(c, 'mini')).join('')}
+        ${p.down.map(() => cardBackHtml('mini')).join('')}
+      </div>
+      <div class="l2" style="font-size:10px; color:#d7efe3;">${p.hand.length} in hand</div>
+    </div>`;
+  }).join('');
+  const handHtml = human.hand.map((c) => {
+    const sel = selectedIds.includes(c.id) ? ' selected' : '';
+    const lg = legalIds.has(c.id) ? ' legal' : '';
+    return cardFaceHtml(c, sel + lg);
+  }).join('');
+  felt.innerHTML = `
+    ${seatsHtml}
+    <div class="table-center">
+      <div class="draw-stack" id="drawPile">${cardBackHtml()}${match.draw.length ? '<div class="inv-slot-count" style="right:4px;bottom:4px;color:#fff;">' + match.draw.length + '</div>' : ''}</div>
+      <div class="pile-stack" id="discardPile">${
+        pileCards.length
+          ? pileCards.map((c, i) => cardFaceHtml(c, '')).join('')
+          : '<div class="pcard back" style="opacity:.25"><div class="pc-pip">pile</div></div>'
+      }</div>
+    </div>
+    <div class="turn-banner ${opts && opts.banner ? 'show' : ''}" id="turnBanner">${opts && opts.banner ? opts.banner : ''}</div>
+    <div class="human-hand" id="humanHand">${handHtml}</div>
+    <div class="table-actions">
+      ${selectedIds.length ? '<button class="btn primary" id="playSelBtn">Play ' + selectedIds.length + '</button>' : ''}
+      ${canPickup ? '<button class="btn danger" id="pickupBtn">Take pile</button>' : ''}
+      ${match.phase === 'bonus' && match.turn === match.humanSeat ? '<div class="seat-name">Bonus card — any rank</div>' : ''}
+    </div>`;
+  document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
+  document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
+
+  felt.querySelectorAll('#humanHand .pcard').forEach((el) => {
+    el.addEventListener('click', () => onHumanCardTap(el.dataset.id));
+  });
+  felt.querySelectorAll('#humanTableCards .pcard.tiny').forEach((el) => {
+    if (zone === 'up' && el.dataset.id) el.addEventListener('click', () => onHumanCardTap(el.dataset.id));
+  });
+  felt.querySelectorAll('#humanTableCards .pcard.back.legal').forEach((el) => {
+    el.addEventListener('click', () => onHumanFlip(Number((el.dataset.id || 'down-0').split('-')[1])));
+  });
+  const playBtn = document.getElementById('playSelBtn');
+  if (playBtn) playBtn.addEventListener('click', () => commitHumanPlay());
+  const pickBtn = document.getElementById('pickupBtn');
+  if (pickBtn) pickBtn.addEventListener('click', () => humanPickup());
+}
+
+function onHumanCardTap(id) {
+  if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
+  const human = match.players[match.humanSeat];
+  const zone = PalaceEngine.activeZone(human);
+  const cards = zone === 'up' ? human.up : human.hand;
+  const card = cards.find((c) => c.id === id);
+  if (!card) return;
+  const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
+  if (!legal.some((m) => m.cardIds.includes(id))) {
+    showToast('That card does not beat the pile');
+    return;
+  }
+  if (!selectedIds.length) {
+    selectedIds = [id];
+  } else {
+    const first = cards.find((c) => c.id === selectedIds[0]);
+    if (first && first.rank === card.rank) {
+      if (selectedIds.includes(id)) selectedIds = selectedIds.filter((x) => x !== id);
+      else selectedIds.push(id);
+    } else {
+      selectedIds = [id];
+    }
+  }
+  if (match.phase === 'bonus') selectedIds = [id];
+  const sameRank = cards.filter((c) => c.rank === card.rank);
+  if (selectedIds.length === 1 && sameRank.length === 1) {
+    commitHumanPlay();
+    return;
+  }
+  renderTable();
+}
+
+async function onHumanFlip(index) {
+  if (uiBusy || !match || match.turn !== match.humanSeat) return;
+  await runMove({ type: 'flip', seat: match.humanSeat, index });
+}
+
+async function commitHumanPlay() {
+  if (!selectedIds.length || !match) return;
+  const ids = selectedIds.slice();
+  selectedIds = [];
+  await runMove({ type: 'play', seat: match.humanSeat, cardIds: ids });
+}
+
+async function humanPickup() {
+  selectedIds = [];
+  await runMove({ type: 'pickup', seat: match.humanSeat });
+}
+
+async function animateEvents(events) {
+  const pile = pileRect();
+  for (const ev of events) {
+    if (ev.type === 'play') {
+      for (const card of ev.cards) {
+        const src = document.querySelector('[data-id="' + card.id + '"]');
+        const html = cardFaceHtml(card);
+        await flyFromTo(src ? src.getBoundingClientRect() : drawRect(), pile || pileRect(), html);
+      }
+      playTone(520, 0.08);
+    } else if (ev.type === 'draw') {
+      const dest = document.getElementById('humanHand');
+      await flyFromTo(drawRect(), dest ? dest.getBoundingClientRect() : pile, cardBackHtml());
+    } else if (ev.type === 'pickup') {
+      const dest = ev.seat === match.humanSeat ? document.getElementById('humanHand') : document.getElementById('seat-' + ev.seat);
+      await flyFromTo(pileRect(), dest ? dest.getBoundingClientRect() : pileRect(), cardBackHtml());
+      playTone(220, 0.12);
+    } else if (ev.type === 'burn') {
+      const stack = document.getElementById('discardPile');
+      if (stack) stack.classList.add('burn');
+      playTone(180, 0.18);
+      await sleep(560);
+    } else if (ev.type === 'flip') {
+      playTone(440, 0.1);
+      await sleep(280);
+    } else if (ev.type === 'reset') {
+      flashBanner(ev.rank === '5' ? '5 — bonus play' : '2 — pile reset');
+    } else if (ev.type === 'out') {
+      flashBanner((ev.name || 'Player') + (ev.loser ? ' is last' : ' is out'));
+    }
+  }
+}
+
+function flashBanner(text) {
+  renderTable({ banner: text });
+  setTimeout(() => {
+    const b = document.getElementById('turnBanner');
+    if (b) b.classList.remove('show');
+  }, 900);
+}
+
+let audioCtx = null;
+function playTone(freq, dur) {
+  const vol = (state.settings.sfx || 0) / 100;
+  if (vol <= 0) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = freq;
+    o.type = 'triangle';
+    g.gain.value = 0.04 * vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + dur);
+  } catch (_) { /* ignore */ }
+}
+
+async function runMove(move) {
+  if (!match || uiBusy) return;
+  uiBusy = true;
+  const events = PalaceEngine.applyMove(match, move);
+  await animateEvents(events);
+  selectedIds = [];
+  uiBusy = false;
+  renderTable();
+  if (match.ended) {
+    finishMatch();
+    return;
+  }
+  await runTurn();
+}
+
+async function runTurn() {
+  while (match && !match.ended) {
+    let p = match.players[match.turn];
+    if (!p || p.out) {
+      match.turn = PalaceEngine.nextSeat(match, match.turn);
+      continue;
+    }
+    renderTable({ banner: p.isBot ? p.name + ' is thinking' : (match.phase === 'bonus' ? 'Bonus play' : 'Your turn') });
+    if (!p.isBot) return;
+    uiBusy = true;
+    await sleep(p.difficulty === 'Easy' ? 520 : 780);
+    let mv = PalaceEngine.chooseBotMove(match, p);
+    let events = PalaceEngine.applyMove(match, mv);
+    if (!events.length) {
+      const fallback = PalaceEngine.legalMoves(match, p.seat)[0];
+      if (fallback) events = PalaceEngine.applyMove(match, fallback);
+    }
+    await animateEvents(events);
+    selectedIds = [];
+    uiBusy = false;
+    if (match.ended) {
+      renderTable();
+      finishMatch();
+      return;
+    }
+  }
+}
+
+async function animateDeal() {
+  uiBusy = true;
+  renderTable({ banner: 'Dealing' });
+  playTone(360, 0.2);
+  await sleep(700);
+  uiBusy = false;
+  renderTable();
+}
+
+function openTable() {
+  document.body.classList.add('in-match');
+  document.getElementById('tableWindow').classList.add('show');
+  document.getElementById('matchOver').classList.remove('show');
+  document.getElementById('matchOver').innerHTML = '';
+}
+
+function closeTable() {
+  match = null;
+  selectedIds = [];
+  uiBusy = false;
+  document.body.classList.remove('in-match');
+  document.getElementById('tableWindow').classList.remove('show');
+  renderHeader();
+}
+
+function finishMatch() {
+  if (!match) return;
+  const human = match.players[match.humanSeat];
+  const place = human.place || match.players.length;
+  const won = place === 1;
+  const seats = match.players.length;
+  let payout = 0;
+  if (match.mode === 'standard') {
+    payout = PalaceEngine.payoutFor(place, match.buyIn, seats);
+    state.coins += payout;
+    if (won) {
+      state.xp += PalaceEngine.XP_WIN[match.difficulty] || 50;
+      state.unlocks = PalaceEngine.nextUnlocks(state.unlocks, match.difficulty, match.buyIn, true);
+    }
+  } else if (won) {
+    state.xp += Math.round((PalaceEngine.XP_WIN[match.difficulty] || 50) * 0.25);
+  }
+  state.stats.matches += 1;
+  if (won) state.stats.wins += 1;
+  saveState();
+  renderHeader();
+  const rows = match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
+    `<div class="settings-row"><div>${p.place}. ${p.name}${p.seat === match.humanSeat ? ' (you)' : ''}</div><div class="l2">${p.out ? 'out' : ''}</div></div>`
+  ).join('');
+  const over = document.getElementById('matchOver');
+  over.innerHTML = `<div class="card" style="max-width:420px; width:100%;">
+    <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">${won ? 'You win' : 'Match over'}</div>
+    <h3 style="font-size:28px; margin:6px 0 10px;">${place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : place + 'th'}</h3>
+    ${match.mode === 'standard' ? `<div class="settings-row"><div>Payout</div><div class="l2 mono">+${payout} coins</div></div>` : '<p style="color:var(--text-dim); font-size:13px;">Practice — no coins on the line.</p>'}
+    ${rows}
+    <button class="btn primary" id="againBtn">Play again</button>
+    <button class="btn" id="leaveMatchBtn">Leave table</button>
+  </div>`;
+  over.classList.add('show');
+  document.getElementById('againBtn').addEventListener('click', () => {
+    if (pendingCfg) startMatch(pendingCfg);
+  });
+  document.getElementById('leaveMatchBtn').addEventListener('click', closeTable);
+}
+
+function startMatch(cfg) {
+  if (!window.PalaceEngine) {
+    showToast('Game engine failed to load');
+    return;
+  }
+  if (cfg.mode === 'standard') {
+    if (state.coins < cfg.buyIn) {
+      showToast('Not enough coins');
+      return;
+    }
+    state.coins -= cfg.buyIn;
+    saveState();
+    renderHeader();
+  }
+  pendingCfg = cfg;
+  selectedIds = [];
+  match = PalaceEngine.newMatch({
+    seats: cfg.seats,
+    difficulty: cfg.difficulty,
+    buyIn: cfg.buyIn || 0,
+    mode: cfg.mode,
+    practiceSub: cfg.practiceSub,
+    names: [state.profile.name || 'You'],
+  });
+  closeMode();
+  openTable();
+  animateDeal().then(() => runTurn());
+}
 
 function openMode(mode) {
   if (mode === 'ranked' || mode === 'custom') {
@@ -658,54 +1562,72 @@ function openMode(mode) {
   document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : 'Standard';
   const body = document.getElementById('modeBody');
   if (mode === 'practice') {
+    let seats = 4;
+    let sub = 'standard';
     body.innerHTML = `
-      <div class="mode-card" data-practice="standard"><h3>Practice Standard</h3><p>You plus three bots.</p></div>
-      <div class="mode-card" data-practice="duel"><h3>Practice One-on-one</h3><p>You against a single bot.</p></div>
-      <div class="mode-card" data-practice="custom"><h3>Practice Custom</h3><p>Two to four seats, rest bots.</p></div>
+      <div class="play-hand" style="height:210px;">
+        <button type="button" class="play-card red lift" data-practice="standard"><div class="pc-rank">4</div><div class="pc-suit">♥</div><div class="pc-center"><h3>Standard</h3><p>You + 3 bots</p></div></button>
+        <button type="button" class="play-card" data-practice="duel"><div class="pc-rank">1</div><div class="pc-suit">♠</div><div class="pc-center"><h3>1v1</h3><p>You vs one bot</p></div></button>
+        <button type="button" class="play-card red" data-practice="custom"><div class="pc-rank">C</div><div class="pc-suit">♦</div><div class="pc-center"><h3>Custom</h3><p>2–4 seats</p></div></button>
+      </div>
+      <div id="practiceExtra"></div>
       <div class="section-title">Bot difficulty</div>
       <div class="tier-row">
         ${['Easy','Medium','Hard','Expert'].map((d,i) => `<div class="tier-chip${i===0?' active':''}" data-diff="${d}"><div class="n">${d}</div><div class="l">All bots</div></div>`).join('')}
       </div>
       <button class="btn primary" id="startPracticeBtn">Start</button>`;
+    const extra = body.querySelector('#practiceExtra');
+    function setSub(s) {
+      sub = s;
+      body.querySelectorAll('[data-practice]').forEach((c) => c.classList.toggle('lift', c.dataset.practice === s));
+      seats = s === 'duel' ? 2 : 4;
+      if (s === 'custom') {
+        extra.innerHTML = `<div class="section-title">Seats</div><div class="tier-row">
+          ${[2,3,4].map((n) => `<div class="tier-chip${n===4?' active':''}" data-seats="${n}"><div class="n">${n}</div><div class="l">players</div></div>`).join('')}
+        </div>`;
+        extra.querySelectorAll('[data-seats]').forEach((chip) => chip.addEventListener('click', () => {
+          extra.querySelectorAll('[data-seats]').forEach((c) => c.classList.remove('active'));
+          chip.classList.add('active');
+          seats = Number(chip.dataset.seats);
+        }));
+      } else extra.innerHTML = '';
+    }
+    body.querySelectorAll('[data-practice]').forEach((card) => card.addEventListener('click', () => setSub(card.dataset.practice)));
     body.querySelectorAll('[data-diff]').forEach((chip) => chip.addEventListener('click', () => {
       body.querySelectorAll('[data-diff]').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
     }));
-    document.getElementById('startPracticeBtn').addEventListener('click', () => showToast('Match play ships with the game spec'));
+    document.getElementById('startPracticeBtn').addEventListener('click', () => {
+      const difficulty = body.querySelector('[data-diff].active').dataset.diff;
+      startMatch({ mode: 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
+    });
     return;
   }
-  body.innerHTML = `
-    <div class="card">
-      <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--a2);">Buy-in locks difficulty</div>
-      <h3 style="margin-top:6px;">Easy</h3>
-      <div class="tier-row"><div class="tier-chip active" data-buy="30"><div class="n">30</div><div class="l">Easy bots</div></div></div>
-    </div>
-    <div class="card">
-      <h3>Medium</h3>
-      <div class="tier-row">
-        <div class="tier-chip" data-buy="100"><div class="n">100</div><div class="l">Unlocks 200</div></div>
-        <div class="tier-chip locked" data-buy="200"><div class="n">200</div><div class="l">Locked</div></div>
-        <div class="tier-chip locked" data-buy="300"><div class="n">300</div><div class="l">Locked</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Hard</h3>
-      <div class="tier-row">
-        <div class="tier-chip locked" data-buy="500"><div class="n">500</div><div class="l">Locked</div></div>
-        <div class="tier-chip locked" data-buy="700"><div class="n">700</div><div class="l">Locked</div></div>
-        <div class="tier-chip locked" data-buy="900"><div class="n">900</div><div class="l">Locked</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Expert</h3>
-      <div class="tier-row">
-        <div class="tier-chip locked" data-buy="1200"><div class="n">1200</div><div class="l">Locked</div></div>
-        <div class="tier-chip locked" data-buy="1500"><div class="n">1500</div><div class="l">Locked</div></div>
-        <div class="tier-chip locked" data-buy="1800"><div class="n">1800</div><div class="l">Locked</div></div>
-      </div>
-    </div>
-    <button class="btn primary" id="startStandardBtn">Start · 30 coins</button>`;
-  document.getElementById('startStandardBtn').addEventListener('click', () => showToast('Match play ships with the game spec'));
+  const diffs = ['Easy', 'Medium', 'Hard', 'Expert'];
+  body.innerHTML = diffs.map((d) => {
+    const buys = PalaceEngine.BUYINS[d];
+    const chips = buys.map((b) => {
+      const open = PalaceEngine.isBuyInUnlocked(state.unlocks, d, b);
+      return `<div class="tier-chip${open ? '' : ' locked'}${d==='Easy' && b===30 ? ' active' : ''}" data-buy="${b}" data-diff="${d}" data-open="${open ? '1' : '0'}">
+        <div class="n">${b}</div><div class="l">${open ? d + ' bots' : 'Locked'}</div>
+      </div>`;
+    }).join('');
+    return `<div class="card"><h3>${d}</h3><div class="tier-row">${chips}</div></div>`;
+  }).join('') + `<button class="btn primary" id="startStandardBtn">Start · 30 coins</button>`;
+  let buyIn = 30;
+  let difficulty = 'Easy';
+  const startBtn = document.getElementById('startStandardBtn');
+  body.querySelectorAll('[data-buy]').forEach((chip) => chip.addEventListener('click', () => {
+    if (chip.dataset.open !== '1') return showToast('Win the previous stake to unlock this');
+    body.querySelectorAll('[data-buy]').forEach((c) => c.classList.remove('active'));
+    chip.classList.add('active');
+    buyIn = Number(chip.dataset.buy);
+    difficulty = chip.dataset.diff;
+    startBtn.textContent = 'Start · ' + buyIn + ' coins';
+  }));
+  startBtn.addEventListener('click', () => {
+    startMatch({ mode: 'standard', seats: 4, difficulty, buyIn });
+  });
 }
 
 function closeMode() { document.getElementById('modeOverlay').style.display = 'none'; }
@@ -770,6 +1692,11 @@ function init() {
   document.getElementById('craftWindowLeaveBtn').addEventListener('click', closeCraft);
   document.getElementById('profileLeaveBtn').addEventListener('click', closeProfile);
   document.getElementById('modeLeaveBtn').addEventListener('click', closeMode);
+  document.getElementById('tableLeaveBtn').addEventListener('click', () => {
+    if (match && !match.ended && !confirm('Leave this match?')) return;
+    closeTable();
+  });
+  document.getElementById('itemDetailPopupBackdrop').addEventListener('click', closeItemDetail);
   document.getElementById('sfxRange').addEventListener('input', (e) => { state.settings.sfx = Number(e.target.value); document.getElementById('sfxVal').textContent = state.settings.sfx + '%'; saveState(); });
   document.getElementById('musicRange').addEventListener('input', (e) => { state.settings.music = Number(e.target.value); document.getElementById('musicVal').textContent = state.settings.music + '%'; saveState(); });
   document.getElementById('notifToggle').addEventListener('click', () => { state.settings.notifications = !state.settings.notifications; saveState(); renderSettings(); });
@@ -803,7 +1730,7 @@ function init() {
   });
   document.getElementById('resetBtn').addEventListener('click', () => {
     if (!confirm('Reset PALACE save on this device?')) return;
-    state = defaultState();
+    state = seedCosmetics(defaultState());
     saveState();
     renderAll();
     showToast('Save reset — 400 coins');
@@ -825,6 +1752,8 @@ function init() {
 }
 
 init();
+
 </script>
+
 </body>
 </html>

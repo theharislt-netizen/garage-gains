@@ -5,6 +5,7 @@
   "description": "PALACE — card-game Android app (Capacitor + live-update, same workflow as RIGCORE)",
   "scripts": {
     "test:setup": "node scripts/test-setup.mjs",
+    "test:game": "node scripts/test-gameplay.mjs",
     "verify:update": "node scripts/verify-live-update.mjs",
     "prepare:www": "node scripts/prepare-www.mjs",
     "bundle:live": "node scripts/make-live-bundle.mjs",
