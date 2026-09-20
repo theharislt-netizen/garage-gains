@@ -8,6 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const E = require(join(root, 'palace-engine.js'));
 const html = readFileSync(join(root, 'card-game.html'), 'utf8');
+const engineSrc = readFileSync(join(root, 'palace-engine.js'), 'utf8');
 const fails = [];
 function must(cond, msg) { if (!cond) fails.push(msg); }
 
@@ -45,6 +46,10 @@ must(html.includes('addEventListener(\'mousedown\', down)'), 'mouse fallback sta
 must(html.includes('if (!match || match.ended || match.settled) return;'), 'hand inspect works during bot turns, not only on your turn');
 must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
 must(html.includes('hideDrawPile') && html.includes('draw-stack.empty'), 'empty draw pile is removed after the last card flies');
+must(!html.includes('empty-pile'), 'empty discard pile does not render a placeholder card');
+must(html.includes('discardPileCardsHtml') && html.includes('playSourceEl'), 'pile paint only uses real cards and never ghosts the discard');
+must(html.includes('Bonus — tap a face-down card'), 'a 5 bonus at stage 3 asks you to pick a face-down slot');
+must(engineSrc.includes('if (player.isBot) pickupOneDownIfStageThree'), 'only bots auto-flip a face-down card on a 5 bonus');
 must(html.includes('drawEmpty ? \'\' : cardBackHtml()'), 'draw pile card-back is omitted when the stock is empty');
 must(!html.includes('dt < 320'), 'taps are not dropped after a 320ms hold window');
 must(html.includes('pruneSelectedIds') && html.includes('onHumanCardTap(g.id)'), 'a tap selects without auto-playing');
@@ -448,6 +453,35 @@ must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone
 must(fiveBonus.some((m) => m.cardIds.includes('3S')), 'bonus can pick a scooped face-up card');
 must(!evFiveEdge.some((e) => e.type === 'draw'), 'empty draw pile does not draw before the scooped bonus');
 
+const fivePairEdge = E.newMatch({ seats: 2, rng: seededRng(16) });
+fivePairEdge.draw = [];
+fivePairEdge.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
+fivePairEdge.turn = 0;
+fivePairEdge.phase = 'playing';
+fivePairEdge.players[0].hand = [{ id: '5D', rank: '5', suit: 'D' }];
+fivePairEdge.players[0].up = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '4H', rank: '4', suit: 'H' },
+  { id: 'QD', rank: 'Q', suit: 'D' },
+];
+fivePairEdge.players[0].down = [
+  { id: '3S', rank: '3', suit: 'S' },
+  { id: '8H', rank: '8', suit: 'H' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+const evFivePairEdge = E.applyMove(fivePairEdge, { type: 'play', seat: 0, cardIds: ['5D'], zone: 'hand' });
+must(evFivePairEdge.some((e) => e.type === 'stageUp'), 'playing the last hand 5 scoops Stage 2 into hand');
+must(fivePairEdge.phase === 'bonus', 'the last Stage 1 5 still grants bonus play');
+must(fivePairEdge.players[0].hand.map((c) => c.rank).sort().join() === '4,4,Q', 'bonus hand is the three scooped face-up cards');
+const pairBonus = E.legalMoves(fivePairEdge, 0);
+must(pairBonus.some((m) => m.rank === '4' && m.count === 1 && m.cardIds.includes('4S')), 'each scooped 4 is legal on the Stage 1→2 bonus');
+must(pairBonus.some((m) => m.rank === '4' && m.count === 1 && m.cardIds.includes('4H')), 'the other scooped 4 is also legal on that bonus');
+must(pairBonus.some((m) => m.rank === '4' && m.count === 2), 'the Stage 1→2 bonus can play both matching 4s together');
+const evPairBonus = E.applyMove(fivePairEdge, { type: 'play', seat: 0, cardIds: ['4S', '4H'], zone: 'hand' });
+must(evPairBonus.some((e) => e.type === 'play' && e.bonus && e.cards.length === 2), 'both scooped 4s leave as one bonus play');
+must(fivePairEdge.players[0].hand.every((c) => c.rank !== '4'), 'both bonus 4s are gone after the Stage 1→2 group');
+must(fivePairEdge.phase === 'playing', 'a non-5 group ends the bonus after the Stage 1→2 scoop');
+
 const stage3 = E.newMatch({ seats: 2, rng: seededRng(13) });
 stage3.draw = [];
 stage3.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
@@ -484,11 +518,37 @@ fiveDown.players[0].down = [
   { id: 'JC', rank: 'J', suit: 'C' },
 ];
 const evFiveDown = E.applyMove(fiveDown, { type: 'play', seat: 0, cardIds: ['5C'], zone: 'hand' });
-must(evFiveDown.some((e) => e.type === 'stageDown'), '5 at stage 3 auto-places one face-down card into hand');
-must(fiveDown.players[0].hand.length === 1, 'exactly one face-down card is placed for the 5 bonus');
-must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
+must(!evFiveDown.some((e) => e.type === 'stageDown'), 'a human 5 at stage 3 does not auto-flip a face-down card');
+must(fiveDown.players[0].hand.length === 0, 'the hand stays empty so the player can choose a slot');
+must(fiveDown.players[0].down.length === 3, 'all three face-down cards stay until a slot is chosen');
 must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, '5 at stage 3 still grants bonus play');
-must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is played from the revealed hand card');
+const bonusFlips = E.legalMoves(fiveDown, 0);
+must(bonusFlips.filter((m) => m.type === 'flip').length === 3, 'the bonus is choosing which face-down slot to flip');
+must(!bonusFlips.some((m) => m.type === 'pickup'), 'bonus play cannot take the pile');
+const evPickDown = E.applyMove(fiveDown, { type: 'flip', seat: 0, index: 2 });
+must(evPickDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === 'JC'), 'the chosen face-down slot is the one revealed');
+must(fiveDown.players[0].hand.map((c) => c.id).join() === 'JC', 'only the chosen face-down card enters the hand');
+must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
+must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, 'after the chosen flip, the bonus play is the revealed card');
+must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is then played from the revealed hand card');
+
+const botFiveDown = E.newMatch({ seats: 2, rng: seededRng(15) });
+botFiveDown.draw = [];
+botFiveDown.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];
+botFiveDown.turn = 0;
+botFiveDown.phase = 'playing';
+botFiveDown.players[0].isBot = true;
+botFiveDown.players[0].hand = [{ id: '5C', rank: '5', suit: 'C' }];
+botFiveDown.players[0].up = [];
+botFiveDown.players[0].down = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '9H', rank: '9', suit: 'H' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+const evBotFiveDown = E.applyMove(botFiveDown, { type: 'play', seat: 0, cardIds: ['5C'], zone: 'hand' });
+must(evBotFiveDown.some((e) => e.type === 'stageDown'), 'bots still auto-place one face-down card for a 5 bonus');
+must(botFiveDown.players[0].hand.length === 1, 'the bot bonus hand is the auto-flipped card');
+must(botFiveDown.phase === 'bonus', 'the bot still gets the 5 bonus play');
 
 const stuck = E.newMatch({ seats: 2, rng: seededRng(5) });
 stuck.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];

@@ -277,7 +277,6 @@
     box-shadow: 0 0 0 2px #163056;
   }
   .pcard.tiny.back .pc-back-inner, .pcard.mini.back .pc-back-inner { inset: 2px; border-width: 1px; box-shadow: inset 0 0 0 1px #163056; }
-  .pcard.back.empty-pile { opacity: 0.28; }
   .pile-count {
     position: absolute; right: -6px; bottom: -6px; z-index: 2;
     min-width: 22px; height: 22px; padding: 0 6px;
@@ -2109,14 +2108,18 @@ function flyArc(fromRect, toRect, html, opts) {
   });
 }
 
-function paintDiscardPile(landedId) {
+function discardPileCardsHtml(cards, landedId) {
+  const shown = cards && cards.length ? cards : [];
+  return shown.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
+    + '<div class="accept-ripple" id="acceptRipple"></div>';
+}
+
+function paintDiscardPile(playedCards, landedId) {
   const stack = document.getElementById('discardPile');
-  if (!stack || !match) return;
-  const pileCards = match.pile.slice(-3);
-  const ripple = '<div class="accept-ripple" id="acceptRipple"></div>';
-  stack.innerHTML = (pileCards.length
-    ? pileCards.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
-    : cardBackHtml('empty-pile')) + ripple;
+  if (!stack) return;
+  const fromMatch = match && match.pile.length ? match.pile.slice(-3) : [];
+  const shown = fromMatch.length ? fromMatch : (playedCards && playedCards.length ? playedCards.slice(-3) : []);
+  stack.innerHTML = discardPileCardsHtml(shown, landedId);
 }
 
 function fireSpecialPulse(kind) {
@@ -2128,9 +2131,16 @@ function fireSpecialPulse(kind) {
   return sleep(SPECIAL_PULSE_MS);
 }
 
+function playSourceEl(seat, id) {
+  if (!id) return null;
+  return document.querySelector('#humanHand [data-id="' + id + '"]')
+    || document.querySelector('#humanTableCards [data-id="' + id + '"]')
+    || document.querySelector('#seat-' + seat + ' [data-id="' + id + '"]');
+}
+
 function playOriginRect(seat, card) {
   if (card) {
-    const src = document.querySelector('[data-id="' + card.id + '"]');
+    const src = playSourceEl(seat, card.id);
     if (src) {
       const r = src.getBoundingClientRect();
       if (r.width >= 8 && r.height >= 8) return r;
@@ -2309,7 +2319,7 @@ function renderTable(opts) {
   let hintHtml = '';
   if (!dealing && match.turn === match.humanSeat) {
     if (zone === 'down') {
-      hintHtml = '<div class="table-hint">Tap a face-down card</div>';
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap a face-down card' : 'Tap a face-down card') + '</div>';
     } else if (selectedIds.length > 0) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
       const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
@@ -2324,11 +2334,7 @@ function renderTable(opts) {
     ${seatsHtml}
     <div class="table-center">
       <div class="draw-stack${drawEmpty ? ' empty' : ''}" id="drawPile">${drawInner}</div>
-      <div class="pile-stack" id="discardPile">${
-        pileCards.length
-          ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
-          : cardBackHtml('empty-pile')
-      }<div class="accept-ripple" id="acceptRipple"></div></div>
+      <div class="pile-stack" id="discardPile">${discardPileCardsHtml(pileCards)}</div>
     </div>
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
     <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
@@ -2652,7 +2658,7 @@ async function animateEvents(events) {
     if (ev.type === 'play') {
       const dest = pileRect();
       await Promise.all(ev.cards.map((card, idx) => {
-        const src = document.querySelector('[data-id="' + card.id + '"]');
+        const src = playSourceEl(ev.seat, card.id);
         const from = playOriginRect(ev.seat, card);
         if (src) src.classList.add('ghost');
         pendingFlyFrom = null;
@@ -2666,7 +2672,7 @@ async function animateEvents(events) {
         });
       }));
       if (!stillThisMatch(token)) return;
-      paintDiscardPile(ev.cards[ev.cards.length - 1].id);
+      paintDiscardPile(ev.cards, ev.cards[ev.cards.length - 1].id);
       updateSeatHud(ev.seat);
       const pulse = specialPulseKind(ev.cards[ev.cards.length - 1], events, i);
       if (pulse) await fireSpecialPulse(pulse);
@@ -2688,6 +2694,7 @@ async function animateEvents(events) {
       if (stack) stack.classList.add('burn');
       playTone(180, 0.18);
       await sleep(560);
+      paintDiscardPile([]);
     } else if (ev.type === 'stageDown' || ev.type === 'flip') {
       const dest = seatDestRect(ev.seat);
       const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
@@ -2702,8 +2709,7 @@ async function animateEvents(events) {
     } else if (ev.type === 'stageUp') {
       const dest = seatDestRect(ev.seat);
       await Promise.all((ev.cards || []).map((card, i) => {
-        const src = document.querySelector('#seat-' + ev.seat + ' [data-id="' + card.id + '"]')
-          || document.querySelector('[data-id="' + card.id + '"]');
+        const src = playSourceEl(ev.seat, card.id);
         const from = src ? src.getBoundingClientRect() : dest;
         if (src) src.classList.add('ghost');
         return flyArc(from || dest, dest, cardFaceHtml(card), {

@@ -233,7 +233,7 @@
     if (zone === 'out') return [];
     if (zone === 'down') {
       const flips = player.down.map((c, i) => ({ type: 'flip', seat, index: i, zone: 'down' }));
-      if (match.pile.length) flips.push({ type: 'pickup', seat });
+      if (!bonus && match.pile.length) flips.push({ type: 'pickup', seat });
       return flips;
     }
     const cards = zone === 'up' ? player.up : player.hand;
@@ -321,11 +321,12 @@
       return events;
     }
 
-    // Stage 1→2 scoop, then Stage 3 auto-pick, BEFORE the 5 bonus / draw-up-to-2 check.
+    // Stage 1→2 scoop, then Stage 3, BEFORE the 5 bonus / draw-up-to-2 check.
     pickupFaceUpIfStageTwo(match, player, events);
     // Every 5 — opening play or bonus card — resets and grants another bonus play.
     if (rank === '5' && !burn) {
-      pickupOneDownIfStageThree(match, player, events);
+      // Humans choose which face-down slot to flip as the bonus. Bots auto-pick.
+      if (player.isBot) pickupOneDownIfStageThree(match, player, events);
       drawFloorBeforeFive(match, player, 0, events);
       if (zoneCards(player, match).length) {
         match.phase = 'bonus';
