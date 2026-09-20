@@ -153,6 +153,19 @@
     }
     if (typeof window !== 'undefined') window.addEventListener('storage', onStorage);
 
+    const seen = new Map();
+    const poll = typeof window !== 'undefined' ? setInterval(() => {
+      if (typeof localStorage === 'undefined') return;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
+        const raw = localStorage.getItem(key);
+        if (!raw || seen.get(key) === raw) continue;
+        seen.set(key, raw);
+        try { fan(JSON.parse(raw)); } catch (_) { /* ignore */ }
+      }
+    }, 350) : null;
+
     function fan(msg) {
       subs.slice().forEach((fn) => {
         try { fn(msg); } catch (_) { /* ignore */ }
@@ -163,7 +176,9 @@
       const msg = Object.assign({ code: normalizeCode(code), at: Date.now() }, payload || {});
       try {
         if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(STORAGE_PREFIX + msg.code, JSON.stringify(msg));
+          const key = STORAGE_PREFIX + msg.code;
+          localStorage.setItem(key, JSON.stringify(msg));
+          seen.set(key, localStorage.getItem(key));
         }
       } catch (_) { /* ignore */ }
       try { if (bc) bc.postMessage(msg); } catch (_) { /* ignore */ }
@@ -256,6 +271,7 @@
     }
 
     function close() {
+      try { if (poll) clearInterval(poll); } catch (_) { /* ignore */ }
       try { if (bc) bc.close(); } catch (_) { /* ignore */ }
       try { if (peer) peer.destroy(); } catch (_) { /* ignore */ }
       peers.length = 0;

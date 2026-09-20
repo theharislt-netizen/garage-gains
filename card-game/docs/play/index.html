@@ -2770,7 +2770,7 @@ function publishMatch(events) {
   if (!lobbySession || !lobbyBus || netRole === 'guest') return;
   lobbyBus.send(lobbySession.code, {
     type: 'match-state',
-    fromId: myPlayerId(),
+    fromId: livePlayerId(),
     match: cloneMatch(match),
     events: events || [],
   });
@@ -2780,7 +2780,7 @@ async function runMove(move) {
   if (!match || uiBusy || match.settled) return;
   if (netRole === 'guest' && lobbyBus && lobbySession) {
     uiBusy = true;
-    lobbyBus.send(lobbySession.code, { type: 'move', fromId: myPlayerId(), move });
+    lobbyBus.send(lobbySession.code, { type: 'move', fromId: livePlayerId(), move });
     return;
   }
   const token = matchToken;
@@ -3022,7 +3022,7 @@ function finishMatch() {
     hideRewards();
     if (lobbySession && lobbySession.status !== 'closed') {
       lobbySession.status = 'lobby';
-      if (lobbyBus) lobbyBus.send(lobbySession.code, { type: 'lobby', fromId: myPlayerId(), lobby: PalaceLobby.snapshot(lobbySession) });
+      if (lobbyBus) lobbyBus.send(lobbySession.code, { type: 'lobby', fromId: livePlayerId(), lobby: PalaceLobby.snapshot(lobbySession) });
       showLobbyOverlay();
       return;
     }
@@ -3068,7 +3068,7 @@ function startMatch(cfg) {
     lobbySession.status = 'playing';
     lobbyBus.send(lobbySession.code, {
       type: 'match-start',
-      fromId: myPlayerId(),
+      fromId: livePlayerId(),
       match: cloneMatch(match),
       lobby: PalaceLobby.snapshot(lobbySession),
     });
@@ -3266,8 +3266,21 @@ function myPlayerId() {
   return state.profile.id;
 }
 
+function livePlayerId() {
+  try {
+    let id = sessionStorage.getItem('palaceLiveId');
+    if (!id && window.PalaceLobby) {
+      id = PalaceLobby.makePlayerId();
+      sessionStorage.setItem('palaceLiveId', id);
+    }
+    return id || myPlayerId();
+  } catch (_) {
+    return myPlayerId();
+  }
+}
+
 function myPlayer() {
-  return { id: myPlayerId(), name: state.profile.name || 'Player' };
+  return { id: livePlayerId(), name: state.profile.name || 'Player' };
 }
 
 function ensureLobbyBus() {
@@ -3279,27 +3292,27 @@ function ensureLobbyBus() {
 
 function onLobbyMessage(msg) {
   if (!msg || !msg.code) return;
-  if (msg.fromId && msg.fromId === myPlayerId()) return;
+  if (msg.fromId && msg.fromId === livePlayerId()) return;
   if (lobbySession && msg.code !== lobbySession.code) return;
   if (msg.type === 'hello' && lobbySession && netRole !== 'guest') {
     const joined = PalaceLobby.joinLobby(lobbySession, { id: msg.fromId, name: msg.name });
     if (!joined.ok) {
-      lobbyBus.send(lobbySession.code, { type: 'join-error', fromId: myPlayerId(), toId: msg.fromId, error: joined.error });
+      lobbyBus.send(lobbySession.code, { type: 'join-error', fromId: livePlayerId(), toId: msg.fromId, error: joined.error });
       return;
     }
-    lobbyBus.send(lobbySession.code, { type: 'lobby', fromId: myPlayerId(), lobby: PalaceLobby.snapshot(lobbySession) });
+    lobbyBus.send(lobbySession.code, { type: 'lobby', fromId: livePlayerId(), lobby: PalaceLobby.snapshot(lobbySession) });
     paintLobby();
     return;
   }
   if (msg.type === 'lobby' && msg.lobby) {
-    const seat = PalaceLobby.seatOf(msg.lobby, myPlayerId());
+    const seat = PalaceLobby.seatOf(msg.lobby, livePlayerId());
     if (seat < 0 && netRole === 'guest') return;
     lobbySession = msg.lobby;
     if (netRole === 'guest') paintLobby();
     else paintLobby();
     return;
   }
-  if (msg.type === 'join-error' && msg.toId === myPlayerId()) {
+  if (msg.type === 'join-error' && msg.toId === livePlayerId()) {
     showToast(msg.error || 'Could not join');
     return;
   }
@@ -3312,7 +3325,7 @@ function onLobbyMessage(msg) {
     pendingCfg = lobbySession ? lobbySession.cfg : pendingCfg;
     matchToken += 1;
     match = msg.match;
-    match.humanSeat = PalaceLobby.seatOf(lobbySession, myPlayerId());
+    match.humanSeat = PalaceLobby.seatOf(lobbySession, livePlayerId());
     if (match.humanSeat < 0) match.humanSeat = 0;
     closeJoinOverlay();
     closeLobbyOverlay(true);
@@ -3334,7 +3347,7 @@ function onLobbyMessage(msg) {
 
 function destroyLobby(keepView) {
   if (lobbySession && lobbyBus && netRole !== 'guest') {
-    try { lobbyBus.send(lobbySession.code, { type: 'lobby-closed', fromId: myPlayerId() }); } catch (_) { /* ignore */ }
+    try { lobbyBus.send(lobbySession.code, { type: 'lobby-closed', fromId: livePlayerId() }); } catch (_) { /* ignore */ }
   }
   if (lobbyUnsub) { lobbyUnsub(); lobbyUnsub = null; }
   if (lobbyBus) { try { lobbyBus.close(); } catch (_) { /* ignore */ } }
@@ -3373,7 +3386,7 @@ function paintLobby() {
     const meta = s.kind === 'host' ? 'Host' : s.kind === 'human' ? 'Joined' : botNote;
     return `<div class="lobby-seat ${s.kind}">
       <div class="seat-n">${s.seat + 1}</div>
-      <div><div class="who">${who}${s.id === myPlayerId() ? ' (you)' : ''}</div><div class="meta">${meta}</div></div>
+      <div><div class="who">${who}${s.id === livePlayerId() ? ' (you)' : ''}</div><div class="meta">${meta}</div></div>
     </div>`;
   }).join('');
   const link = PalaceLobby.inviteLink(lobbySession.code);
@@ -3469,11 +3482,11 @@ function attemptJoin(raw) {
   netRole = 'guest';
   ensureLobbyBus();
   lobbySession = { code, hostId: null, cfg: { seats: 4, difficulty: 'Easy', mode: 'standard' }, seats: [], status: 'lobby' };
-  lobbyBus.send(code, { type: 'hello', fromId: myPlayerId(), name: myPlayer().name });
+  lobbyBus.send(code, { type: 'hello', fromId: livePlayerId(), name: myPlayer().name });
   showToast('Looking for lobby…');
   lobbyBus.enableRemote(code, { host: false }).then((ok) => {
     remoteReady = !!ok;
-    if (ok) lobbyBus.send(code, { type: 'hello', fromId: myPlayerId(), name: myPlayer().name });
+    if (ok) lobbyBus.send(code, { type: 'hello', fromId: livePlayerId(), name: myPlayer().name });
   });
   closeJoinOverlay();
   showLobbyOverlay();
@@ -3638,6 +3651,14 @@ function init() {
   if (window.PalaceLobby) {
     const join = PalaceLobby.readJoinCode(location.search, location.hash);
     if (join) setTimeout(() => openJoinSession(join), 120);
+  }
+  if (/[?&]test=1/.test(location.search || '')) {
+    window.__palaceTest = {
+      expireTurn() { turnDeadline = Date.now() - 1; tickTurnClock(); },
+      lobby() { return lobbySession; },
+      match() { return match; },
+      role() { return netRole; },
+    };
   }
 }
 
