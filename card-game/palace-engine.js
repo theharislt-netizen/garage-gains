@@ -263,15 +263,7 @@
       return events;
     }
 
-    if (burn) {
-      match.phase = 'playing';
-      drawUp(match, player, events);
-      markOut(match, player, events);
-      maybeEnd(match, events);
-      return events;
-    }
-
-    if (rank === '5' && !opts.bonus) {
+    if (rank === '5' && !opts.bonus && !burn) {
       while (player.hand.length < HAND_SIZE && match.draw.length) drawFromPile(match, player, 1, events);
       if (zoneCards(player).length) {
         match.phase = 'bonus';

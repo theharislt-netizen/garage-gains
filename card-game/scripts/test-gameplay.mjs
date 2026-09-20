@@ -76,7 +76,13 @@ must(legal.some((mv) => mv.rank === '10'), '10 can be played on Ace');
 const ev10 = E.applyMove(pileAce, { type: 'play', seat: 0, cardIds: ['10C'], zone: 'hand' });
 must(ev10.some((e) => e.type === 'burn'), '10 burns the pile');
 must(pileAce.pile.length === 0, 'pile empty after 10');
-must(pileAce.turn === 0, 'burner goes again');
+must(pileAce.turn === 1, '10 passes to the next player — no extra move');
+pileAce.players[1].hand = [
+  { id: '3C', rank: '3', suit: 'C' },
+  { id: '6S', rank: '6', suit: 'S' },
+];
+const after10 = E.legalMoves(pileAce, 1);
+must(after10.some((mv) => mv.rank === '3'), 'after a 10, the next player can play any rank on the empty pile');
 
 const four = E.newMatch({ seats: 2, rng: seededRng(2) });
 four.pile = [
@@ -93,6 +99,7 @@ four.players[0].hand = [
 const ev4 = E.applyMove(four, { type: 'play', seat: 0, cardIds: ['7S'], zone: 'hand' });
 must(ev4.some((e) => e.type === 'burn' && e.fourKind), 'four of a kind burns');
 must(four.pile.length === 0, 'pile empty after four-kind');
+must(four.turn === 1, 'four-kind burn passes to the next player — no extra move');
 
 const reset = E.newMatch({ seats: 2, rng: seededRng(3) });
 reset.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];

@@ -60,7 +60,7 @@ Special cards can be played **on top of any card, regardless of rank**, and **at
 
 - Can be played on top of *any* card, at *any* time on your turn.
 - Playing a 10 **burns the entire discard pile** — all cards on the pile are removed from the game completely (they do not go into anyone's hand and are not reused).
-- The player who burned the pile **leads the next pile** and effectively continues — a fresh, empty pile starts with them.
+- The burner’s **turn then ends**. Play passes to the next player, who faces an empty pile and may play any card. Completing a four-of-a-kind burns the same way — no extra move.
 
 ---
 
@@ -89,7 +89,7 @@ Special cards can be played **on top of any card, regardless of rank**, and **at
 |---|---|---|
 | **2** | Resets the pile — next player can play anything | Anytime, on any card |
 | **5** | Resets the pile + play 1 bonus card from hand (draw up to 2 cards first if needed) | Anytime, on any card |
-| **10** | Burns the pile completely out of the game; player goes again | Anytime, on any card |
+| **10** | Burns the pile completely out of the game; turn then passes | Anytime, on any card |
 | Any other card | Must be equal or higher rank than the top card | Only if it beats the top card |
 | 4-of-a-kind completed on pile | Burns the pile (same as a 10) | — |
 
