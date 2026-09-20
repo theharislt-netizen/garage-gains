@@ -804,7 +804,8 @@
   }
   .header-copy .instance-title { min-height: 0; font-size: 18px; }
   .header-currency { margin-left: auto; flex-shrink: 0; }
-  .overlay-scroll { flex: 1; overflow-y: auto; padding: 4px 0 calc(12px + env(safe-area-inset-bottom)); }
+  .overlay-scroll { flex: 1; overflow-y: auto; padding: 4px 16px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  #modeOverlay .overlay-scroll { padding: 4px 0 0; }
   #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
     overflow: hidden; padding: 0;
@@ -831,11 +832,11 @@
   }
   .seat-toggle button.on { background: var(--a2); color: #081018; font-weight: 700; }
   .seat-toggle.static button { cursor: default; }
-  .stake-screen { display: flex; flex-direction: column; min-height: 100%; }
+  .stake-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .stake-rail {
-    display: flex; align-items: flex-end; gap: 14px;
+    display: flex; align-items: center; gap: 14px; flex: 1;
     overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 20px;
-    padding: 22px 20px 28px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding: 12px 20px 18px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .stake-rail::-webkit-scrollbar { display: none; }
   .stake-card {
@@ -852,8 +853,8 @@
     padding: 12px 8px 10px; text-align: center;
   }
   .stake-oval {
-    position: absolute; left: 8%; right: 8%; top: 16%; height: 54%; border-radius: 50%;
-    transform: rotate(-18deg); pointer-events: none;
+    position: absolute; left: 5%; right: 5%; top: 8%; height: 70%; border-radius: 50%;
+    transform: rotate(-22deg); pointer-events: none;
   }
   .stake-card.diff-easy .stake-oval { background: radial-gradient(circle at 40% 30%, #ff6a7a, #e0233a 62%); }
   .stake-card.diff-medium .stake-oval { background: radial-gradient(circle at 40% 30%, #ffc36a, #e08a2b 62%); }
@@ -2960,10 +2961,11 @@ function openMode(mode) {
           ${stakes.map((s) => {
             const open = PalaceEngine.isBuyInUnlocked(state.unlocks, s.difficulty, s.buyIn);
             const hero = s.difficulty === 'Easy' ? 'EASY' : String(s.buyIn);
+            const kicker = s.difficulty === 'Easy' ? 'Classic' : s.difficulty;
             return stakeCardHtml({
               difficulty: s.difficulty,
               buyIn: s.buyIn,
-              kicker: s.difficulty,
+              kicker,
               hero,
               need: s.buyIn,
               locked: !open,
