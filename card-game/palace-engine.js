@@ -137,6 +137,7 @@
       took += 1;
       if (events) events.push({ type: 'draw', seat: player.seat, card: c });
     }
+    if (took) player.hand = sortHand(player.hand);
     if (!match.draw.length && !match.drawEmptyAt && match.started) {
       match.drawEmptyAt = {
         circulating: match.players.reduce((s, p) => s + p.hand.length + p.up.length + p.down.length, 0),
@@ -324,6 +325,7 @@
       if (!match.pile.length) return events;
       const taken = match.pile.splice(0);
       player.hand.push(...taken);
+      player.hand = sortHand(player.hand);
       events.push({ type: 'pickup', seat: player.seat, cards: taken.map(cloneCard) });
       match.phase = 'playing';
       match.turn = nextSeat(match, player.seat);

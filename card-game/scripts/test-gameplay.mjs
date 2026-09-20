@@ -31,6 +31,14 @@ must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must rend
 must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');
 must(html.includes('drag-follow') && html.includes('startCardDrag'), 'cards must be pickable and throwable');
 must(html.includes('pcard.lifted') && html.includes('legalGlow'), 'hold-to-lift and auto legal glow required');
+must(html.includes('startCardPress') && html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
+must(html.includes('DRAG_PX') && html.includes('maybeBeginDrag'), 'drag starts only after the pointer moves');
+must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
+must(html.includes('hideDrawPile') && html.includes('draw-stack.empty'), 'empty draw pile is removed after the last card flies');
+must(html.includes('drawEmpty ? \'\' : cardBackHtml()'), 'draw pile card-back is omitted when the stock is empty');
+must(!html.includes('dt < 320'), 'taps are not dropped after a 320ms hold window');
+must(html.includes('pruneSelectedIds') && html.includes('skipAuto'), 'selection is pruned and peek-release does not auto-play');
+must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest to highest');
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
 must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
 must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
@@ -460,6 +468,61 @@ must(botMove && botMove.type, 'easy bot returns a move');
 
 must(E.payoutFor(1, 30, 4) === 60, '4p 1st is 50% of pool');
 must(E.payoutFor(4, 30, 4) === 0, '4p last takes nothing');
+
+const dealtSorted = E.newMatch({ seats: 2, rng: seededRng(7) });
+const dealtOrder = dealtSorted.players[0].hand.map((c) => E.faceOrder(c.rank));
+must(dealtOrder.length === 2 && dealtOrder[0] <= dealtOrder[1], 'dealt hand is already lowest to highest');
+
+const sortDraw = E.newMatch({ seats: 2, rng: seededRng(12) });
+sortDraw.turn = 0;
+sortDraw.phase = 'playing';
+sortDraw.pile = [{ id: '3H', rank: '3', suit: 'H' }];
+sortDraw.draw = [
+  { id: 'AH', rank: 'A', suit: 'H' },
+  { id: '2C', rank: '2', suit: 'C' },
+];
+sortDraw.players[0].hand = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: 'KH', rank: 'K', suit: 'H' },
+];
+E.applyMove(sortDraw, { type: 'play', seat: 0, cardIds: ['4S'] });
+must(sortDraw.players[0].hand.map((c) => c.rank).join() === '2,K', 'drawn cards land in ascending rank order');
+must(sortDraw.draw.map((c) => c.id).join() === 'AH', 'un-drawn stock stays on the pile');
+
+const emptyDraw = E.newMatch({ seats: 2, rng: seededRng(12) });
+emptyDraw.turn = 0;
+emptyDraw.phase = 'playing';
+emptyDraw.pile = [{ id: '3H', rank: '3', suit: 'H' }];
+emptyDraw.draw = [{ id: '2C', rank: '2', suit: 'C' }];
+emptyDraw.players[0].hand = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '9D', rank: '9', suit: 'D' },
+];
+E.applyMove(emptyDraw, { type: 'play', seat: 0, cardIds: ['4S'] });
+must(emptyDraw.draw.length === 0, 'last stock cards leave the draw pile empty');
+must(emptyDraw.players[0].hand.map((c) => c.rank).join() === '2,9', 'the last drawn card is sorted into the hand');
+
+const sortPick = E.newMatch({ seats: 2, rng: seededRng(6) });
+sortPick.pile = [
+  { id: 'AS', rank: 'A', suit: 'S' },
+  { id: '2C', rank: '2', suit: 'C' },
+];
+sortPick.turn = 0;
+sortPick.phase = 'playing';
+sortPick.players[0].hand = [
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '9D', rank: '9', suit: 'D' },
+];
+E.applyMove(sortPick, { type: 'pickup', seat: 0 });
+must(sortPick.players[0].hand.map((c) => c.rank).join() === '2,9,K,A', 'pickup re-sorts the hand lowest to highest');
+
+const unsorted = [
+  { id: 'AH', rank: 'A', suit: 'H' },
+  { id: '3C', rank: '3', suit: 'C' },
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '5D', rank: '5', suit: 'D' },
+];
+must(E.sortHand(unsorted).map((c) => c.rank).join() === '3,5,K,A', 'sortHand is 2–A ascending');
 
 const winEarly = E.newMatch({ seats: 4, rng: seededRng(40) });
 winEarly.draw = [];

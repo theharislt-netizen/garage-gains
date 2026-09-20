@@ -459,6 +459,13 @@
     box-shadow: 0 0 0 3px #ffe14a, 0 18px 32px rgba(255,210,74,0.55);
     transition: transform 0.12s ease;
   }
+  .human-hand .pcard.peeking {
+    transform: translateY(-78px) scale(1.48) rotate(0deg) !important;
+    z-index: 40;
+    box-shadow: 0 0 0 3px #ffe14a, 0 22px 40px rgba(0,0,0,0.5);
+    transition: transform 0.14s ease;
+  }
+  .human-hand:has(.pcard.peeking), .human-hand:has(.pcard.lifted) { z-index: 20; }
   .sp-ov {
     position: static; inset: auto;
     display: flex; align-items: center; justify-content: center;
@@ -635,6 +642,10 @@
   .pcard.ghost { visibility: hidden; }
   .pile-stack, .draw-stack { position: relative; width: 72px; height: 106px; }
   .pile-stack .pcard, .draw-stack .pcard { position: absolute; inset: 0; width: 72px; height: 106px; }
+  .draw-stack.empty {
+    width: 0; height: 0; overflow: hidden; margin: 0; pointer-events: none;
+    visibility: hidden;
+  }
   .table-felt {
     flex: 1; position: relative; min-height: 0; overflow: hidden;
     background:
@@ -702,9 +713,10 @@
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
     height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
     padding: 0 8px 6px; touch-action: none; pointer-events: none;
+    --overlap: 16px;
   }
   .human-hand .pcard {
-    margin-left: -16px; cursor: grab; z-index: var(--z, 1); pointer-events: auto;
+    margin-left: calc(-1 * var(--overlap, 16px)); cursor: grab; z-index: var(--z, 1); pointer-events: auto;
     transition: transform 0.16s ease; transform-origin: bottom center;
     transform: rotate(var(--fan, 0deg));
   }
@@ -1617,6 +1629,10 @@ function closeProfile() {
 const PLAY_FLY_MS = 260;
 const PLAY_LAND_MS = 100;
 const SPECIAL_PULSE_MS = 340;
+const PEEK_MS = 280;
+const DRAG_PX = 14;
+const TAP_PLAY_MS = 420;
+const HAND_CARD_W = 64;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -1763,7 +1779,43 @@ function pileRect() {
 }
 function drawRect() {
   const el = document.getElementById('drawPile');
-  return el ? el.getBoundingClientRect() : null;
+  if (!el || el.classList.contains('empty')) return null;
+  const r = el.getBoundingClientRect();
+  if (r.width < 4 || r.height < 4) return null;
+  return r;
+}
+
+function hideDrawPile() {
+  const el = document.getElementById('drawPile');
+  if (!el) return;
+  el.classList.add('empty');
+  el.innerHTML = '';
+}
+
+function handLayout(count) {
+  const felt = document.querySelector('.table-felt');
+  const maxW = Math.max(160, (felt ? felt.clientWidth : window.innerWidth) - 24);
+  if (count <= 1) return { overlap: 0, spread: 0 };
+  const minStep = 16;
+  const maxStep = 52;
+  const fitStep = (maxW - HAND_CARD_W) / (count - 1);
+  const step = Math.max(minStep, Math.min(maxStep, fitStep));
+  const overlap = Math.max(0, Math.round(HAND_CARD_W - step));
+  const spread = count <= 3 ? 14 : count <= 5 ? 10 : 6;
+  return { overlap, spread };
+}
+
+function liveZoneCards() {
+  if (!match) return [];
+  const human = match.players[match.humanSeat];
+  if (!human) return [];
+  const zone = PalaceEngine.activeZone(human);
+  return zone === 'up' ? human.up : human.hand;
+}
+
+function pruneSelectedIds() {
+  const live = new Set(liveZoneCards().map((c) => c.id));
+  selectedIds = selectedIds.filter((id) => live.has(id));
 }
 function seatDestRect(seat) {
   if (match && seat === match.humanSeat) {
@@ -2025,18 +2077,22 @@ function renderTable(opts) {
       ${tableCards}
     </div>`;
   }).join('');
-  const handN = human.hand.length;
-  const spread = handN <= 1 ? 0 : Math.min(28, handN * 4);
-  const handHtml = dealing ? '' : human.hand.map((c, i) => {
+  pruneSelectedIds();
+  const handCards = dealing ? [] : PalaceEngine.sortHand(human.hand);
+  const handN = handCards.length;
+  const layout = handLayout(handN);
+  const handHtml = dealing ? '' : handCards.map((c, i) => {
     const sel = selectedIds.includes(c.id) ? ' selected' : '';
     const lg = legalIds.has(c.id) ? ' legal' : '';
-    const fan = handN <= 1 ? 0 : (-spread / 2 + spread * i / Math.max(1, handN - 1));
+    const fan = handN <= 1 ? 0 : (-layout.spread / 2 + layout.spread * i / Math.max(1, handN - 1));
     const html = cardFaceHtml(c, sel + lg);
     return html.replace('class="pcard', `style="--fan:${fan}deg;--z:${i + 1}" class="pcard`);
   }).join('');
+  const drawEmpty = !dealing && match.draw.length === 0;
   const drawCountHtml = match.draw.length > 0
     ? '<div class="pile-count">' + match.draw.length + '</div>'
     : '';
+  const drawInner = drawEmpty ? '' : cardBackHtml() + drawCountHtml;
   const playBtnHtml = selectedIds.length > 0
     ? '<button class="btn primary" id="playSelBtn">Play ' + selectedIds.length + '</button>'
     : '';
@@ -2059,14 +2115,14 @@ function renderTable(opts) {
     ${tableWatermarkHtml()}
     ${seatsHtml}
     <div class="table-center">
-      <div class="draw-stack" id="drawPile">${cardBackHtml()}${drawCountHtml}</div>
+      <div class="draw-stack${drawEmpty ? ' empty' : ''}" id="drawPile">${drawInner}</div>
       <div class="pile-stack" id="discardPile">${
         pileCards.length
           ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
           : cardBackHtml('empty-pile')
       }<div class="accept-ripple" id="acceptRipple"></div></div>
     </div>
-    <div class="human-hand" id="humanHand">${handHtml}</div>
+    <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
     <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
@@ -2115,6 +2171,10 @@ function ensureDragListeners() {
   dragListenersBound = true;
   const move = (ev) => {
     if (!gesture) return;
+    if (!gesture.dragging) {
+      maybeBeginDrag(ev);
+      if (!gesture || !gesture.dragging) return;
+    }
     positionDragClone(ev);
   };
   const end = (ev) => finishCardGesture(ev);
@@ -2123,8 +2183,36 @@ function ensureDragListeners() {
   document.addEventListener('pointercancel', end);
 }
 
+function startCardPress(el, ev) {
+  el.classList.add('peeking');
+  gesture = {
+    id: el.dataset.id,
+    el,
+    wrap: null,
+    origin: el.getBoundingClientRect(),
+    startX: ev.clientX,
+    startY: ev.clientY,
+    startT: Date.now(),
+    commit: false,
+    dragging: false,
+    pointerId: ev.pointerId,
+  };
+}
+
+function maybeBeginDrag(ev) {
+  if (!gesture || gesture.dragging) return;
+  const dx = ev.clientX - gesture.startX;
+  const dy = ev.clientY - gesture.startY;
+  if (Math.hypot(dx, dy) < DRAG_PX) return;
+  startCardDrag(gesture.el, ev);
+}
+
 function startCardDrag(el, ev) {
-  const origin = el.getBoundingClientRect();
+  if (!gesture) return;
+  if (gesture.dragging) return;
+  gesture.dragging = true;
+  const origin = gesture.origin || el.getBoundingClientRect();
+  el.classList.remove('peeking');
   el.classList.add('lifted', 'ghost');
   const layer = document.getElementById('flyLayer');
   const wrap = document.createElement('div');
@@ -2134,7 +2222,7 @@ function startCardDrag(el, ev) {
   wrap.innerHTML = el.outerHTML;
   const inner = wrap.firstElementChild;
   if (inner) {
-    inner.classList.remove('ghost', 'lifted', 'legal');
+    inner.classList.remove('ghost', 'lifted', 'legal', 'peeking', 'selected');
     inner.style.width = '100%';
     inner.style.height = '100%';
     inner.style.marginLeft = '0';
@@ -2142,33 +2230,29 @@ function startCardDrag(el, ev) {
   }
   wrap.style.transform = `translate(${origin.left}px, ${origin.top - 20}px) scale(1.2)`;
   layer.appendChild(wrap);
-  gesture = {
-    id: el.dataset.id,
-    el,
-    wrap,
-    origin,
-    startX: ev.clientX,
-    startY: ev.clientY,
-    startT: Date.now(),
-    commit: false,
-    pointerId: ev.pointerId,
-  };
+  gesture.wrap = wrap;
+  gesture.origin = origin;
+  if (ev) positionDragClone(ev);
 }
 
 function finishCardGesture(ev) {
   if (!gesture) return;
   const g = gesture;
   gesture = null;
-  const dy = g.startY - (ev.clientY || g.startY);
+  const clientX = ev && ev.clientX != null ? ev.clientX : g.startX;
+  const clientY = ev && ev.clientY != null ? ev.clientY : g.startY;
+  const dy = g.startY - clientY;
+  const dx = clientX - g.startX;
   const dt = Date.now() - g.startT;
-  const toPile = nearPile(ev.clientX || g.startX, ev.clientY || g.startY);
-  const thrown = toPile || dy > 80;
+  const moved = Math.hypot(dx, dy) >= DRAG_PX;
+  const toPile = nearPile(clientX, clientY);
+  const thrown = g.dragging && (g.commit || toPile || dy > 80);
   if (g.wrap) {
     pendingFlyFrom = g.origin || g.wrap.getBoundingClientRect();
     g.wrap.remove();
   }
   if (g.el) {
-    g.el.classList.remove('lifted', 'dragging');
+    g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
   if (thrown) {
@@ -2178,9 +2262,10 @@ function finishCardGesture(ev) {
   }
   pendingFlyFrom = null;
   if (g.el) g.el.classList.remove('ghost');
-  if (dt < 320 && Math.abs(dy) < 80) {
-    onHumanCardTap(g.id);
-  }
+  if (g.dragging || moved) return;
+  const peekRelease = dt >= TAP_PLAY_MS;
+  if (peekRelease && selectedIds.includes(g.id)) return;
+  onHumanCardTap(g.id, { skipAuto: peekRelease });
 }
 
 function bindTableGestures(zone) {
@@ -2211,15 +2296,14 @@ function bindCardGesture(el, from) {
     ev.stopPropagation();
     hideEmotePicker();
     try { el.setPointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
-    startCardDrag(el, ev);
+    startCardPress(el, ev);
   });
 }
 
 function playLiftedCard(id) {
   if (!id || !match) return;
-  const human = match.players[match.humanSeat];
-  const zone = PalaceEngine.activeZone(human);
-  const cards = zone === 'up' ? human.up : human.hand;
+  pruneSelectedIds();
+  const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) {
     pendingFlyFrom = null;
@@ -2229,7 +2313,7 @@ function playLiftedCard(id) {
   if (!legal.some((m) => m.rank === card.rank)) {
     pendingFlyFrom = null;
     const el = document.querySelector('[data-id="' + id + '"]');
-    if (el) el.classList.remove('ghost', 'lifted', 'dragging');
+    if (el) el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
     showToast('That card does not beat the pile');
     return;
   }
@@ -2238,9 +2322,8 @@ function playLiftedCard(id) {
 }
 
 function selectedPlayIds(thrownId) {
-  const human = match.players[match.humanSeat];
-  const zone = PalaceEngine.activeZone(human);
-  const cards = zone === 'up' ? human.up : human.hand;
+  pruneSelectedIds();
+  const cards = liveZoneCards();
   const thrown = cards.find((c) => c.id === thrownId);
   if (match.phase === 'bonus') return thrown ? [thrown.id] : selectedIds.slice(0, 1);
   if (!thrown) return selectedIds.slice();
@@ -2253,11 +2336,10 @@ function selectedPlayIds(thrownId) {
   return [thrown.id];
 }
 
-function onHumanCardTap(id) {
+function onHumanCardTap(id, opts) {
   if (uiBusy || !match || match.ended || match.settled || match.turn !== match.humanSeat) return;
-  const human = match.players[match.humanSeat];
-  const zone = PalaceEngine.activeZone(human);
-  const cards = zone === 'up' ? human.up : human.hand;
+  pruneSelectedIds();
+  const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
   const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
@@ -2282,8 +2364,13 @@ function onHumanCardTap(id) {
       showToast('Matching ranks play together');
     }
   }
+  if (!selectedIds.length) {
+    renderTable();
+    return;
+  }
   const sameRank = cards.filter((c) => c.rank === card.rank);
-  if (selectedIds.length === 1 && sameRank.length === 1) {
+  const skipAuto = !!(opts && opts.skipAuto);
+  if (!skipAuto && selectedIds.length === 1 && sameRank.length === 1) {
     commitHumanPlay();
     return;
   }
@@ -2296,6 +2383,7 @@ async function onHumanFlip(index) {
 }
 
 async function commitHumanPlay() {
+  pruneSelectedIds();
   if (!selectedIds.length || !match) return;
   const ids = selectedIds.slice();
   selectedIds = [];
@@ -2344,6 +2432,8 @@ async function animateEvents(events) {
       const dest = seatDestRect(ev.seat);
       await flyArc(drawRect(), dest, cardBackHtml(), { duration: 380, spin: 180, comet: false });
       updateSeatHud(ev.seat);
+      const laterDraw = events.slice(i + 1).some((e) => e.type === 'draw');
+      if (!laterDraw && match.draw.length === 0) hideDrawPile();
     } else if (ev.type === 'pickup') {
       const dest = seatDestRect(ev.seat);
       await flyArc(pileRect(), dest, cardBackHtml(), { duration: 420, spin: 200, comet: false });
