@@ -531,10 +531,19 @@
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 1px 4px rgba(0,0,0,0.4);
   }
-  .fan-backs { display: flex; align-items: flex-end; justify-content: center; height: 62px; pointer-events: none; }
+  .fan-backs {
+    display: flex; align-items: flex-end; justify-content: center;
+    height: 70px; max-width: 132px; pointer-events: none; overflow: visible;
+  }
+  .seat.east .fan-backs, .seat.west .fan-backs { max-width: 108px; }
+  .seat.east .fan-backs { margin-right: 8px; }
+  .seat.west .fan-backs { margin-left: 8px; }
   .fan-backs .pcard {
-    width: 40px; height: 58px; margin-left: -16px;
-    transform: rotate(calc((var(--i, 0) - 0.45) * 9deg));
+    width: 40px; height: 58px; flex-shrink: 0;
+    margin-left: calc(-1 * var(--fan-overlap, 22px));
+    transform-origin: bottom center;
+    transform: rotate(var(--fan, 0deg));
+    z-index: var(--z, 1);
   }
   .fan-backs .pcard:first-child { margin-left: 0; }
   .emote-btn {
@@ -1707,11 +1716,42 @@ function tableWatermarkHtml() {
   </div>`;
 }
 
-function fanBacksHtml(count) {
-  const show = Math.max(0, Math.min(8, count));
+function opponentFanLayout(count, place) {
+  const n = Math.max(0, Math.min(8, count | 0));
+  const CARD_W = 40;
+  const side = place === 'east' || place === 'west';
+  if (n <= 0) return { n: 0, overlap: 0, angles: [], width: 0 };
+  if (n === 1) return { n: 1, overlap: 0, angles: [0], width: CARD_W };
+  const maxW = side ? 104 : 124;
+  const minVisible = 10;
+  const maxVisible = side ? 16 : 18;
+  const visible = Math.max(minVisible, Math.min(maxVisible, (maxW - CARD_W) / (n - 1)));
+  const overlap = Math.round(CARD_W - visible);
+  const maxSpread = side
+    ? Math.max(10, 28 - n * 3)
+    : Math.max(14, 36 - n * 3);
+  const stepDeg = maxSpread / (n - 1);
+  const mid = (n - 1) / 2;
+  const angles = [];
+  for (let i = 0; i < n; i++) angles.push((i - mid) * stepDeg);
+  return { n, overlap, angles, stepDeg, width: CARD_W + (n - 1) * visible };
+}
+
+function seatFanPlace(seat) {
+  const el = document.getElementById('seat-' + seat);
+  if (!el) return 'north';
+  if (el.classList.contains('east')) return 'east';
+  if (el.classList.contains('west')) return 'west';
+  if (el.classList.contains('north')) return 'north';
+  return 'south';
+}
+
+function fanBacksHtml(count, place) {
+  const layout = opponentFanLayout(count, place);
   let html = '';
-  for (let i = 0; i < show; i++) {
-    html += cardBackHtml('tiny fan-card', '', '--i:' + i);
+  for (let i = 0; i < layout.n; i++) {
+    const style = '--fan:' + layout.angles[i].toFixed(2) + 'deg;--fan-overlap:' + layout.overlap + 'px;--z:' + (i + 1);
+    html += cardBackHtml('tiny fan-card', '', style);
   }
   return html;
 }
@@ -1966,7 +2006,7 @@ function specialPulseKind(card, events, idx) {
 
 function setFanCount(seat, count) {
   const fan = document.getElementById('fan-' + seat);
-  if (fan) fan.innerHTML = fanBacksHtml(count);
+  if (fan) fan.innerHTML = fanBacksHtml(count, seatFanPlace(seat));
 }
 
 function paintEmote(seat, icon) {
@@ -2073,7 +2113,7 @@ function renderTable(opts) {
         </div>
         <div class="seat-name">${p.out ? 'Out · ' + p.place : p.name}</div>
       </div>
-      ${isHuman ? '' : `<div class="fan-backs" id="fan-${p.seat}">${fanBacksHtml(fanCount)}</div>`}
+      ${isHuman ? '' : `<div class="fan-backs" id="fan-${p.seat}">${fanBacksHtml(fanCount, place)}</div>`}
       ${tableCards}
     </div>`;
   }).join('');
