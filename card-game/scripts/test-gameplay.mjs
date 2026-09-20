@@ -38,10 +38,13 @@ must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matchin
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
-must(!html.includes("'Your turn'") && !html.includes('is thinking'), 'no YOUR TURN / thinking text under the pile');
+must(!html.includes('id="turnBanner"') && !html.includes('turn-banner') && !html.includes('function flashBanner'), 'turn-status element under the pile is deleted');
+must(!html.includes('Your turn') && !html.includes('is thinking'), 'no YOUR TURN / thinking text anywhere');
 must(!html.includes('pc-pip">P') && !html.includes('pc-pip">pile'), 'card backs have no placeholder letter');
+must(html.includes('pc-back-inner') && html.includes('pc-back-diamond'), 'card backs use a stock framed pattern with no letter');
 must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a stock navy/gold design');
-must(html.includes("})() : ''}"), 'matching-rank hint does not leak a stray 0');
+must(html.includes('playBtnHtml') && html.includes('hintHtml') && html.includes('pile-count'), 'hand chrome is built from strings so a 0 cannot leak');
+must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in the table template');
 must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
 function seededRng(seed) {

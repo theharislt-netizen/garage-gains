@@ -254,17 +254,44 @@
   .pcard .pc-suit { font-size: 18px; line-height: 1; }
   .pcard .pc-pip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
   .pcard.back {
-    background:
-      radial-gradient(circle at 50% 42%, rgba(212,181,106,0.22) 0 10px, transparent 11px),
-      repeating-linear-gradient(45deg, rgba(212,181,106,0.16) 0 1px, transparent 1px 7px),
-      repeating-linear-gradient(-45deg, rgba(212,181,106,0.12) 0 1px, transparent 1px 7px),
-      linear-gradient(180deg, #1e3a6b, #122544 55%, #0d1b33);
-    border: 1.5px solid #c9a45b;
-    box-shadow: inset 0 0 0 4px #163056, inset 0 0 0 6px rgba(201,164,91,0.45);
+    background: #efe6d4;
+    border: 1px solid #c9a45b;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.35);
     color: transparent;
   }
-  .pcard.back .pc-pip { display: none; }
-  .pcard.back.empty-pile { opacity: 0.3; }
+  .pcard.back .pc-pip { display: none !important; }
+  .pcard.back .pc-back-inner {
+    position: absolute; inset: 5px; border-radius: 4px;
+    border: 1.5px solid #c9a45b;
+    background:
+      repeating-linear-gradient(0deg, rgba(201,164,91,0.2) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(90deg, rgba(201,164,91,0.2) 0 1px, transparent 1px 7px),
+      linear-gradient(180deg, #1e3a6b, #122544 55%, #0d1b33);
+    box-shadow: inset 0 0 0 3px #163056;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pcard.back .pc-back-diamond {
+    width: 22%; aspect-ratio: 1; max-width: 18px;
+    background: linear-gradient(135deg, #e6d5a2, #c9a45b 48%, #8a6e32);
+    transform: rotate(45deg); border-radius: 2px;
+    box-shadow: 0 0 0 2px #163056;
+  }
+  .pcard.tiny.back .pc-back-inner, .pcard.mini.back .pc-back-inner { inset: 2px; border-width: 1px; box-shadow: inset 0 0 0 1px #163056; }
+  .pcard.back.empty-pile { opacity: 0.28; }
+  .pile-count {
+    position: absolute; right: -6px; bottom: -6px; z-index: 2;
+    min-width: 22px; height: 22px; padding: 0 6px;
+    border-radius: 100px; background: #0c1220; border: 1.5px solid #c9a45b;
+    color: #f4efe4; font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.45); pointer-events: none;
+  }
+  .table-hint {
+    font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; background: rgba(0,0,0,0.45); color: #f4efe4;
+    padding: 6px 10px; border-radius: 100px; border: 1px solid rgba(201,164,91,0.35);
+    max-width: 140px; text-align: center;
+  }
   .pcard.legal { box-shadow: 0 0 0 2px #ffd24a, 0 0 14px 4px rgba(255,210,74,0.62); }
   .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
   .pcard.tiny { width: 40px; height: 58px; border-radius: 6px; }
@@ -627,13 +654,6 @@
     display: flex; flex-direction: column; gap: 8px; z-index: 6;
   }
   .table-actions .btn { width: auto; padding: 10px 14px; margin: 0; }
-  .turn-banner {
-    position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%);
-    font-family: 'Barlow Condensed'; letter-spacing: 0.12em; text-transform: uppercase;
-    background: rgba(0,0,0,0.45); padding: 8px 14px; border-radius: 100px; pointer-events: none;
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .turn-banner.show { opacity: 1; }
   .match-over {
     position: fixed; inset: 0; z-index: 300;
     background:
@@ -1554,8 +1574,9 @@ function cardFaceHtml(card, extra) {
   </div>`;
 }
 
-function cardBackHtml(extra, id) {
-  return `<div class="pcard back ${extra || ''}" ${id ? 'data-id="' + id + '"' : ''}></div>`;
+function cardBackHtml(extra, id, style) {
+  const st = style ? ' style="' + style + '"' : '';
+  return `<div class="pcard back ${extra || ''}"${st} ${id ? 'data-id="' + id + '"' : ''}"><div class="pc-back-inner"><div class="pc-back-diamond"></div></div></div>`;
 }
 
 function remainingCount(p) {
@@ -1572,7 +1593,7 @@ function fanBacksHtml(count) {
   const show = Math.max(0, Math.min(8, count));
   let html = '';
   for (let i = 0; i < show; i++) {
-    html += `<div class="pcard back mini" style="--i:${i}"></div>`;
+    html += cardBackHtml('mini', '', '--i:' + i);
   }
   return html;
 }
@@ -1669,8 +1690,19 @@ function seatDestRect(seat) {
 function updateSeatHud(seat) {
   if (!match || !match.players[seat]) return;
   const p = match.players[seat];
-  const badge = document.querySelector('#seat-' + seat + ' .count-badge');
-  if (badge) badge.textContent = String(remainingCount(p));
+  const wrap = document.querySelector('#seat-' + seat + ' .avatar-wrap');
+  let badge = document.querySelector('#seat-' + seat + ' .count-badge');
+  const n = remainingCount(p);
+  if (n > 0) {
+    if (!badge && wrap) {
+      badge = document.createElement('div');
+      badge.className = 'count-badge';
+      wrap.appendChild(badge);
+    }
+    if (badge) badge.textContent = String(n);
+  } else if (badge) {
+    badge.remove();
+  }
   if (seat !== match.humanSeat) setFanCount(seat, p.hand.length);
 }
 
@@ -1873,12 +1905,13 @@ function renderTable(opts) {
       : `<div class="seat-row">
           ${p.up.map((c) => cardFaceHtml(c, 'mini')).join('')}
         </div>`;
+    const remainBadge = remain > 0 ? '<div class="count-badge">' + remain + '</div>' : '';
     return `<div class="seat ${place}${active ? ' active' : ''}${thinking ? ' thinking' : ''}" id="seat-${p.seat}" data-seat="${p.seat}">
       <div class="seat-head">
         <div class="avatar-wrap">
           <div class="avatar-ring"></div>
           <div class="avatar" style="background:${color}">${initialsOf(p.name)}</div>
-          <div class="count-badge">${remain}</div>
+          ${remainBadge}
           <div class="speech-bubble" id="bubble-${p.seat}"></div>
           <div class="sparkle" id="sparkle-${p.seat}"></div>
         </div>
@@ -1898,29 +1931,39 @@ function renderTable(opts) {
     const html = cardFaceHtml(c, sel + lg);
     return html.replace('class="pcard', `style="--fan:${fan}deg;--z:${i + 1}" class="pcard`);
   }).join('');
+  const drawCountHtml = match.draw.length > 0
+    ? '<div class="pile-count">' + match.draw.length + '</div>'
+    : '';
+  const playBtnHtml = selectedIds.length > 0
+    ? '<button class="btn primary" id="playSelBtn">Play ' + selectedIds.length + '</button>'
+    : '';
+  const pickupBtnHtml = canPickup
+    ? '<button class="btn danger" id="pickupBtn">Take pile</button>'
+    : '';
+  let hintHtml = '';
+  if (!dealing && match.turn === match.humanSeat) {
+    if (match.phase === 'bonus') {
+      hintHtml = '<div class="table-hint">Bonus card — any rank</div>';
+    } else if (zone === 'down') {
+      hintHtml = '<div class="table-hint">Tap a face-down card</div>';
+    } else if (selectedIds.length > 0) {
+      const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
+      const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
+      if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
+    }
+  }
   felt.innerHTML = `
     ${seatsHtml}
     <div class="table-center">
-      <div class="draw-stack" id="drawPile">${cardBackHtml()}${match.draw.length ? '<div class="inv-slot-count" style="right:4px;bottom:4px;color:#fff;">' + match.draw.length + '</div>' : ''}</div>
+      <div class="draw-stack" id="drawPile">${cardBackHtml()}${drawCountHtml}</div>
       <div class="pile-stack" id="discardPile">${
         pileCards.length
           ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
           : cardBackHtml('empty-pile')
       }<div class="accept-ripple" id="acceptRipple"></div></div>
     </div>
-    <div class="turn-banner ${opts && opts.banner ? 'show' : ''}" id="turnBanner">${opts && opts.banner ? opts.banner : ''}</div>
     <div class="human-hand" id="humanHand">${handHtml}</div>
-    <div class="table-actions">
-      ${selectedIds.length ? '<button class="btn primary" id="playSelBtn">Play ' + selectedIds.length + '</button>' : ''}
-      ${canPickup ? '<button class="btn danger" id="pickupBtn">Take pile</button>' : ''}
-      ${match.phase === 'bonus' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Bonus card — any rank</div>' : ''}
-      ${zone === 'down' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Tap a face-down card</div>' : ''}
-      ${selectedIds.length && match.phase !== 'bonus' && match.turn === match.humanSeat && !dealing ? (() => {
-        const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
-        const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
-        return more > 0 ? '<div class="seat-name">Tap matching ' + c0.rank + 's to add</div>' : '';
-      })() : ''}
-    </div>`;
+    <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
 
@@ -2217,7 +2260,7 @@ async function animateEvents(events) {
       await flyArc(from || dest, dest, face, { duration: 480, spin: 140, comet: false });
       updateSeatHud(ev.seat);
       playTone(400, 0.1);
-      flashBanner('Face-down card to hand');
+      /* Face-down card to hand — no pile-status text; animation is the cue */
     } else if (ev.type === 'stageUp') {
       const dest = seatDestRect(ev.seat);
       await Promise.all((ev.cards || []).map((card, i) => {
@@ -2234,27 +2277,13 @@ async function animateEvents(events) {
       }));
       updateSeatHud(ev.seat);
       playTone(400, 0.1);
-      flashBanner('Face-up cards to hand');
+      /* Face-up cards to hand — no pile-status text; animation is the cue */
     } else if (ev.type === 'reset') {
-      flashBanner(ev.rank === '5' ? '5 — bonus play' : '2 — pile reset');
+      /* 5 bonus play / 2 pile reset — avatar ring + pulse, no center label */
     } else if (ev.type === 'out') {
-      flashBanner((ev.name || 'Player') + (ev.loser ? ' is last' : ' is out'));
+      /* player is last / is out — seat name updates; no center label */
     }
   }
-}
-
-function flashBanner(text) {
-  const b = document.getElementById('turnBanner');
-  if (!b) {
-    renderTable({ banner: text });
-  } else {
-    b.textContent = text;
-    b.classList.add('show');
-  }
-  setTimeout(() => {
-    const el = document.getElementById('turnBanner');
-    if (el) el.classList.remove('show');
-  }, 900);
 }
 
 let audioCtx = null;
@@ -2328,7 +2357,7 @@ async function runTurn() {
 async function animateDeal() {
   const token = matchToken;
   uiBusy = true;
-  renderTable({ banner: 'Dealing', dealing: true });
+  renderTable({ dealing: true });
   playTone(360, 0.2);
   const centerEl = document.querySelector('.table-center') || document.getElementById('drawPile');
   const center = centerEl ? centerEl.getBoundingClientRect() : { left: window.innerWidth / 2 - 14, top: window.innerHeight / 2 - 20, width: 28, height: 40 };
