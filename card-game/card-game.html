@@ -2181,7 +2181,11 @@ function renderTable(opts) {
   const legal = (!uiBusy && !dealing && match.turn === match.humanSeat && !match.ended)
     ? PalaceEngine.legalMoves(match, match.humanSeat) : [];
   const legalIds = new Set();
-  legal.filter((m) => m.type === 'play').forEach((m) => m.cardIds.forEach((id) => legalIds.add(id)));
+  const legalRanks = new Set();
+  legal.filter((m) => m.type === 'play').forEach((m) => {
+    m.cardIds.forEach((id) => legalIds.add(id));
+    if (m.rank) legalRanks.add(m.rank);
+  });
   const canPickup = legal.some((m) => m.type === 'pickup');
   const pileCards = match.pile.slice(-3);
   const seatsHtml = match.players.map((p) => {
@@ -2196,7 +2200,7 @@ function renderTable(opts) {
       : isHuman
       ? `<div class="seat-row" id="humanTableCards">
           ${p.up.map((c) => cardFaceHtml(c, 'tiny'
-            + (zone === 'up' && active && !uiBusy && legalIds.has(c.id) ? ' legal' : '')
+            + (zone === 'up' && active && !uiBusy && (legalIds.has(c.id) || legalRanks.has(c.rank)) ? ' legal' : '')
             + (selectedIds.includes(c.id) ? ' selected' : ''))).join('')}
           ${p.down.map((c, i) => cardBackHtml('tiny' + (zone === 'down' && active && !uiBusy ? ' legal' : ''), 'down-' + i)).join('')}
         </div>`
@@ -2228,7 +2232,7 @@ function renderTable(opts) {
   const layout = handLayout(handN);
   const handHtml = dealing ? '' : handCards.map((c, i) => {
     const sel = selectedIds.includes(c.id) ? ' selected' : '';
-    const lg = legalIds.has(c.id) ? ' legal' : '';
+    const lg = (legalIds.has(c.id) || legalRanks.has(c.rank)) ? ' legal' : '';
     const fan = handN <= 1 ? 0 : (-layout.spread / 2 + layout.spread * i / Math.max(1, handN - 1));
     const html = cardFaceHtml(c, sel + lg);
     return html.replace('class="pcard', `style="--fan:${fan}deg;--z:${i + 1}" class="pcard`);
@@ -2246,17 +2250,15 @@ function renderTable(opts) {
     : '';
   let hintHtml = '';
   if (!dealing && match.turn === match.humanSeat) {
-    if (match.phase === 'bonus') {
-      hintHtml = '<div class="table-hint">Bonus card — any rank</div>';
-    } else if (zone === 'down') {
+    if (zone === 'down') {
       hintHtml = '<div class="table-hint">Tap a face-down card</div>';
     } else if (selectedIds.length > 0) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
       const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
       if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
-      else hintHtml = '<div class="table-hint">Swipe up to play</div>';
+      else hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — swipe up to play' : 'Swipe up to play') + '</div>';
     } else {
-      hintHtml = '<div class="table-hint">Tap to select · swipe up to play</div>';
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · swipe up' : 'Tap to select · swipe up to play') + '</div>';
     }
   }
   felt.innerHTML = `
@@ -2529,7 +2531,6 @@ function selectedPlayIds(thrownId) {
   pruneSelectedIds();
   const cards = liveZoneCards();
   const thrown = cards.find((c) => c.id === thrownId);
-  if (match.phase === 'bonus') return thrown ? [thrown.id] : selectedIds.slice(0, 1);
   if (!thrown) return selectedIds.slice();
   const first = cards.find((c) => c.id === selectedIds[0]);
   if (selectedIds.length && first && first.rank === thrown.rank) {
@@ -2546,11 +2547,6 @@ function onHumanCardTap(id) {
   const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
-  if (match.phase === 'bonus') {
-    selectedIds = selectedIds.includes(id) ? [] : [id];
-    renderTable();
-    return;
-  }
   if (!selectedIds.length) {
     selectedIds = [id];
   } else {

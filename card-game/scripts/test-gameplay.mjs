@@ -55,7 +55,8 @@ must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest t
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
 must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
 must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
-must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matching ranks can be selected together before Play');
+must(html.includes('legalRanks.has(c.rank)'), 'every copy of a playable rank glows, not only the first grouped id');
+must(!html.includes('bonus && cards.length !== 1'), 'bonus play does not reject a same-rank group');
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
@@ -183,8 +184,14 @@ must(five.phase === 'bonus', '5 enters bonus play');
 must(five.turn === 0, '5 keeps the turn for bonus');
 must(five.players[0].hand.length >= 2, '5 keeps a 2-card floor for bonus');
 const bonusMoves = E.legalMoves(five, 0);
-must(bonusMoves.every((mv) => mv.count === 1), 'bonus is a single card');
-must(bonusMoves.length >= 1, 'bonus has at least one card');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 1 && mv.cardIds.includes('4S')), 'bonus can play a single 4');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 1 && mv.cardIds.includes('4C')), 'every copy of a playable rank is legal on bonus, not only the first');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 2), 'bonus can play both 4s together as one play');
+const evBonusPair = E.applyMove(five, { type: 'play', seat: 0, cardIds: ['4S', '4C'], zone: 'hand' });
+must(evBonusPair.some((e) => e.type === 'play' && e.bonus && e.cards.length === 2), 'both 4s leave as one bonus play');
+must(five.players[0].hand.every((c) => c.rank !== '4'), 'both bonus 4s are gone from hand');
+must(five.phase === 'playing', 'a non-5 bonus group ends the 5 chain');
+must(five.turn === 1, 'turn passes after the grouped bonus play');
 
 const chain = E.newMatch({ seats: 2, rng: seededRng(31) });
 chain.pile = [{ id: 'QH', rank: 'Q', suit: 'H' }];
@@ -432,7 +439,7 @@ must(fiveEdge.players[0].hand.length === 3, '5-at-boundary hand is the 3 scooped
 must(fiveEdge.phase === 'bonus', '5 at the stage-2 boundary still grants bonus play');
 must(fiveEdge.turn === 0, '5 at the stage-2 boundary keeps the turn');
 const fiveBonus = E.legalMoves(fiveEdge, 0);
-must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone === 'hand' && m.count === 1), 'bonus is chosen from the scooped hand, not the table');
+must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is chosen from the scooped hand, not the table');
 must(fiveBonus.some((m) => m.cardIds.includes('3S')), 'bonus can pick a scooped face-up card');
 must(!evFiveEdge.some((e) => e.type === 'draw'), 'empty draw pile does not draw before the scooped bonus');
 

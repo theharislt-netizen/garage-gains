@@ -86,7 +86,6 @@
     if (!cards || !cards.length) return false;
     const rank = cards[0].rank;
     if (!cards.every((c) => c.rank === rank)) return false;
-    if (bonus) return cards.length === 1;
     return canPlayCardOnPile(match, cards[0]);
   }
 
@@ -241,8 +240,19 @@
     const groups = groupByRank(cards);
     const moves = [];
     groups.forEach((g) => {
-      const max = bonus ? 1 : g.cards.length;
-      for (let n = 1; n <= max; n++) {
+      g.cards.forEach((c) => {
+        if (canPlayCards(match, [c], bonus)) {
+          moves.push({
+            type: 'play',
+            seat,
+            zone,
+            cardIds: [c.id],
+            rank: g.rank,
+            count: 1,
+          });
+        }
+      });
+      for (let n = 2; n <= g.cards.length; n++) {
         const set = g.cards.slice(0, n);
         if (canPlayCards(match, set, bonus)) {
           moves.push({
@@ -367,10 +377,6 @@
       const useZone = activeZone(player, match);
       const cards = takeCards(player, useZone, move.cardIds || []);
       if (!cards.length) return events;
-      if (bonus && cards.length !== 1) {
-        player[useZone === 'up' ? 'up' : 'hand'].push(...cards);
-        return events;
-      }
       if (!canPlayCards(match, cards, bonus)) {
         const dest = useZone === 'up' ? player.up : player.hand;
         dest.push(...cards);
