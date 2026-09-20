@@ -56,7 +56,8 @@ must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pil
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
 must(html.includes('humanFinishedMatch') && html.includes('shouldLeaveForRewards') && html.includes('settleIfDone'), 'going out settles the local client immediately');
 must(html.includes('remainingAreOnlyBots') && html.includes('are not spectated'), 'remaining bots are not spectated after a win');
-must(html.includes('if (settleIfDone()) return;'), 'runMove/runTurn leave for rewards before the next bot turn');
+must(html.includes('PalaceEngine.syncSeat(match, p, refillEv)'), 'each turn refills from stock before table stages can open');
+must(html.includes('activeZone(human, match)'), 'the table UI gates stage 2/3 with the draw pile, not hand-empty alone');
 must(html.includes("if (match && ev.seat === match.humanSeat) break;"), 'winning out event skips leftover table animations');
 must(html.includes("You're out") && html.includes('You never sit and watch the rest') && html.includes('seedLastCardFinish'), '2nd/3rd/last also leave for rewards with Play again');
 must(!html.includes('id="turnBanner"') && !html.includes('turn-banner') && !html.includes('function flashBanner'), 'turn-status element under the pile is deleted');
@@ -375,6 +376,36 @@ stillDraw.players[0].up = [
 const evStill = E.applyMove(stillDraw, { type: 'play', seat: 0, cardIds: ['9H'], zone: 'hand' });
 must(!evStill.some((e) => e.type === 'stageUp'), 'do not scoop face-up cards while the draw pile still has cards');
 must(stillDraw.players[0].up.length === 3, 'face-up row stays on the table while drawing');
+must(stillDraw.players[0].hand.length === 2, 'emptying the hand refills from the draw pile up to 2');
+must(evStill.some((e) => e.type === 'draw'), 'the refill comes from the stock, not the table');
+must(E.activeZone(stillDraw.players[0], stillDraw) === 'hand', 'stage 2 stays closed while the stock has cards');
+must(!E.legalMoves(stillDraw, 0).some((m) => m.zone === 'up' || m.type === 'flip'), 'cannot play face-up or face-down while the draw pile remains');
+
+const freshGate = E.newMatch({ seats: 4, rng: seededRng(7) });
+must(freshGate.draw.length > 0, 'a fresh deal has a draw pile');
+must(E.activeZone(freshGate.players[0], freshGate) === 'hand', 'a fresh match is stage 1 (hand)');
+must(freshGate.players[0].up.length === 3 && freshGate.players[0].down.length === 3, 'table cards exist from the deal');
+must(!E.legalMoves(freshGate, 0).some((m) => m.zone === 'up' || m.zone === 'down' || m.type === 'flip'), 'stage 2/3 cards are not legal at match start');
+
+const earlyUp = E.newMatch({ seats: 2, rng: seededRng(9) });
+earlyUp.turn = 0;
+earlyUp.phase = 'playing';
+earlyUp.draw = [{ id: '2C', rank: '2', suit: 'C' }, { id: '4D', rank: '4', suit: 'D' }];
+earlyUp.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+earlyUp.players[0].hand = [];
+earlyUp.players[0].up = [
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '9D', rank: '9', suit: 'D' },
+  { id: '8S', rank: '8', suit: 'S' },
+];
+must(E.activeZone(earlyUp.players[0], earlyUp) === 'hand', 'empty hand still reads as stage 1 if the stock remains');
+must(!E.legalMoves(earlyUp, 0).some((m) => m.zone === 'up' || m.type === 'flip'), 'face-up/down cards are not legal until the stock is empty');
+const stealUp = E.applyMove(earlyUp, { type: 'play', seat: 0, cardIds: ['KH'], zone: 'up' });
+must(!stealUp.some((e) => e.type === 'play'), 'playing a face-up card is rejected while the draw pile remains');
+must(earlyUp.players[0].up.some((c) => c.id === 'KH'), 'the face-up king stays on the table');
+E.syncSeat(earlyUp, earlyUp.players[0]);
+must(earlyUp.players[0].hand.length === 2, 'syncSeat draws back up to 2 from stock');
+must(earlyUp.players[0].up.length === 3, 'syncSeat does not scoop face-up cards while stock remains');
 
 const fiveEdge = E.newMatch({ seats: 2, rng: seededRng(10) });
 fiveEdge.draw = [];

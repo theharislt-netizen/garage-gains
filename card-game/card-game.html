@@ -1948,7 +1948,7 @@ function liveZoneCards() {
   if (!match) return [];
   const human = match.players[match.humanSeat];
   if (!human) return [];
-  const zone = PalaceEngine.activeZone(human);
+  const zone = PalaceEngine.activeZone(human, match);
   return zone === 'up' ? human.up : human.hand;
 }
 
@@ -2170,7 +2170,7 @@ function renderTable(opts) {
   const n = match.players.length;
   const pos = SEAT_POS[n] || SEAT_POS[4];
   const human = match.players[match.humanSeat];
-  const zone = PalaceEngine.activeZone(human);
+  const zone = PalaceEngine.activeZone(human, match);
   const dealing = !!(opts && opts.dealing);
   const legal = (!uiBusy && !dealing && match.turn === match.humanSeat && !match.ended)
     ? PalaceEngine.legalMoves(match, match.humanSeat) : [];
@@ -2419,7 +2419,7 @@ function bindTableGestures(zone) {
   document.querySelectorAll('#humanTableCards .pcard.back[data-id^="down"]').forEach((el) => {
     el.addEventListener('pointerdown', (ev) => {
       if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
-      if (PalaceEngine.activeZone(match.players[match.humanSeat]) !== 'down') return;
+      if (PalaceEngine.activeZone(match.players[match.humanSeat], match) !== 'down') return;
       ev.preventDefault();
       ev.stopPropagation();
       onHumanFlip(Number((el.dataset.id || 'down-0').split('-')[1]));
@@ -2660,6 +2660,13 @@ async function runTurn() {
       match.turn = PalaceEngine.nextSeat(match, match.turn);
       continue;
     }
+    const refillEv = [];
+    PalaceEngine.syncSeat(match, p, refillEv);
+    if (refillEv.length) await animateEvents(refillEv);
+    if (!stillThisMatch(token) || match.settled) return;
+    if (settleIfDone()) return;
+    p = match.players[match.turn];
+    if (!p || p.out) continue;
     renderTable({
       thinking: p.isBot ? p.seat : -1,
     });
