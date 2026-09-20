@@ -255,11 +255,16 @@
   .pcard .pc-pip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
   .pcard.back {
     background:
-      repeating-linear-gradient(45deg, rgba(180,85,245,0.35) 0 6px, rgba(62,198,240,0.18) 6px 12px),
-      linear-gradient(180deg, #2a1f3d, #120e1c);
-    color: var(--gain);
+      radial-gradient(circle at 50% 42%, rgba(212,181,106,0.22) 0 10px, transparent 11px),
+      repeating-linear-gradient(45deg, rgba(212,181,106,0.16) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-45deg, rgba(212,181,106,0.12) 0 1px, transparent 1px 7px),
+      linear-gradient(180deg, #1e3a6b, #122544 55%, #0d1b33);
+    border: 1.5px solid #c9a45b;
+    box-shadow: inset 0 0 0 4px #163056, inset 0 0 0 6px rgba(201,164,91,0.45);
+    color: transparent;
   }
-  .pcard.back .pc-pip { font-family: 'Barlow Condensed'; font-weight: 800; letter-spacing: 0.08em; font-size: 11px; }
+  .pcard.back .pc-pip { display: none; }
+  .pcard.back.empty-pile { opacity: 0.3; }
   .pcard.legal { box-shadow: 0 0 0 2px #ffd24a, 0 0 14px 4px rgba(255,210,74,0.62); }
   .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
   .pcard.tiny { width: 40px; height: 58px; border-radius: 6px; }
@@ -1544,7 +1549,7 @@ function cardFaceHtml(card, extra) {
 }
 
 function cardBackHtml(extra, id) {
-  return `<div class="pcard back ${extra || ''}" ${id ? 'data-id="' + id + '"' : ''}><div class="pc-pip">P</div></div>`;
+  return `<div class="pcard back ${extra || ''}" ${id ? 'data-id="' + id + '"' : ''}></div>`;
 }
 
 function remainingCount(p) {
@@ -1561,7 +1566,7 @@ function fanBacksHtml(count) {
   const show = Math.max(0, Math.min(8, count));
   let html = '';
   for (let i = 0; i < show; i++) {
-    html += `<div class="pcard back mini" style="--i:${i}"><div class="pc-pip">P</div></div>`;
+    html += `<div class="pcard back mini" style="--i:${i}"></div>`;
   }
   return html;
 }
@@ -1590,7 +1595,7 @@ function restartTurnClock() {
 }
 
 function tickTurnClock() {
-  if (!match || match.ended) {
+  if (!match || match.ended || match.settled) {
     stopTurnClock();
     return;
   }
@@ -1600,14 +1605,14 @@ function tickTurnClock() {
     el.textContent = fmtClock(left);
     el.classList.toggle('low', left <= 5);
   }
-  if (left <= 0 && !uiBusy && match.turn === match.humanSeat && !match.ended) {
+  if (left <= 0 && !uiBusy && match.turn === match.humanSeat && !match.ended && !match.settled) {
     stopTurnClock();
     autoHumanTimeout();
   }
 }
 
 function autoHumanTimeout() {
-  if (!match || uiBusy || match.ended || match.turn !== match.humanSeat) return;
+  if (!match || uiBusy || match.ended || match.settled || match.turn !== match.humanSeat) return;
   const legal = PalaceEngine.legalMoves(match, match.humanSeat);
   const play = legal.find((m) => m.type === 'play');
   if (play) {
@@ -1736,7 +1741,7 @@ function paintDiscardPile(landedId) {
   const ripple = '<div class="accept-ripple" id="acceptRipple"></div>';
   stack.innerHTML = (pileCards.length
     ? pileCards.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
-    : '<div class="pcard back" style="opacity:.25"><div class="pc-pip">pile</div></div>') + ripple;
+    : cardBackHtml('empty-pile')) + ripple;
 }
 
 function fireSpecialPulse(kind) {
@@ -1894,7 +1899,7 @@ function renderTable(opts) {
       <div class="pile-stack" id="discardPile">${
         pileCards.length
           ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
-          : '<div class="pcard back" style="opacity:.25"><div class="pc-pip">pile</div></div>'
+          : cardBackHtml('empty-pile')
       }<div class="accept-ripple" id="acceptRipple"></div></div>
     </div>
     <div class="turn-banner ${opts && opts.banner ? 'show' : ''}" id="turnBanner">${opts && opts.banner ? opts.banner : ''}</div>
@@ -1904,11 +1909,11 @@ function renderTable(opts) {
       ${canPickup ? '<button class="btn danger" id="pickupBtn">Take pile</button>' : ''}
       ${match.phase === 'bonus' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Bonus card — any rank</div>' : ''}
       ${zone === 'down' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Tap a face-down card</div>' : ''}
-      ${selectedIds.length && match.phase !== 'bonus' && match.turn === match.humanSeat && !dealing && (() => {
+      ${selectedIds.length && match.phase !== 'bonus' && match.turn === match.humanSeat && !dealing ? (() => {
         const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
         const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
         return more > 0 ? '<div class="seat-name">Tap matching ' + c0.rank + 's to add</div>' : '';
-      })()}
+      })() : ''}
     </div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
@@ -2096,7 +2101,7 @@ function selectedPlayIds(thrownId) {
 }
 
 function onHumanCardTap(id) {
-  if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
+  if (uiBusy || !match || match.ended || match.settled || match.turn !== match.humanSeat) return;
   const human = match.players[match.humanSeat];
   const zone = PalaceEngine.activeZone(human);
   const cards = zone === 'up' ? human.up : human.hand;
@@ -2264,7 +2269,7 @@ function playTone(freq, dur) {
 }
 
 async function runMove(move) {
-  if (!match || uiBusy) return;
+  if (!match || uiBusy || match.settled) return;
   const token = matchToken;
   uiBusy = true;
   const events = PalaceEngine.applyMove(match, move);
@@ -2273,7 +2278,7 @@ async function runMove(move) {
   selectedIds = [];
   uiBusy = false;
   renderTable();
-  if (match.ended) {
+  if (humanWonMatch() || match.ended) {
     finishMatch();
     return;
   }
@@ -2282,25 +2287,20 @@ async function runMove(move) {
 
 async function runTurn() {
   const token = matchToken;
-  while (stillThisMatch(token) && !match.ended) {
+  while (stillThisMatch(token) && !match.ended && !match.settled) {
     let p = match.players[match.turn];
     if (!p || p.out) {
       match.turn = PalaceEngine.nextSeat(match, match.turn);
       continue;
     }
     renderTable({
-      banner: p.isBot
-        ? p.name + ' is thinking'
-        : (match.phase === 'bonus'
-          ? 'Bonus play'
-          : (PalaceEngine.activeZone(p) === 'down' ? 'Pick a face-down card' : 'Your turn')),
       thinking: p.isBot ? p.seat : -1,
     });
     restartTurnClock();
     if (!p.isBot) return;
     uiBusy = true;
     await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
-    if (!stillThisMatch(token)) return;
+    if (!stillThisMatch(token) || match.settled) return;
     let mv = PalaceEngine.chooseBotMove(match, p);
     let events = PalaceEngine.applyMove(match, mv);
     if (!events.length) {
@@ -2311,7 +2311,7 @@ async function runTurn() {
     if (!stillThisMatch(token)) return;
     selectedIds = [];
     uiBusy = false;
-    if (match.ended) {
+    if (humanWonMatch() || match.ended) {
       renderTable();
       finishMatch();
       return;
@@ -2382,15 +2382,27 @@ function closeTable() {
   renderHeader();
 }
 
+function humanWonMatch() {
+  if (!match) return false;
+  const human = match.players[match.humanSeat];
+  return !!(human && human.out && human.place === 1);
+}
+
 function finishMatch() {
-  if (!match) return;
+  if (!match || match.settled) return;
+  match.settled = true;
+  stopTurnClock();
   const human = match.players[match.humanSeat];
   const place = human.place || match.players.length;
   const won = place === 1;
   const seats = match.players.length;
+  const earlyWin = won && !match.ended;
+  let baseline = 0;
+  let speedBonus = 0;
   let payout = 0;
   if (match.mode === 'standard') {
-    payout = PalaceEngine.payoutFor(place, match.buyIn, seats);
+    baseline = PalaceEngine.payoutFor(place, match.buyIn, seats);
+    payout = baseline + speedBonus;
     state.coins += payout;
     if (won) {
       state.xp += PalaceEngine.XP_WIN[match.difficulty] || 50;
@@ -2403,17 +2415,22 @@ function finishMatch() {
   if (won) state.stats.wins += 1;
   saveState();
   renderHeader();
-  const rows = match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
+  const rows = earlyWin ? '' : match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
     `<div class="settings-row"><div>${p.place}. ${p.name}${p.seat === match.humanSeat ? ' (you)' : ''}</div><div class="l2">${p.out ? 'out' : ''}</div></div>`
   ).join('');
+  const payRows = match.mode === 'standard'
+    ? `<div class="settings-row"><div>Baseline share</div><div class="l2 mono">+${baseline} coins</div></div>`
+      + (speedBonus ? `<div class="settings-row"><div>Speed bonus</div><div class="l2 mono">+${speedBonus} coins</div></div>` : '')
+      + `<div class="settings-row"><div>Payout</div><div class="l2 mono">+${payout} coins</div></div>`
+    : '<p style="color:var(--text-dim); font-size:13px;">Practice — no coins on the line.</p>';
   const over = document.getElementById('matchOver');
   over.innerHTML = `<div class="card" style="max-width:420px; width:100%;">
     <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">${won ? 'You win' : 'Match over'}</div>
     <h3 style="font-size:28px; margin:6px 0 10px;">${place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : place + 'th'}</h3>
-    ${match.mode === 'standard' ? `<div class="settings-row"><div>Payout</div><div class="l2 mono">+${payout} coins</div></div>` : '<p style="color:var(--text-dim); font-size:13px;">Practice — no coins on the line.</p>'}
+    ${payRows}
     ${rows}
     <button class="btn primary" id="againBtn">Play again</button>
-    <button class="btn" id="leaveMatchBtn">Leave table</button>
+    <button class="btn" id="leaveMatchBtn">${won ? 'Home' : 'Leave table'}</button>
   </div>`;
   over.classList.add('show');
   document.getElementById('againBtn').addEventListener('click', () => {

@@ -37,6 +37,11 @@ must(html.includes('#humanTableCards') && html.includes('pointer-events: none'),
 must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matching ranks can be selected together before Play');
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
+must(html.includes('humanWonMatch') && html.includes('match.settled') && html.includes('Baseline share'), '1st place leaves immediately to a rewards summary');
+must(!html.includes("'Your turn'") && !html.includes('is thinking'), 'no YOUR TURN / thinking text under the pile');
+must(!html.includes('pc-pip">P') && !html.includes('pc-pip">pile'), 'card backs have no placeholder letter');
+must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a stock navy/gold design');
+must(html.includes("})() : ''}"), 'matching-rank hint does not leak a stray 0');
 must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
 function seededRng(seed) {
@@ -149,6 +154,49 @@ const bonusMoves = E.legalMoves(five, 0);
 must(bonusMoves.every((mv) => mv.count === 1), 'bonus is a single card');
 must(bonusMoves.length >= 1, 'bonus has at least one card');
 
+const chain = E.newMatch({ seats: 2, rng: seededRng(31) });
+chain.pile = [{ id: 'QH', rank: 'Q', suit: 'H' }];
+chain.turn = 0;
+chain.phase = 'playing';
+chain.draw = [
+  { id: '6C', rank: '6', suit: 'C' },
+  { id: '8C', rank: '8', suit: 'C' },
+  { id: '9C', rank: '9', suit: 'C' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+chain.players[0].hand = [
+  { id: '5H', rank: '5', suit: 'H' },
+  { id: '5S', rank: '5', suit: 'S' },
+  { id: '4D', rank: '4', suit: 'D' },
+];
+const evChain1 = E.applyMove(chain, { type: 'play', seat: 0, cardIds: ['5H'], zone: 'hand' });
+must(chain.phase === 'bonus' && chain.turn === 0, 'first 5 grants a bonus play');
+must(evChain1.some((e) => e.type === 'reset' && e.rank === '5'), 'first 5 resets the pile');
+const evChain2 = E.applyMove(chain, { type: 'play', seat: 0, cardIds: ['5S'], zone: 'hand' });
+must(evChain2.some((e) => e.type === 'play' && e.bonus && e.cards[0].id === '5S'), 'the second 5 is played as the bonus card');
+must(evChain2.some((e) => e.type === 'reset' && e.rank === '5'), 'bonus 5 resets the pile again');
+must(chain.phase === 'bonus' && chain.turn === 0, 'a bonus 5 grants another bonus play');
+must(chain.players[0].hand.length >= 2, 'hand-size floor applies on every 5 in the chain');
+must(chain.players[0].hand.some((c) => c.id === '4D'), 'unplayed cards stay available through the chain');
+const evChain3 = E.applyMove(chain, { type: 'play', seat: 0, cardIds: ['4D'], zone: 'hand' });
+must(evChain3.some((e) => e.type === 'play' && e.bonus && e.cards[0].id === '4D'), 'non-5 is played as the chained bonus');
+must(chain.phase === 'playing', 'chain ends when the bonus card is not a 5');
+must(chain.turn === 1, 'turn passes after a non-5 bonus card');
+
+const noChain2 = E.newMatch({ seats: 2, rng: seededRng(32) });
+noChain2.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
+noChain2.turn = 0;
+noChain2.phase = 'playing';
+noChain2.draw = [{ id: '6C', rank: '6', suit: 'C' }, { id: '8C', rank: '8', suit: 'C' }];
+noChain2.players[0].hand = [
+  { id: '5D', rank: '5', suit: 'D' },
+  { id: '2H', rank: '2', suit: 'H' },
+];
+E.applyMove(noChain2, { type: 'play', seat: 0, cardIds: ['5D'], zone: 'hand' });
+must(noChain2.phase === 'bonus', '5 still grants bonus before a 2');
+E.applyMove(noChain2, { type: 'play', seat: 0, cardIds: ['2H'], zone: 'hand' });
+must(noChain2.phase === 'playing' && noChain2.turn === 1, 'a bonus 2 does not chain another bonus');
+
 const pair2 = E.newMatch({ seats: 2, rng: seededRng(21) });
 pair2.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
 pair2.turn = 0;
@@ -210,9 +258,29 @@ must(twoFives.phase === 'bonus', 'grouped 5s grant one bonus play total');
 must(twoFives.turn === 0, 'grouped 5s keep the turn for that one bonus');
 const groupedBonus = E.legalMoves(twoFives, 0);
 must(groupedBonus.length >= 1 && groupedBonus.every((mv) => mv.count === 1), 'bonus after grouped 5s is still a single card');
+must(!groupedBonus.some((mv) => mv.rank === '5'), 'both grouped 5s already left the hand');
 E.applyMove(twoFives, { type: 'play', seat: 0, cardIds: groupedBonus[0].cardIds, zone: 'hand' });
-must(twoFives.phase === 'playing', 'only one bonus after grouped 5s');
-must(twoFives.turn === 1, 'turn passes after the single bonus card');
+must(twoFives.phase === 'playing', 'grouped 5s grant one bonus; a non-5 bonus ends the turn');
+must(twoFives.turn === 1, 'turn passes after the single non-5 bonus card');
+
+const groupedThenChain = E.newMatch({ seats: 2, rng: seededRng(33) });
+groupedThenChain.pile = [{ id: 'QH', rank: 'Q', suit: 'H' }];
+groupedThenChain.turn = 0;
+groupedThenChain.phase = 'playing';
+groupedThenChain.draw = [
+  { id: '6C', rank: '6', suit: 'C' },
+  { id: '8C', rank: '8', suit: 'C' },
+];
+groupedThenChain.players[0].hand = [
+  { id: '5H', rank: '5', suit: 'H' },
+  { id: '5D', rank: '5', suit: 'D' },
+  { id: '5S', rank: '5', suit: 'S' },
+];
+E.applyMove(groupedThenChain, { type: 'play', seat: 0, cardIds: ['5H', '5D'], zone: 'hand' });
+must(groupedThenChain.phase === 'bonus', 'a pair of 5s still grants one bonus');
+const afterPair = E.applyMove(groupedThenChain, { type: 'play', seat: 0, cardIds: ['5S'], zone: 'hand' });
+must(afterPair.some((e) => e.type === 'play' && e.bonus), 'the leftover 5 can be the bonus card');
+must(groupedThenChain.phase === 'bonus' && groupedThenChain.turn === 0, 'bonus 5 after a grouped 5 still chains');
 
 const pairFour = E.newMatch({ seats: 2, rng: seededRng(23) });
 pairFour.pile = [
@@ -368,6 +436,24 @@ must(botMove && botMove.type, 'easy bot returns a move');
 
 must(E.payoutFor(1, 30, 4) === 60, '4p 1st is 50% of pool');
 must(E.payoutFor(4, 30, 4) === 0, '4p last takes nothing');
+
+const winEarly = E.newMatch({ seats: 4, rng: seededRng(40) });
+winEarly.draw = [];
+winEarly.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+winEarly.turn = 0;
+winEarly.phase = 'playing';
+winEarly.players[0].hand = [{ id: '9H', rank: '9', suit: 'H' }];
+winEarly.players[0].up = [];
+winEarly.players[0].down = [];
+winEarly.players[1].hand = [{ id: '8H', rank: '8', suit: 'H' }];
+winEarly.players[2].hand = [{ id: '7H', rank: '7', suit: 'H' }];
+winEarly.players[3].hand = [{ id: '6H', rank: '6', suit: 'H' }];
+const evWin = E.applyMove(winEarly, { type: 'play', seat: 0, cardIds: ['9H'], zone: 'hand' });
+must(winEarly.players[0].out && winEarly.players[0].place === 1, 'emptying all cards finishes 1st');
+must(evWin.some((e) => e.type === 'out' && e.seat === 0 && e.place === 1), '1st place is an out event');
+must(!winEarly.ended, 'the match keeps running for everyone else after 1st');
+must(winEarly.turn !== 0, 'the winner does not take another turn');
+must(winEarly.players.filter((p) => !p.out).length === 3, 'three players remain after 1st goes out');
 must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Easy', 30), 'easy 30 always unlocked');
 must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 200), 'medium 200 starts locked');
 const unlocked = E.nextUnlocks({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100, true);
