@@ -34,6 +34,9 @@ must(html.includes('pcard.lifted') && html.includes('legalGlow'), 'hold-to-lift 
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
 must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
 must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
+must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matching ranks can be selected together before Play');
+must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
+must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
 must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
 function seededRng(seed) {
@@ -145,6 +148,103 @@ must(five.players[0].hand.length >= 2, '5 keeps a 2-card floor for bonus');
 const bonusMoves = E.legalMoves(five, 0);
 must(bonusMoves.every((mv) => mv.count === 1), 'bonus is a single card');
 must(bonusMoves.length >= 1, 'bonus has at least one card');
+
+const pair2 = E.newMatch({ seats: 2, rng: seededRng(21) });
+pair2.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
+pair2.turn = 0;
+pair2.phase = 'playing';
+pair2.draw = [{ id: '4C', rank: '4', suit: 'C' }];
+pair2.players[0].hand = [
+  { id: '2H', rank: '2', suit: 'H' },
+  { id: '2S', rank: '2', suit: 'S' },
+  { id: '9D', rank: '9', suit: 'D' },
+];
+const pairMoves = E.legalMoves(pair2, 0);
+must(pairMoves.some((m) => m.rank === '2' && m.count === 1), 'holding two 2s still allows playing only one');
+must(pairMoves.some((m) => m.rank === '2' && m.count === 2), 'holding two 2s allows playing both together');
+must(!pairMoves.some((m) => m.rank === '2' && m.count === 3), 'cannot play more copies than you hold');
+const evPair = E.applyMove(pair2, { type: 'play', seat: 0, cardIds: ['2H', '2S'], zone: 'hand' });
+must(evPair.filter((e) => e.type === 'play').length === 1, 'a matching set is one play event');
+must(evPair.find((e) => e.type === 'play').cards.map((c) => c.id).sort().join() === '2H,2S', 'both selected 2s leave the hand together');
+must(pair2.players[0].hand.every((c) => c.rank !== '2'), 'played 2s are gone from hand');
+must(pair2.players[0].hand.some((c) => c.id === '9D'), 'the unselected 9 stays in hand');
+must(evPair.filter((e) => e.type === 'reset').length === 1, 'a pair of 2s resets once as a group');
+must(pair2.turn === 1, 'playing a pair advances the turn once');
+
+const keepOne = E.newMatch({ seats: 2, rng: seededRng(24) });
+keepOne.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+keepOne.turn = 0;
+keepOne.phase = 'playing';
+keepOne.players[0].hand = [
+  { id: '6H', rank: '6', suit: 'H' },
+  { id: '6D', rank: '6', suit: 'D' },
+  { id: '6S', rank: '6', suit: 'S' },
+];
+const tripleMoves = E.legalMoves(keepOne, 0);
+must(tripleMoves.some((m) => m.rank === '6' && m.count === 1), 'three of a kind can play 1');
+must(tripleMoves.some((m) => m.rank === '6' && m.count === 2), 'three of a kind can play 2');
+must(tripleMoves.some((m) => m.rank === '6' && m.count === 3), 'three of a kind can play all 3');
+E.applyMove(keepOne, { type: 'play', seat: 0, cardIds: ['6H'], zone: 'hand' });
+must(keepOne.players[0].hand.filter((c) => c.rank === '6').length === 2, 'playing one of three 6s keeps the other two');
+must(keepOne.turn === 1, 'playing a single from a matching set still advances once');
+
+const twoFives = E.newMatch({ seats: 2, rng: seededRng(22) });
+twoFives.pile = [{ id: 'QH', rank: 'Q', suit: 'H' }];
+twoFives.turn = 0;
+twoFives.phase = 'playing';
+twoFives.draw = [
+  { id: '6C', rank: '6', suit: 'C' },
+  { id: '8C', rank: '8', suit: 'C' },
+  { id: '9C', rank: '9', suit: 'C' },
+];
+twoFives.players[0].hand = [
+  { id: '5H', rank: '5', suit: 'H' },
+  { id: '5S', rank: '5', suit: 'S' },
+  { id: '4D', rank: '4', suit: 'D' },
+];
+must(E.legalMoves(twoFives, 0).some((m) => m.rank === '5' && m.count === 2), 'two 5s can be played together');
+const evFives = E.applyMove(twoFives, { type: 'play', seat: 0, cardIds: ['5H', '5S'], zone: 'hand' });
+must(evFives.filter((e) => e.type === 'play').length === 1, 'grouped 5s are one play');
+must(evFives.filter((e) => e.type === 'reset').length === 1, 'grouped 5s reset once');
+must(twoFives.phase === 'bonus', 'grouped 5s grant one bonus play total');
+must(twoFives.turn === 0, 'grouped 5s keep the turn for that one bonus');
+const groupedBonus = E.legalMoves(twoFives, 0);
+must(groupedBonus.length >= 1 && groupedBonus.every((mv) => mv.count === 1), 'bonus after grouped 5s is still a single card');
+E.applyMove(twoFives, { type: 'play', seat: 0, cardIds: groupedBonus[0].cardIds, zone: 'hand' });
+must(twoFives.phase === 'playing', 'only one bonus after grouped 5s');
+must(twoFives.turn === 1, 'turn passes after the single bonus card');
+
+const pairFour = E.newMatch({ seats: 2, rng: seededRng(23) });
+pairFour.pile = [
+  { id: '8H', rank: '8', suit: 'H' },
+  { id: '8D', rank: '8', suit: 'D' },
+];
+pairFour.turn = 0;
+pairFour.phase = 'playing';
+pairFour.players[0].hand = [
+  { id: '8C', rank: '8', suit: 'C' },
+  { id: '8S', rank: '8', suit: 'S' },
+  { id: '4H', rank: '4', suit: 'H' },
+];
+const evPairFour = E.applyMove(pairFour, { type: 'play', seat: 0, cardIds: ['8C', '8S'], zone: 'hand' });
+must(evPairFour.some((e) => e.type === 'burn' && e.fourKind), 'a pair that completes four-of-a-kind burns');
+must(pairFour.pile.length === 0, 'pile empty after completing four-kind with a pair');
+must(pairFour.turn === 1, 'four-kind from a pair play passes once');
+
+const quadHand = E.newMatch({ seats: 2, rng: seededRng(25) });
+quadHand.pile = [{ id: '3H', rank: '3', suit: 'H' }];
+quadHand.turn = 0;
+quadHand.phase = 'playing';
+quadHand.players[0].hand = [
+  { id: '7H', rank: '7', suit: 'H' },
+  { id: '7D', rank: '7', suit: 'D' },
+  { id: '7C', rank: '7', suit: 'C' },
+  { id: '7S', rank: '7', suit: 'S' },
+];
+const evQuad = E.applyMove(quadHand, { type: 'play', seat: 0, cardIds: ['7H', '7D', '7C', '7S'], zone: 'hand' });
+must(evQuad.some((e) => e.type === 'burn' && e.fourKind), 'playing four of a kind from hand burns');
+must(quadHand.pile.length === 0, 'pile empty after a four-of-a-kind play');
+must(quadHand.turn === 1, 'four-of-a-kind from hand passes once');
 
 const stageTwo = E.newMatch({ seats: 2, rng: seededRng(6) });
 stageTwo.draw = [];

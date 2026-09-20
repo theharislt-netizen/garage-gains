@@ -1854,7 +1854,9 @@ function renderTable(opts) {
       ? ''
       : isHuman
       ? `<div class="seat-row" id="humanTableCards">
-          ${p.up.map((c) => cardFaceHtml(c, 'tiny' + (zone === 'up' && active && !uiBusy && legalIds.has(c.id) ? ' legal' : ''))).join('')}
+          ${p.up.map((c) => cardFaceHtml(c, 'tiny'
+            + (zone === 'up' && active && !uiBusy && legalIds.has(c.id) ? ' legal' : '')
+            + (selectedIds.includes(c.id) ? ' selected' : ''))).join('')}
           ${p.down.map((c, i) => cardBackHtml('tiny' + (zone === 'down' && active && !uiBusy ? ' legal' : ''), 'down-' + i)).join('')}
         </div>`
       : `<div class="seat-row">
@@ -1902,6 +1904,11 @@ function renderTable(opts) {
       ${canPickup ? '<button class="btn danger" id="pickupBtn">Take pile</button>' : ''}
       ${match.phase === 'bonus' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Bonus card — any rank</div>' : ''}
       ${zone === 'down' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Tap a face-down card</div>' : ''}
+      ${selectedIds.length && match.phase !== 'bonus' && match.turn === match.humanSeat && !dealing && (() => {
+        const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
+        const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
+        return more > 0 ? '<div class="seat-name">Tap matching ' + c0.rank + 's to add</div>' : '';
+      })()}
     </div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
@@ -1996,7 +2003,8 @@ function finishCardGesture(ev) {
   gesture = null;
   const dy = g.startY - (ev.clientY || g.startY);
   const dt = Date.now() - g.startT;
-  const thrown = g.commit || dy > 52 || nearPile(ev.clientX || g.startX, ev.clientY || g.startY);
+  const toPile = nearPile(ev.clientX || g.startX, ev.clientY || g.startY);
+  const thrown = toPile || dy > 80;
   if (g.wrap) {
     pendingFlyFrom = g.origin || g.wrap.getBoundingClientRect();
     g.wrap.remove();
@@ -2012,7 +2020,7 @@ function finishCardGesture(ev) {
   }
   pendingFlyFrom = null;
   if (g.el) g.el.classList.remove('ghost');
-  if (dt < 220 && Math.abs(dy) < 28) {
+  if (dt < 320 && Math.abs(dy) < 80) {
     onHumanCardTap(g.id);
   }
 }
@@ -2060,15 +2068,31 @@ function playLiftedCard(id) {
     return;
   }
   const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
-  if (!legal.some((m) => m.cardIds.includes(id))) {
+  if (!legal.some((m) => m.rank === card.rank)) {
     pendingFlyFrom = null;
     const el = document.querySelector('[data-id="' + id + '"]');
     if (el) el.classList.remove('ghost', 'lifted', 'dragging');
     showToast('That card does not beat the pile');
     return;
   }
-  selectedIds = [id];
+  selectedIds = selectedPlayIds(id);
   commitHumanPlay();
+}
+
+function selectedPlayIds(thrownId) {
+  const human = match.players[match.humanSeat];
+  const zone = PalaceEngine.activeZone(human);
+  const cards = zone === 'up' ? human.up : human.hand;
+  const thrown = cards.find((c) => c.id === thrownId);
+  if (match.phase === 'bonus') return thrown ? [thrown.id] : selectedIds.slice(0, 1);
+  if (!thrown) return selectedIds.slice();
+  const first = cards.find((c) => c.id === selectedIds[0]);
+  if (selectedIds.length && first && first.rank === thrown.rank) {
+    const ids = selectedIds.slice();
+    if (!ids.includes(thrown.id)) ids.push(thrown.id);
+    return ids;
+  }
+  return [thrown.id];
 }
 
 function onHumanCardTap(id) {
@@ -2079,8 +2103,13 @@ function onHumanCardTap(id) {
   const card = cards.find((c) => c.id === id);
   if (!card) return;
   const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
-  if (!legal.some((m) => m.cardIds.includes(id))) {
+  if (!legal.some((m) => m.rank === card.rank)) {
     showToast('That card does not beat the pile');
+    return;
+  }
+  if (match.phase === 'bonus') {
+    selectedIds = [id];
+    commitHumanPlay();
     return;
   }
   if (!selectedIds.length) {
@@ -2092,9 +2121,9 @@ function onHumanCardTap(id) {
       else selectedIds.push(id);
     } else {
       selectedIds = [id];
+      showToast('Matching ranks play together');
     }
   }
-  if (match.phase === 'bonus') selectedIds = [id];
   const sameRank = cards.filter((c) => c.rank === card.rank);
   if (selectedIds.length === 1 && sameRank.length === 1) {
     commitHumanPlay();
@@ -2131,20 +2160,23 @@ async function animateEvents(events) {
     const ev = events[i];
     if (!stillThisMatch(token)) return;
     if (ev.type === 'play') {
-      for (const card of ev.cards) {
+      const dest = pileRect();
+      await Promise.all(ev.cards.map((card, idx) => {
         const src = document.querySelector('[data-id="' + card.id + '"]');
         const from = playOriginRect(ev.seat, card);
         if (src) src.classList.add('ghost');
         pendingFlyFrom = null;
-        await flyArc(from, pileRect() || from, cardFaceHtml(card), {
+        return flyArc(from, dest || from, cardFaceHtml(card), {
           duration: PLAY_FLY_MS,
-          spin: ev.seat === match.humanSeat ? -18 : 22,
+          spin: (ev.seat === match.humanSeat ? -16 : 20) + idx * 6,
           comet: true,
           land: true,
           landMs: PLAY_LAND_MS,
-          onArrive: () => paintDiscardPile(card.id),
+          curveX: (idx - (ev.cards.length - 1) / 2) * 24,
         });
-      }
+      }));
+      if (!stillThisMatch(token)) return;
+      paintDiscardPile(ev.cards[ev.cards.length - 1].id);
       updateSeatHud(ev.seat);
       const pulse = specialPulseKind(ev.cards[ev.cards.length - 1], events, i);
       if (pulse) await fireSpecialPulse(pulse);
