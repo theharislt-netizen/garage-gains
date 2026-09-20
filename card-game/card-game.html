@@ -1718,9 +1718,11 @@ function renderTable(opts) {
     const isHuman = p.seat === match.humanSeat;
     const active = !dealing && match.turn === p.seat && !match.ended;
     const color = AVATAR_COLORS[p.seat % AVATAR_COLORS.length];
-    const remain = remainingCount(p);
+    const remain = dealing ? 0 : remainingCount(p);
     const fanCount = dealing ? 0 : p.hand.length;
-    const tableCards = isHuman
+    const tableCards = dealing
+      ? ''
+      : isHuman
       ? `<div class="seat-row" id="humanTableCards">
           ${p.up.map((c) => cardFaceHtml(c, 'tiny' + (zone === 'up' && active && !uiBusy && legalIds.has(c.id) ? ' legal' : ''))).join('')}
           ${p.down.map((c, i) => cardBackHtml('tiny' + (zone === 'down' && active && !uiBusy ? ' legal' : ''), 'down-' + i)).join('')}
