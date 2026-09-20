@@ -85,7 +85,7 @@
   .theme-swatch .nm { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Barlow Condensed'; color: var(--text-dim); }
   .theme-swatch.active { border-color: var(--a2); }
   .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: env(safe-area-inset-top); }
-  .name-badge-row { display: flex; justify-content: center; padding: 14px 14px 12px; max-width: 100%; overflow: hidden; }
+  .name-badge-row { display: flex; align-items: center; justify-content: center; padding: 14px 14px 12px; max-width: 100%; overflow: hidden; }
   .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; }
   .ml-icon {
     position: absolute; left: -17px; top: 50%; transform: translateY(-50%);
@@ -415,33 +415,23 @@
   }
   #tableWindow.show { display: flex; }
   .table-topbar {
-    display: flex; align-items: center; gap: 10px;
-    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
     z-index: 8;
     background: linear-gradient(180deg, rgba(10, 22, 16, 0.94), rgba(12, 28, 20, 0.82));
     border-bottom: 1px solid rgba(201, 164, 91, 0.28);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
     backdrop-filter: blur(10px);
   }
-  .table-topbar .instance-title { color: #f7efe0; font-size: 18px; }
-  .table-sub { color: #e8d5a0; font-size: 12px; margin-top: 1px; }
-  .table-leave-btn {
-    background: rgba(110, 22, 28, 0.55);
-    border: 1px solid rgba(255, 120, 120, 0.55);
-    color: #ffd6d6;
-    border-radius: 100px;
-    padding: 8px 14px;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 4px 10px rgba(80, 0, 0, 0.25);
-  }
-  .table-leave-btn:active { border-color: #ff8a8a; color: #fff; }
+  .table-topbar .instance-title { color: #f7efe0; }
+  .table-sub { color: #e8d5a0; font-size: 12px; line-height: 1; margin: 0; }
   .turn-clock {
     margin-left: auto;
-    font-family: 'JetBrains Mono'; font-weight: 700; font-size: 15px;
+    height: 36px; min-width: 72px; padding: 0 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono'; font-weight: 700; font-size: 15px; line-height: 1;
     color: #ffe14a;
     background: rgba(8, 14, 12, 0.72);
     border: 1px solid rgba(201, 164, 91, 0.5);
-    border-radius: 100px;
-    padding: 7px 14px; min-width: 72px; text-align: center;
+    border-radius: 100px; text-align: center; box-sizing: border-box;
     box-shadow: inset 0 0 0 1px rgba(255, 210, 74, 0.12), 0 4px 12px rgba(0,0,0,0.3);
   }
   .turn-clock.low { color: #ff8a8a; border-color: rgba(255, 110, 110, 0.6); }
@@ -782,27 +772,133 @@
   .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
   .inv-item-row:last-child { border-bottom: none; }
   .inv-btn { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono'; font-size: 11px; cursor: pointer; }
-  .instance-header { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  .instance-header, .table-topbar {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 44px;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+    box-sizing: border-box;
+  }
   .instance-leave-btn {
-    background: none; border: 1px solid var(--line); color: var(--text-dim); border-radius: 10px; padding: 8px 12px;
-    font-family: 'Barlow Condensed'; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; padding: 0 14px; margin: 0; flex-shrink: 0;
+    background: none; border: 1px solid var(--line); color: var(--text-dim);
+    border-radius: 100px; line-height: 1;
+    font-family: 'Barlow Condensed'; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
   }
   .instance-leave-btn:active { border-color: var(--a1); color: var(--text); }
-  .instance-leave-btn.table-leave-btn {
+  .instance-leave-btn.table-leave-btn, .table-leave-btn {
+    height: 36px; padding: 0 14px; border-radius: 100px;
     background: rgba(110, 22, 28, 0.72);
     border: 1px solid rgba(255, 132, 132, 0.7);
     color: #ffd6d6;
-    border-radius: 100px;
-    padding: 8px 14px;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 4px 10px rgba(80, 0, 0, 0.28);
   }
-  .instance-leave-btn.table-leave-btn:active { border-color: #ff9a9a; color: #fff; }
-  .instance-title { font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+  .instance-leave-btn.table-leave-btn:active, .table-leave-btn:active { border-color: #ff9a9a; color: #fff; }
+  .instance-title {
+    font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.02em; line-height: 1;
+    display: flex; align-items: center; min-height: 36px; margin: 0;
+  }
+  .header-copy {
+    display: flex; flex-direction: column; justify-content: center; gap: 3px; min-height: 36px; min-width: 0;
+  }
+  .header-copy .instance-title { min-height: 0; font-size: 18px; }
+  .header-currency { margin-left: auto; flex-shrink: 0; }
+  .overlay-scroll { flex: 1; overflow-y: auto; padding: 4px 0 calc(12px + env(safe-area-inset-bottom)); }
   #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
-    overflow-y: auto; padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
-    display: none;
+    overflow: hidden; padding: 0;
+    display: none; flex-direction: column;
   }
+  #modeOverlay {
+    background:
+      radial-gradient(circle at 50% 12%, rgba(var(--a2-rgb),0.20), transparent 48%),
+      var(--bg);
+  }
+  .page-title {
+    font-size: 26px; line-height: 1; margin: 4px 0 12px;
+    min-height: 36px; display: flex; align-items: center;
+  }
+  .seat-toggle {
+    display: flex; margin: 6px auto 2px; width: max-content; max-width: calc(100% - 24px);
+    background: rgba(255,255,255,0.08); border-radius: 100px; padding: 3px; gap: 2px;
+  }
+  .seat-toggle button {
+    border: 0; background: transparent; color: var(--text-dim); cursor: pointer;
+    border-radius: 100px; padding: 8px 16px; min-height: 36px;
+    font-family: 'Barlow Condensed'; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .seat-toggle button.on { background: var(--a2); color: #081018; font-weight: 700; }
+  .seat-toggle.static button { cursor: default; }
+  .stake-screen { display: flex; flex-direction: column; min-height: 100%; }
+  .stake-rail {
+    display: flex; align-items: flex-end; gap: 14px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 20px;
+    padding: 22px 20px 28px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .stake-rail::-webkit-scrollbar { display: none; }
+  .stake-card {
+    flex: 0 0 132px; width: 132px; height: 196px; margin: 0; padding: 7px;
+    border: 0; border-radius: 16px; cursor: pointer; scroll-snap-align: center;
+    background: linear-gradient(180deg, #f7f3ea, #d9d0c2);
+    box-shadow: 0 12px 22px rgba(0,0,0,0.38), inset 0 0 0 2px #fff;
+    position: relative; color: #fff; font-family: 'Barlow Condensed';
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+  .stake-card .stake-face {
+    position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: hidden;
+    background: #120e16; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 12px 8px 10px; text-align: center;
+  }
+  .stake-oval {
+    position: absolute; left: 8%; right: 8%; top: 16%; height: 54%; border-radius: 50%;
+    transform: rotate(-18deg); pointer-events: none;
+  }
+  .stake-card.diff-easy .stake-oval { background: radial-gradient(circle at 40% 30%, #ff6a7a, #e0233a 62%); }
+  .stake-card.diff-medium .stake-oval { background: radial-gradient(circle at 40% 30%, #ffc36a, #e08a2b 62%); }
+  .stake-card.diff-hard .stake-oval { background: radial-gradient(circle at 40% 30%, #b089ff, #6b3dff 62%); }
+  .stake-card.diff-expert .stake-oval { background: radial-gradient(circle at 40% 30%, #7ee7ff, #1aa8c8 62%); }
+  .stake-hero {
+    position: relative; z-index: 1; font-size: 34px; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 0.9; text-shadow: 0 3px 0 rgba(0,0,0,0.45); color: #fff;
+  }
+  .stake-card.diff-easy .stake-hero { color: #ffe14a; font-size: 28px; }
+  .stake-kicker {
+    position: relative; z-index: 1; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    opacity: 0.9; margin-bottom: 4px;
+  }
+  .stake-need {
+    position: relative; z-index: 1; margin-top: 8px; font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 700;
+    background: rgba(0,0,0,0.45); border-radius: 100px; padding: 4px 8px; color: #ffe7a3;
+  }
+  .stake-card.selected {
+    transform: translateY(-8px);
+    box-shadow: 0 0 0 3px #ffe14a, 0 0 18px rgba(255,210,74,0.55), 0 14px 24px rgba(0,0,0,0.4);
+  }
+  .stake-card.locked { cursor: default; }
+  .stake-card.locked .stake-face { filter: saturate(0.45) brightness(0.72); }
+  .stake-lock {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2;
+    width: 22px; height: 22px; border-radius: 50%; background: #1b1520; color: #f4efe4;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+  }
+  .stake-unlock {
+    position: relative; z-index: 1; margin-top: 8px; font-size: 11px; line-height: 1.25;
+    color: #ffe7a3; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 600;
+    padding: 0 4px;
+  }
+  .stake-custom { padding: 0 16px 8px; }
+  .stake-footer {
+    padding: 4px 16px calc(14px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stake-hint {
+    text-align: center; font-family: 'Barlow Condensed'; font-size: 13px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .stake-footer .btn { margin-top: 0; }
   #enchantWindow.book-open, #craftWindow.book-open { animation: enchantBookOpen 0.5s cubic-bezier(0.22, 1, 0.36, 1); transform-origin: center; }
   @keyframes enchantBookOpen {
     0% { opacity: 0; transform: scaleX(0.25) scaleY(0.9); }
@@ -897,13 +993,13 @@
   </section>
 
   <section id="view-shop" class="view">
-    <h2 style="font-size:26px; margin-bottom:6px;">Shop</h2>
+    <h2 class="page-title">Shop</h2>
     <div class="shop-tabs" id="shopTabs"></div>
     <div class="card" id="shopBody"></div>
   </section>
 
   <section id="view-inventory" class="view">
-    <h2 style="font-size:26px; margin-bottom:6px;">Inventory</h2>
+    <h2 class="page-title">Inventory</h2>
     <div class="inv-primary-actions" id="invPrimaryActions">
       <div class="inv-primary-btn" id="invShopEntry">
         <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>
@@ -926,7 +1022,7 @@
   </section>
 
   <section id="view-subscription" class="view">
-    <h2 style="font-size:26px; margin-bottom:6px;">Subscription</h2>
+    <h2 class="page-title">Subscription</h2>
     <div class="card">
       <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">Coming later</div>
       <h3 style="font-size:22px; margin-top:6px;">Daily reward boxes</h3>
@@ -935,7 +1031,7 @@
   </section>
 
   <section id="view-friends" class="view">
-    <h2 style="font-size:26px; margin-bottom:6px;">Friends</h2>
+    <h2 class="page-title">Friends</h2>
     <div class="card">
       <div class="log-form">
         <input id="friendSearch" placeholder="Nickname or profile ID">
@@ -949,7 +1045,7 @@
   </section>
 
   <section id="view-settings" class="view">
-    <h2 style="font-size:26px; margin-bottom:14px;">Settings</h2>
+    <h2 class="page-title">Settings</h2>
     <div class="section-title">Sound &amp; music</div>
     <div class="card">
       <div class="settings-row"><div>Sound<div class="l2" id="sfxVal">80%</div></div></div>
@@ -1002,39 +1098,40 @@
 <div id="enchantWindow">
   <div class="instance-header">
     <button class="instance-leave-btn" id="enchantWindowLeaveBtn">‹ Leave</button>
-    <div><div class="instance-title">Enchanting Table</div></div>
+    <div class="instance-title">Enchanting Table</div>
   </div>
-  <div id="enchantWindowBody"></div>
+  <div class="overlay-scroll" id="enchantWindowBody"></div>
 </div>
 
 <div id="craftWindow">
   <div class="instance-header">
     <button class="instance-leave-btn" id="craftWindowLeaveBtn">‹ Leave</button>
-    <div><div class="instance-title">Craft</div></div>
+    <div class="instance-title">Craft</div>
   </div>
-  <div id="craftWindowBody"></div>
+  <div class="overlay-scroll" id="craftWindowBody"></div>
 </div>
 
 <div id="profileOverlay">
   <div class="instance-header">
     <button class="instance-leave-btn" id="profileLeaveBtn">‹ Leave</button>
-    <div><div class="instance-title">Profile</div></div>
+    <div class="instance-title">Profile</div>
   </div>
-  <div id="profileBody"></div>
+  <div class="overlay-scroll" id="profileBody"></div>
 </div>
 
 <div id="modeOverlay">
   <div class="instance-header">
     <button class="instance-leave-btn" id="modeLeaveBtn">‹ Leave</button>
-    <div><div class="instance-title" id="modeTitle">Standard</div></div>
+    <div class="instance-title" id="modeTitle">Standard</div>
+    <div class="nb-currency gold header-currency" id="modeGold"><span>🪙</span><span id="modeGoldVal">0</span></div>
   </div>
-  <div id="modeBody"></div>
+  <div class="overlay-scroll" id="modeBody"></div>
 </div>
 
 <div id="tableWindow">
   <div class="table-topbar">
     <button class="instance-leave-btn table-leave-btn" id="tableLeaveBtn">‹ Leave</button>
-    <div>
+    <div class="header-copy">
       <div class="instance-title" id="tableTitle">Palace</div>
       <div class="table-sub" id="tableSub"></div>
     </div>
@@ -1312,6 +1409,7 @@ function renderHeader() {
   document.getElementById('nbNameText').textContent = state.profile.name || 'Player';
   document.getElementById('rankTag').textContent = 'Lv ' + getLevel(state.xp);
   document.getElementById('nbGoldVal').textContent = String(state.coins);
+  paintModeGold();
   document.body.setAttribute('data-theme', state.settings.theme || 'rig');
   const due = state.lastDailyLogin !== todayStamp();
   document.getElementById('nbDailyDot').style.display = due ? '' : 'none';
@@ -1554,7 +1652,7 @@ function renderEnchantTable() {
 function openEnchant() {
   document.body.classList.add('overlay-open');
   const el = document.getElementById('enchantWindow');
-  el.style.display = 'block';
+  el.style.display = 'flex';
   el.classList.add('book-open');
   renderEnchantTable();
 }
@@ -1569,7 +1667,7 @@ function closeEnchant() {
 function openCraft() {
   document.body.classList.add('overlay-open');
   const el = document.getElementById('craftWindow');
-  el.style.display = 'block';
+  el.style.display = 'flex';
   el.classList.add('book-open');
   const shards = state.inventory.shards.cosmetic || 0;
   const pct = Math.min(100, Math.round((shards % SHARDS_PER_STONE) / SHARDS_PER_STONE * 100));
@@ -1608,7 +1706,7 @@ function closeCraft() {
 
 function openProfile() {
   document.body.classList.add('overlay-open');
-  document.getElementById('profileOverlay').style.display = 'block';
+  document.getElementById('profileOverlay').style.display = 'flex';
   const eqName = (key) => {
     const id = state.equipped[key];
     const it = (state.inventory.items || []).find((i) => i.id === id);
@@ -2761,82 +2859,136 @@ function startMatch(cfg) {
   animateDeal().then(() => runTurn());
 }
 
+function paintModeGold() {
+  const el = document.getElementById('modeGoldVal');
+  if (el) el.textContent = String(state.coins);
+}
+
+function stakeCardHtml(opts) {
+  const locked = !!opts.locked;
+  const selected = !!opts.selected && !locked;
+  const diff = (opts.difficulty || 'Easy').toLowerCase();
+  const lock = locked ? '<div class="stake-lock">🔒</div>' : '';
+  const need = locked
+    ? '<div class="stake-unlock">Win previous stake</div>'
+    : '<div class="stake-need">🪙 ' + (opts.need || opts.hero) + '</div>';
+  return `<button type="button" class="stake-card diff-${diff}${selected ? ' selected' : ''}${locked ? ' locked' : ''}" data-diff="${opts.difficulty}" data-buy="${opts.buyIn == null ? '' : opts.buyIn}" data-open="${locked ? '0' : '1'}">
+    <div class="stake-face">
+      ${lock}
+      <div class="stake-oval"></div>
+      <div class="stake-kicker">${opts.kicker}</div>
+      <div class="stake-hero">${opts.hero}</div>
+      ${need}
+    </div>
+  </button>`;
+}
+
 function openMode(mode) {
   if (mode === 'ranked' || mode === 'custom') {
     showToast(mode === 'ranked' ? 'Ranked is deferred' : 'Custom is a later placeholder');
     return;
   }
-  document.getElementById('modeOverlay').style.display = 'block';
+  document.getElementById('modeOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : 'Standard';
+  paintModeGold();
   const body = document.getElementById('modeBody');
   if (mode === 'practice') {
     let seats = 4;
     let sub = 'standard';
-    body.innerHTML = `
-      <div class="play-hand overlay-row">
-        <button type="button" class="play-card art-standard lift" data-practice="standard"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">4 seats</div><h3>Standard</h3><p>You + 3 bots</p></div></div></button>
-        <button type="button" class="play-card art-ranked" data-practice="duel"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">Duel</div><h3>1v1</h3><p>You vs one bot</p></div></div></button>
-        <button type="button" class="play-card art-practice" data-practice="custom"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">Seats</div><h3>Custom</h3><p>2–4 players</p></div></div></button>
-      </div>
-      <div id="practiceExtra"></div>
-      <div class="section-title">Bot difficulty</div>
-      <div class="tier-row">
-        ${['Easy','Medium','Hard','Expert'].map((d,i) => `<div class="tier-chip${i===0?' active':''}" data-diff="${d}"><div class="n">${d}</div><div class="l">All bots</div></div>`).join('')}
-      </div>
-      <button class="btn primary" id="startPracticeBtn">Start</button>`;
-    const extra = body.querySelector('#practiceExtra');
-    function setSub(s) {
-      sub = s;
-      body.querySelectorAll('[data-practice]').forEach((c) => c.classList.toggle('lift', c.dataset.practice === s));
-      seats = s === 'duel' ? 2 : 4;
-      if (s === 'custom') {
-        extra.innerHTML = `<div class="section-title">Seats</div><div class="tier-row">
-          ${[2,3,4].map((n) => `<div class="tier-chip${n===4?' active':''}" data-seats="${n}"><div class="n">${n}</div><div class="l">players</div></div>`).join('')}
+    let difficulty = 'Easy';
+    const diffs = ['Easy', 'Medium', 'Hard', 'Expert'];
+    function paint() {
+      const custom = sub === 'custom'
+        ? `<div class="stake-custom"><div class="tier-row">${[2,3,4].map((n) => `<div class="tier-chip${n===seats?' active':''}" data-seats="${n}"><div class="n">${n}</div><div class="l">players</div></div>`).join('')}</div></div>`
+        : '';
+      body.innerHTML = `
+        <div class="stake-screen">
+          <div class="seat-toggle">
+            <button type="button" data-practice="standard"${sub==='standard'?' class="on"':''}>4 seats</button>
+            <button type="button" data-practice="duel"${sub==='duel'?' class="on"':''}>1v1</button>
+            <button type="button" data-practice="custom"${sub==='custom'?' class="on"':''}>Custom</button>
+          </div>
+          ${custom}
+          <div class="stake-rail">
+            ${diffs.map((d) => stakeCardHtml({
+              difficulty: d,
+              kicker: 'Bots',
+              hero: d.toUpperCase(),
+              need: d,
+              selected: d === difficulty,
+            })).join('')}
+          </div>
+          <div class="stake-footer">
+            <div class="stake-hint">No coin risk · vs bots</div>
+            <button class="btn primary" id="startPracticeBtn">Start ${difficulty}</button>
+          </div>
         </div>`;
-        extra.querySelectorAll('[data-seats]').forEach((chip) => chip.addEventListener('click', () => {
-          extra.querySelectorAll('[data-seats]').forEach((c) => c.classList.remove('active'));
-          chip.classList.add('active');
-          seats = Number(chip.dataset.seats);
-        }));
-      } else extra.innerHTML = '';
+      body.querySelectorAll('[data-practice]').forEach((btn) => btn.addEventListener('click', () => {
+        sub = btn.dataset.practice;
+        if (sub === 'duel') seats = 2;
+        else if (sub !== 'custom') seats = 4;
+        paint();
+      }));
+      body.querySelectorAll('[data-seats]').forEach((chip) => chip.addEventListener('click', () => {
+        seats = Number(chip.dataset.seats);
+        paint();
+      }));
+      body.querySelectorAll('.stake-card').forEach((card) => card.addEventListener('click', () => {
+        difficulty = card.dataset.diff;
+        paint();
+        const sel = body.querySelector('.stake-card.selected');
+        if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      }));
+      document.getElementById('startPracticeBtn').addEventListener('click', () => {
+        startMatch({ mode: 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
+      });
     }
-    body.querySelectorAll('[data-practice]').forEach((card) => card.addEventListener('click', () => setSub(card.dataset.practice)));
-    body.querySelectorAll('[data-diff]').forEach((chip) => chip.addEventListener('click', () => {
-      body.querySelectorAll('[data-diff]').forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-    }));
-    document.getElementById('startPracticeBtn').addEventListener('click', () => {
-      const difficulty = body.querySelector('[data-diff].active').dataset.diff;
-      startMatch({ mode: 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
-    });
+    paint();
     return;
   }
-  const diffs = ['Easy', 'Medium', 'Hard', 'Expert'];
-  body.innerHTML = diffs.map((d) => {
-    const buys = PalaceEngine.BUYINS[d];
-    const chips = buys.map((b) => {
-      const open = PalaceEngine.isBuyInUnlocked(state.unlocks, d, b);
-      return `<div class="tier-chip${open ? '' : ' locked'}${d==='Easy' && b===30 ? ' active' : ''}" data-buy="${b}" data-diff="${d}" data-open="${open ? '1' : '0'}">
-        <div class="n">${b}</div><div class="l">${open ? d + ' bots' : 'Locked'}</div>
-      </div>`;
-    }).join('');
-    return `<div class="card"><h3>${d}</h3><div class="tier-row">${chips}</div></div>`;
-  }).join('') + `<button class="btn primary" id="startStandardBtn">Start · 30 coins</button>`;
+  const stakes = ['Easy', 'Medium', 'Hard', 'Expert'].flatMap((d) =>
+    PalaceEngine.BUYINS[d].map((b) => ({ difficulty: d, buyIn: b }))
+  );
   let buyIn = 30;
   let difficulty = 'Easy';
-  const startBtn = document.getElementById('startStandardBtn');
-  body.querySelectorAll('[data-buy]').forEach((chip) => chip.addEventListener('click', () => {
-    if (chip.dataset.open !== '1') return showToast('Win the previous stake to unlock this');
-    body.querySelectorAll('[data-buy]').forEach((c) => c.classList.remove('active'));
-    chip.classList.add('active');
-    buyIn = Number(chip.dataset.buy);
-    difficulty = chip.dataset.diff;
-    startBtn.textContent = 'Start · ' + buyIn + ' coins';
-  }));
-  startBtn.addEventListener('click', () => {
-    startMatch({ mode: 'standard', seats: 4, difficulty, buyIn });
-  });
+  function paintStandard() {
+    body.innerHTML = `
+      <div class="stake-screen">
+        <div class="seat-toggle static"><button type="button" class="on">4 seats</button></div>
+        <div class="stake-rail">
+          ${stakes.map((s) => {
+            const open = PalaceEngine.isBuyInUnlocked(state.unlocks, s.difficulty, s.buyIn);
+            const hero = s.difficulty === 'Easy' ? 'EASY' : String(s.buyIn);
+            return stakeCardHtml({
+              difficulty: s.difficulty,
+              buyIn: s.buyIn,
+              kicker: s.difficulty,
+              hero,
+              need: s.buyIn,
+              locked: !open,
+              selected: open && s.buyIn === buyIn && s.difficulty === difficulty,
+            });
+          }).join('')}
+        </div>
+        <div class="stake-footer">
+          <div class="stake-hint">Higher stake = bigger payout</div>
+          <button class="btn primary" id="startStandardBtn">Start ${difficulty} · ${buyIn} coins</button>
+        </div>
+      </div>`;
+    body.querySelectorAll('.stake-card').forEach((card) => card.addEventListener('click', () => {
+      if (card.dataset.open !== '1') return showToast('Win the previous stake to unlock this');
+      buyIn = Number(card.dataset.buy);
+      difficulty = card.dataset.diff;
+      paintStandard();
+      const sel = body.querySelector('.stake-card.selected');
+      if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    }));
+    document.getElementById('startStandardBtn').addEventListener('click', () => {
+      startMatch({ mode: 'standard', seats: 4, difficulty, buyIn });
+    });
+  }
+  paintStandard();
 }
 
 function closeMode() {
@@ -2905,6 +3057,10 @@ function init() {
   }
   document.getElementById('nameBadge').addEventListener('click', openProfile);
   document.getElementById('nbGold').addEventListener('click', () => showView('shop'));
+  document.getElementById('modeGold').addEventListener('click', () => {
+    closeMode();
+    showView('shop');
+  });
   document.getElementById('nbDailyDot').addEventListener('click', () => showToast('Daily login already claimed for today'));
   document.getElementById('invShopEntry').addEventListener('click', () => showView('shop'));
   document.getElementById('invEnchantEntry').addEventListener('click', openEnchant);

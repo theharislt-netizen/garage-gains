@@ -14,6 +14,10 @@ function must(cond, msg) { if (!cond) fails.push(msg); }
 must(html.includes('palace-engine.js'), 'card-game.html must load palace-engine.js');
 must(html.includes('play-hand') && html.includes('play-card'), 'home must use playing-card mode tiles');
 must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must be UNO-style illustrated cards');
+must(html.includes('stake-rail') && html.includes('stake-card') && html.includes('seat-toggle'), 'mode setup is a UNO-style horizontal stake rail');
+must(html.includes('header-currency') && html.includes('modeGold'), 'mode overlay header shows coins beside the title');
+must(html.includes('header-copy') && html.includes('min-height: 36px'), 'header rows share a 36px control height');
+must(!html.includes('Start · 30 coins'), 'standard setup is not the stacked difficulty card list');
 must(html.includes('inv-slot-grid'), 'inventory must be a Rigcore slot grid');
 must(html.includes('enchant-table') && html.includes('enchant-drop'), 'enchanting table layout required');
 must(html.includes('craft-stone-card'), 'craft must use stone cards');
