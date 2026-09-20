@@ -2335,11 +2335,18 @@ function clearDragClone() {
   document.querySelectorAll('.fly-card.drag-follow').forEach((el) => el.remove());
 }
 
+function clearPeekTimer() {
+  if (!gesture || !gesture.peekTimer) return;
+  clearTimeout(gesture.peekTimer);
+  gesture.peekTimer = null;
+}
+
 function enterBrowse(ev) {
   if (!gesture || gesture.browsing) return;
+  clearPeekTimer();
   gesture.browsing = true;
   gesture.swipePlay = false;
-  updateBrowseTarget(ev);
+  updateBrowseTarget(ev || { clientX: gesture.lastX, clientY: gesture.lastY });
 }
 
 function updateBrowseTarget(ev) {
@@ -2357,6 +2364,8 @@ function ensureDragListeners() {
   dragListenersBound = true;
   const move = (ev) => {
     if (!gesture) return;
+    gesture.lastX = ev.clientX;
+    gesture.lastY = ev.clientY;
     const dx = ev.clientX - gesture.startX;
     const dy = ev.clientY - gesture.startY;
     const dt = Date.now() - gesture.startT;
@@ -2380,7 +2389,7 @@ function ensureDragListeners() {
 }
 
 function startCardPress(el, ev, from) {
-  el.classList.add('peeking');
+  if (gesture && gesture.peekTimer) clearTimeout(gesture.peekTimer);
   gesture = {
     id: el.dataset.id,
     el,
@@ -2389,10 +2398,16 @@ function startCardPress(el, ev, from) {
     origin: el.getBoundingClientRect(),
     startX: ev.clientX,
     startY: ev.clientY,
+    lastX: ev.clientX,
+    lastY: ev.clientY,
     startT: Date.now(),
     browsing: false,
     swipePlay: false,
     pointerId: ev.pointerId,
+    peekTimer: setTimeout(() => {
+      if (!gesture) return;
+      enterBrowse({ clientX: gesture.lastX, clientY: gesture.lastY });
+    }, PEEK_MS),
   };
 }
 
@@ -2400,19 +2415,21 @@ function finishCardGesture(ev) {
   if (!gesture) return;
   const g = gesture;
   gesture = null;
+  if (g.peekTimer) clearTimeout(g.peekTimer);
   const clientX = ev && ev.clientX != null ? ev.clientX : g.startX;
   const clientY = ev && ev.clientY != null ? ev.clientY : g.startY;
   const dy = g.startY - clientY;
   const dx = clientX - g.startX;
   const dt = Date.now() - g.startT;
   const moved = Math.hypot(dx, dy) >= DRAG_PX;
-  const swipeUp = g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx) && dt < PEEK_MS + 80);
+  const swipeUp = !g.browsing && dt < PEEK_MS && (g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx)));
   clearPeeking();
   if (g.el) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
-  if (g.browsing) return;
+  // Hold / magnifying-glass browse never selects or plays — including off-turn.
+  if (g.browsing || dt >= PEEK_MS) return;
   if (swipeUp) {
     if (!canActOnCards()) return;
     playLiftedCard(g.id);
@@ -2444,7 +2461,7 @@ function bindTableGestures(zone) {
 
 function bindCardGesture(el, from) {
   el.addEventListener('pointerdown', (ev) => {
-    if (!match || match.ended || match.settled || uiBusy) return;
+    if (!match || match.ended || match.settled) return;
     if (ev.button && ev.button !== 0) return;
     ev.preventDefault();
     ev.stopPropagation();
