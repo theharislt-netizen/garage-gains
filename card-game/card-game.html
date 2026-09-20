@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PALACE</title>
+<meta name="application-name" content="PALACE">
+<meta name="apple-mobile-web-app-title" content="PALACE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#09080f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2309080f'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='28' fill='%23ffb648'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --radius: 16px; --radius-sm: 11px; }
+  [data-theme="rig"] {
+    --bg: #09080f; --panel: #121019; --line: #241f30;
+    --text: #f4f2f9; --text-dim: #8d859f;
+    --a1: #b455f5; --a2: #3ec6f0; --gain: #ffb648;
+    --a1-rgb: 180,85,245; --a2-rgb: 62,198,240;
+  }
+  [data-theme="magenta"] {
+    --bg: #0b0710; --panel: #150c1c; --line: #2b1a35;
+    --text: #f7f1f7; --text-dim: #a084a0;
+    --a1: #ff4fa3; --a2: #4fd8ff; --gain: #ffd23f;
+    --a1-rgb: 255,79,163; --a2-rgb: 79,216,255;
+  }
+  [data-theme="ember"] {
+    --bg: #0d0906; --panel: #1a120c; --line: #322114;
+    --text: #f7f0e9; --text-dim: #ab9584;
+    --a1: #ff9d3f; --a2: #b455f5; --gain: #ffe14f;
+    --a1-rgb: 255,157,63; --a2-rgb: 180,85,245;
+  }
+  [data-theme="verdant"] {
+    --bg: #060b09; --panel: #0f1813; --line: #1e3327;
+    --text: #eef7f1; --text-dim: #82a390;
+    --a1: #38e29a; --a2: #3ec6f0; --gain: #ffcd4f;
+    --a1-rgb: 56,226,154; --a2-rgb: 62,198,240;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(circle at 15% 0%, rgba(var(--a1-rgb),0.10), transparent 45%),
+      radial-gradient(circle at 100% 20%, rgba(var(--a2-rgb),0.08), transparent 40%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 96px;
+    overscroll-behavior-y: contain;
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
+  h1, h2, h3, .display { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; font-weight: 700; margin: 0; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .grad-text { background: linear-gradient(90deg, var(--a1), var(--a2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  main { padding: 4px 16px 24px; max-width: 560px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; margin-bottom: 12px; }
+  .btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: var(--radius-sm); font-family: 'Barlow Condensed'; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; cursor: pointer; background: var(--panel); border: 1px solid var(--line); color: var(--text); margin-top: 6px; }
+  .btn.primary { background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; border: none; }
+  .btn.danger { background: transparent; border: 1px solid #ff5c5c; color: #ff5c5c; }
+  .section-title { font-size: 12.5px; letter-spacing: 0.1em; color: var(--text-dim); margin: 20px 2px 8px; font-family:'Barlow Condensed'; text-transform: uppercase;}
+  .empty { text-align: center; padding: 26px 10px; color: var(--text-dim); }
+  .empty .big { font-family: 'Barlow Condensed'; font-size: 19px; color: var(--text); margin-bottom: 4px; }
+  nav.tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--line); display: flex; padding: 6px 2px calc(8px + env(safe-area-inset-bottom)); z-index: 10; }
+  .tab { flex: 1; min-width: 0; background: none; border: none; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: 'Barlow Condensed'; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 1px; cursor: pointer; border-radius: 10px; }
+  .tab.active { color: var(--a2); }
+  .tab svg { width: 20px; height: 20px; }
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 300; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  input[type=file] { display: none; }
+  .settings-row { display:flex; justify-content:space-between; align-items:center; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 14px;}
+  .settings-row:last-child{border-bottom:none;}
+  .settings-row .l2 { color: var(--text-dim); font-size: 12px; }
+  .log-form { display: flex; gap: 8px; margin-top: 12px; }
+  .log-form input, .field { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text); font-family: 'JetBrains Mono'; font-size: 16px; padding: 12px; }
+  .log-form button { flex-shrink: 0; width: auto; padding: 0 20px; margin-top: 0; background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; border:none; }
+  .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+  .theme-swatch { border-radius: var(--radius-sm); padding: 10px 4px; border: 2px solid transparent; cursor: pointer; text-align: center; background: var(--panel); }
+  .theme-swatch .dot { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto 6px; }
+  .theme-swatch .nm { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Barlow Condensed'; color: var(--text-dim); }
+  .theme-swatch.active { border-color: var(--a2); }
+  .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: env(safe-area-inset-top); }
+  .name-badge-row { display: flex; justify-content: center; padding: 14px 14px 12px; max-width: 100%; overflow: hidden; }
+  .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; }
+  .ml-icon {
+    position: absolute; left: -17px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border-radius: 50%; z-index: 3; flex-shrink: 0;
+    background: var(--panel); border: 2px solid var(--rank-color, rgba(var(--a1-rgb),0.7));
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 0 6px var(--rank-color, rgba(var(--a1-rgb),0.5)));
+  }
+  .ml-icon svg { width: 16px; height: 16px; }
+  .name-badge {
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px 8px 30px;
+    max-width: min(78vw, 340px); min-width: 0; flex-shrink: 1;
+    border-radius: 8px 18px 8px 18px;
+    font-family: 'Barlow Condensed'; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1.5px solid var(--rank-color, rgba(var(--a1-rgb),0.5)); color: var(--text);
+    filter: drop-shadow(0 0 8px var(--rank-color, rgba(var(--a1-rgb),0.3)));
+    white-space: nowrap; cursor: pointer;
+  }
+  .name-badge .nb-name { letter-spacing: 0.1em; flex-shrink: 0; }
+  .name-badge .rank-tag { font-family: 'JetBrains Mono'; font-size: 8.5px; letter-spacing: 0.03em; color: var(--text-dim); text-transform: uppercase; }
+  .nb-currency {
+    display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; flex-shrink: 0;
+    font-family: 'JetBrains Mono'; font-weight: 700; font-size: 12.5px;
+    border-radius: 100px; padding: 5px 9px; cursor: pointer; border: 1px solid transparent;
+  }
+  .nb-currency.gold { color: var(--gain); background: rgba(255,182,72,0.1); border-color: rgba(255,182,72,0.3); }
+  .nb-daily-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gain); margin-left: 4px; flex-shrink: 0; cursor: pointer; box-shadow: 0 0 6px rgba(255,182,72,0.7); animation: ledPulse 1.6s ease-in-out infinite; }
+  @keyframes ledPulse {
+    0%,100% { box-shadow: 0 0 6px rgba(255,182,72,0.7); }
+    50% { box-shadow: 0 0 14px rgba(255,182,72,1); }
+  }
+  .mode-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; }
+  .mode-card:active { border-color: var(--a1); }
+  .mode-card .kicker { font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--a2); margin-bottom: 4px; }
+  .mode-card h3 { font-size: 22px; }
+  .mode-card p { margin: 6px 0 0; color: var(--text-dim); font-size: 13px; line-height: 1.4; }
+  .mode-card.locked { opacity: 0.55; }
+  .tier-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .tier-chip { flex: 1; min-width: 72px; text-align: center; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+  .tier-chip .n { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--gain); }
+  .tier-chip .l { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-family: 'Barlow Condensed'; letter-spacing: 0.06em; margin-top: 2px; }
+  .tier-chip.locked { opacity: 0.4; }
+  .tier-chip.active { border-color: var(--a2); background: rgba(var(--a2-rgb),0.1); }
+  .shop-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 12px; }
+  .shop-tab { flex: 0 0 auto; padding: 8px 12px; border-radius: 100px; border: 1px solid var(--line); background: var(--panel); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+  .shop-tab.active { color: var(--text); border-color: var(--a1); background: rgba(var(--a1-rgb),0.12); }
+  .inv-primary-actions { display: flex; gap: 10px; margin-bottom: 14px; }
+  .inv-primary-btn { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; }
+  .inv-primary-btn:active { border-color: var(--a1); }
+  .inv-primary-ic { width: 26px; height: 26px; display: inline-flex; color: var(--a1); margin-bottom: 6px; }
+  .inv-primary-ic svg { width: 100%; height: 100%; }
+  .inv-primary-label { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700; text-transform: uppercase; }
+  .inv-primary-sub { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
+  .inv-filter-row { display: flex; gap: 8px; padding: 2px 2px 12px; overflow-x: auto; }
+  .inv-filter-chip {
+    flex: 0 0 auto; padding: 7px 12px; border-radius: 100px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  }
+  .inv-filter-chip.active { border-color: var(--a1); color: var(--text); background: rgba(var(--a1-rgb),0.1); }
+  .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
+  .inv-item-row:last-child { border-bottom: none; }
+  .inv-btn { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono'; font-size: 11px; cursor: pointer; }
+  .instance-header { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  .instance-leave-btn {
+    background: none; border: 1px solid var(--line); color: var(--text-dim); border-radius: 10px; padding: 8px 12px;
+    font-family: 'Barlow Condensed'; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  }
+  .instance-leave-btn:active { border-color: var(--a1); color: var(--text); }
+  .instance-title { font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+  #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay {
+    position: fixed; inset: 0; z-index: 260; background: var(--bg);
+    overflow-y: auto; padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    display: none;
+  }
+  #enchantWindow.book-open, #craftWindow.book-open { animation: enchantBookOpen 0.5s cubic-bezier(0.22, 1, 0.36, 1); transform-origin: center; }
+  @keyframes enchantBookOpen {
+    0% { opacity: 0; transform: scaleX(0.25) scaleY(0.9); }
+    55% { opacity: 1; transform: scaleX(1.03) scaleY(1); }
+    100% { opacity: 1; transform: scaleX(1) scaleY(1); }
+  }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 250; display: none; align-items: flex-end; justify-content: center; }
+  .modal-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%; max-width: 560px; padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); max-height: 86vh; overflow: auto; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; font-family: 'Barlow Condensed'; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .modal-close { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; }
+  .cosmetic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cosmetic-slot { background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px 12px; min-height: 92px; }
+  .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
+  .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
+  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  .range { width: 100%; accent-color: var(--a2); }
+</style>
+</head>
+<body data-theme="rig">
+
+<div class="sticky-header" id="stickyHeader">
+  <div class="name-badge-row" id="nameBadgeRow">
+    <div class="ml-badge-frame" id="mlBadgeFrame">
+      <div class="ml-icon" id="nameBadgeIcon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
+      </div>
+      <div class="name-badge" id="nameBadge">
+        <span class="nb-name" id="nbNameText">Player</span>
+        <span class="rank-tag" id="rankTag">Lv 1</span>
+      </div>
+      <div class="nb-currency gold" id="nbGold"><span>🪙</span><span id="nbGoldVal">400</span></div>
+      <div class="nb-daily-dot" id="nbDailyDot" style="display:none;" title="Daily login reward ready"></div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section id="view-home" class="view active">
+    <div class="section-title" style="margin-top:0;">Play</div>
+    <div class="mode-card" data-mode="standard">
+      <div class="kicker">Quick play</div>
+      <h3>Standard</h3>
+      <p>Pick a stake. Bots fill empty seats at that tier’s difficulty.</p>
+    </div>
+    <div class="mode-card locked" data-mode="ranked">
+      <div class="kicker">Later</div>
+      <h3>Ranked</h3>
+      <p>Placeholder — built last, after the rest of the game.</p>
+    </div>
+    <div class="mode-card" data-mode="practice">
+      <div class="kicker">Bots only</div>
+      <h3>Practice</h3>
+      <p>Standard, one-on-one, or custom table vs bots. No coin risk.</p>
+    </div>
+    <div class="mode-card locked" data-mode="custom">
+      <div class="kicker">Later</div>
+      <h3>Custom</h3>
+      <p>Placeholder — same treatment as the shop content pass.</p>
+    </div>
+  </section>
+
+  <section id="view-shop" class="view">
+    <h2 style="font-size:26px; margin-bottom:6px;">Shop</h2>
+    <div class="shop-tabs" id="shopTabs"></div>
+    <div class="card" id="shopBody"></div>
+  </section>
+
+  <section id="view-inventory" class="view">
+    <h2 style="font-size:26px; margin-bottom:6px;">Inventory</h2>
+    <div class="inv-primary-actions" id="invPrimaryActions">
+      <div class="inv-primary-btn" id="invShopEntry">
+        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>
+        <div class="inv-primary-label">Store</div>
+        <div class="inv-primary-sub" id="invGoldGems"></div>
+      </div>
+      <div class="inv-primary-btn" id="invEnchantEntry">
+        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+        <div class="inv-primary-label">Enchant</div>
+        <div class="inv-primary-sub" id="invGemsCount"></div>
+      </div>
+      <div class="inv-primary-btn" id="invCraftEntry">
+        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></span>
+        <div class="inv-primary-label">Craft</div>
+        <div class="inv-primary-sub" id="invShardCount"></div>
+      </div>
+    </div>
+    <div class="inv-filter-row" id="invFilterRow"></div>
+    <div class="card" id="invItemList"></div>
+  </section>
+
+  <section id="view-subscription" class="view">
+    <h2 style="font-size:26px; margin-bottom:6px;">Subscription</h2>
+    <div class="card">
+      <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">Coming later</div>
+      <h3 style="font-size:22px; margin-top:6px;">Daily reward boxes</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; line-height:1.5; margin-top:8px;">VIP is planned around cosmetics only — never match outcomes. This slot stays visible so the offer is not buried in the shop.</p>
+    </div>
+  </section>
+
+  <section id="view-friends" class="view">
+    <h2 style="font-size:26px; margin-bottom:6px;">Friends</h2>
+    <div class="card">
+      <div class="log-form">
+        <input id="friendSearch" placeholder="Nickname or profile ID">
+        <button class="btn" id="addFriendBtn" type="button">Add</button>
+      </div>
+    </div>
+    <div class="section-title">Friends list</div>
+    <div class="card" id="friendsList"></div>
+    <div class="section-title">Messages</div>
+    <div class="card"><div class="empty"><div class="big">No messages</div>Direct chat ships with the social pass.</div></div>
+  </section>
+
+  <section id="view-settings" class="view">
+    <h2 style="font-size:26px; margin-bottom:14px;">Settings</h2>
+    <div class="section-title">Sound &amp; music</div>
+    <div class="card">
+      <div class="settings-row"><div>Sound<div class="l2" id="sfxVal">80%</div></div></div>
+      <input class="range" id="sfxRange" type="range" min="0" max="100" value="80">
+      <div class="settings-row"><div>Music<div class="l2" id="musicVal">80%</div></div></div>
+      <input class="range" id="musicRange" type="range" min="0" max="100" value="80">
+    </div>
+    <div class="section-title">Notifications</div>
+    <div class="card">
+      <div class="settings-row"><div>Push reminders<div class="l2">Daily login and friend invites</div></div><button class="inv-btn" id="notifToggle">On</button></div>
+    </div>
+    <div class="section-title">Language</div>
+    <div class="card">
+      <div class="settings-row"><div>Language</div><div class="l2">English</div></div>
+    </div>
+    <div class="section-title">Account</div>
+    <div class="card">
+      <div class="settings-row"><div>Sign in with Google<div class="l2">Login and account creation — not wired yet</div></div></div>
+      <button class="btn" id="googleBtn">Sign in with Google</button>
+      <button class="btn" id="logoutBtn" style="margin-top:8px;">Log out</button>
+    </div>
+    <div class="section-title">Theme</div>
+    <div class="theme-grid" id="themeGrid"></div>
+    <div class="section-title">Shortcut</div>
+    <div class="card">
+      <div class="settings-row"><div>Add to Home Screen<div class="l2">Launch PALACE like an app</div></div></div>
+      <button class="btn" id="addHomeBtn">Add to Home Screen</button>
+    </div>
+    <div class="section-title">Data</div>
+    <div class="card">
+      <div class="settings-row"><div>Keep your progress<div class="l2">Saves live in this app under palaceCards_v1. Share or copy a backup before switching devices, then import it after.</div></div></div>
+      <button class="btn" id="shareBackupBtn">Share / Copy Backup</button>
+      <button class="btn" id="exportBtn" style="margin-top:8px;">Download Backup File</button>
+      <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file or paste JSON</div></div></div>
+      <button class="btn" id="importBtn">Import Backup File</button>
+      <button class="btn" id="pasteBackupBtn" style="margin-top:8px;">Paste Backup</button>
+      <input type="file" id="importFile" accept="application/json">
+    </div>
+    <div class="section-title">Help</div>
+    <div class="card">
+      <div class="settings-row"><div>Support<div class="l2">Working title PALACE — rules live in design/game-rules.md</div></div></div>
+    </div>
+    <div class="section-title">Danger Zone</div>
+    <div class="card"><button class="btn danger" id="resetBtn">Reset All Data</button></div>
+    <div class="section-title">About</div>
+    <div class="card">
+      <div class="settings-row"><div>App</div><div class="l2">PALACE</div></div>
+      <div class="settings-row"><div>Version</div><div class="l2 mono">0.1.0</div></div>
+      <div class="settings-row"><div>Starting balance</div><div class="l2 mono">400 coins</div></div>
+    </div>
+  </section>
+</main>
+
+<div id="enchantWindow">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="enchantWindowLeaveBtn">‹ Leave</button>
+    <div><div class="instance-title">Enchanting Table</div></div>
+  </div>
+  <div id="enchantWindowBody"></div>
+</div>
+
+<div id="craftWindow">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="craftWindowLeaveBtn">‹ Leave</button>
+    <div><div class="instance-title">Craft</div></div>
+  </div>
+  <div id="craftWindowBody"></div>
+</div>
+
+<div id="profileOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="profileLeaveBtn">‹ Leave</button>
+    <div><div class="instance-title">Profile</div></div>
+  </div>
+  <div id="profileBody"></div>
+</div>
+
+<div id="modeOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="modeLeaveBtn">‹ Leave</button>
+    <div><div class="instance-title" id="modeTitle">Standard</div></div>
+  </div>
+  <div id="modeBody"></div>
+</div>
+
+<nav class="tabbar">
+  <button class="tab active" data-view="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+    Home
+  </button>
+  <button class="tab" data-view="shop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+    Shop
+  </button>
+  <button class="tab" data-view="inventory">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 8L12 4 4 8v8l8 4 8-4V8Z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>
+    Inventory
+  </button>
+  <button class="tab" data-view="subscription">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.4 6.8H21l-5.4 4.2 2 7-5.6-4.2L6.4 21l2-7L3 9.8h6.6z"/></svg>
+    Sub
+  </button>
+  <button class="tab" data-view="friends">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Friends
+  </button>
+  <button class="tab" data-view="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   PALACE (card-game.html) — card-game shell.
+   Progress is localStorage key palaceCards_v1. Never rename it.
+   Never use garageGains_v1 — that belongs to RIGCORE.
+   ========================================================= */
+const APP_NAME = 'PALACE';
+const STORE_KEY = 'palaceCards_v1';
+const STARTING_COINS = 400;
+const DAILY_LOGIN_COINS = 50;
+const SHARDS_PER_STONE = 10;
+const SHOP_TABS = [
+  { id: 'skins', label: 'Card skins' },
+  { id: 'tables', label: 'Tables' },
+  { id: 'emotes', label: 'Emotes' },
+  { id: 'bubbles', label: 'Chat bubbles' },
+  { id: 'borders', label: 'Borders' },
+  { id: 'coins', label: 'Coins' },
+];
+const INV_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'cosmetics', label: 'Cosmetics' },
+  { id: 'shards', label: 'Shards' },
+  { id: 'stones', label: 'Stones' },
+];
+const THEMES = [
+  { id: 'rig', name: 'Rig', a: '#b455f5', b: '#3ec6f0' },
+  { id: 'magenta', name: 'Magenta', a: '#ff4fa3', b: '#4fd8ff' },
+  { id: 'ember', name: 'Ember', a: '#ff9d3f', b: '#b455f5' },
+  { id: 'verdant', name: 'Verdant', a: '#38e29a', b: '#3ec6f0' },
+];
+
+function todayStamp() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function defaultState() {
+  return {
+    app: 'palace',
+    format: 1,
+    profile: { name: 'Player', photo: '', border: null },
+    coins: STARTING_COINS,
+    xp: 0,
+    lastDailyLogin: '',
+    inventory: { items: [], shards: { cosmetic: 0 }, stones: { cosmetic: 0 } },
+    equipped: { cardSkin: null, tableTheme: null, emote: null, chatBubble: null, profileBorder: null },
+    friends: [],
+    settings: { theme: 'rig', sfx: 80, music: 80, notifications: true, language: 'en' },
+    stats: { matches: 0, wins: 0 },
+    shopTab: 'skins',
+    invFilter: 'all',
+  };
+}
+
+function getLevel(xp) { return 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 50)); }
+
+let state = defaultState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    const src = parsed && parsed.app === 'palace' && parsed.state ? parsed.state : parsed;
+    return { ...defaultState(), ...src, inventory: { ...defaultState().inventory, ...(src.inventory || {}) }, equipped: { ...defaultState().equipped, ...(src.equipped || {}) }, settings: { ...defaultState().settings, ...(src.settings || {}) }, profile: { ...defaultState().profile, ...(src.profile || {}) }, stats: { ...defaultState().stats, ...(src.stats || {}) } };
+  } catch (_) {
+    return defaultState();
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+function buildBackupPayload() {
+  return {
+    app: 'palace',
+    format: 1,
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+}
+window.buildBackupPayload = buildBackupPayload;
+
+function applyImportedBackupText(text) {
+  try {
+    const parsed = JSON.parse(text);
+    const src = parsed && parsed.app === 'palace' && parsed.state ? parsed.state : parsed;
+    if (!src || typeof src !== 'object') throw new Error('bad');
+    if (parsed && parsed.app && parsed.app !== 'palace') throw new Error('wrong app');
+    state = { ...defaultState(), ...src, inventory: { ...defaultState().inventory, ...(src.inventory || {}) } };
+    saveState();
+    renderAll();
+    showToast('Backup restored');
+  } catch (_) {
+    showToast('Import failed — not a PALACE backup');
+  }
+}
+window.applyImportedBackupText = applyImportedBackupText;
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+window.showToast = showToast;
+
+function maybeDailyLogin() {
+  const today = todayStamp();
+  if (state.lastDailyLogin === today) return false;
+  state.lastDailyLogin = today;
+  state.coins += DAILY_LOGIN_COINS;
+  saveState();
+  showToast('Daily login +' + DAILY_LOGIN_COINS + ' coins');
+  return true;
+}
+
+function syncHeaderHeight() {
+  const header = document.getElementById('stickyHeader');
+  const main = document.querySelector('main');
+  if (!header || !main) return;
+  main.style.paddingTop = (header.offsetHeight + 8) + 'px';
+}
+window.syncHeaderHeight = syncHeaderHeight;
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + id));
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === id));
+  if (id === 'inventory') renderInventory();
+  if (id === 'shop') renderShop();
+  if (id === 'friends') renderFriends();
+  if (id === 'settings') renderSettings();
+}
+
+function renderHeader() {
+  document.getElementById('nbNameText').textContent = state.profile.name || 'Player';
+  document.getElementById('rankTag').textContent = 'Lv ' + getLevel(state.xp);
+  document.getElementById('nbGoldVal').textContent = String(state.coins);
+  document.body.setAttribute('data-theme', state.settings.theme || 'rig');
+  const due = state.lastDailyLogin !== todayStamp();
+  document.getElementById('nbDailyDot').style.display = due ? '' : 'none';
+}
+
+function renderShop() {
+  const tabs = document.getElementById('shopTabs');
+  tabs.innerHTML = SHOP_TABS.map((t) => `<button class="shop-tab${state.shopTab === t.id ? ' active' : ''}" data-shop="${t.id}">${t.label}</button>`).join('');
+  tabs.querySelectorAll('[data-shop]').forEach((btn) => btn.addEventListener('click', () => {
+    state.shopTab = btn.dataset.shop;
+    saveState();
+    renderShop();
+  }));
+  const body = document.getElementById('shopBody');
+  if (state.shopTab === 'coins') {
+    body.innerHTML = `<div class="empty"><div class="big">Coin packs</div>Real-money tab is wired. Packs are not listed yet.</div>`;
+  } else {
+    body.innerHTML = `<div class="empty"><div class="big">Empty shelf</div>Category structure is ready. Cosmetic items come in the content pass.</div>`;
+  }
+}
+
+function renderInventory() {
+  document.getElementById('invGoldGems').textContent = state.coins + ' coins';
+  document.getElementById('invGemsCount').textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
+  document.getElementById('invShardCount').textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
+  const filterRow = document.getElementById('invFilterRow');
+  filterRow.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
+  filterRow.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
+    state.invFilter = chip.dataset.invFilter;
+    saveState();
+    renderInventory();
+  }));
+  const list = document.getElementById('invItemList');
+  const items = state.inventory.items || [];
+  const shards = state.inventory.shards.cosmetic || 0;
+  const stones = state.inventory.stones.cosmetic || 0;
+  const showItems = state.invFilter === 'all' || state.invFilter === 'cosmetics';
+  const showShards = state.invFilter === 'all' || state.invFilter === 'shards';
+  const showStones = state.invFilter === 'all' || state.invFilter === 'stones';
+  let html = '';
+  if (showItems && items.length) {
+    html += items.map((it) => `<div class="inv-item-row"><div>${it.name}</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${it.slot || 'cosmetic'} · t${it.tier || 0}</div></div>`).join('');
+  } else if (showItems && state.invFilter === 'cosmetics') {
+    html += `<div class="empty"><div class="big">No cosmetics yet</div>Owned skins, borders, and emotes land here.</div>`;
+  }
+  if (showShards) html += `<div class="inv-item-row"><div>Cosmetic Shards</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${shards} · ${SHARDS_PER_STONE} craft 1 stone</div></div>`;
+  if (showStones) html += `<div class="inv-item-row"><div>Cosmetic Enchantment Stone</div><div class="l2" style="color:var(--text-dim); font-size:12px;">${stones} · spent at the Enchanting Table</div></div>`;
+  if (!html) html = `<div class="empty"><div class="big">Inventory is empty</div>Same layout as RIGCORE — items fill in with the content pass.</div>`;
+  list.innerHTML = html;
+}
+
+function openEnchant() {
+  const el = document.getElementById('enchantWindow');
+  el.style.display = 'block';
+  el.classList.add('book-open');
+  document.getElementById('enchantWindowBody').innerHTML = `
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Slot</div>
+      <div class="empty"><div class="big">No item selected</div>Upgradable cosmetics preview all four tiers here, then spend stones on a regrade roll — same RIGCORE enchant table flow.</div>
+    </div>
+    <div class="card">
+      <div class="settings-row"><div>Stones ready</div><div class="l2 mono">${state.inventory.stones.cosmetic || 0}</div></div>
+      <button class="btn" id="enchantAttemptBtn" ${state.inventory.stones.cosmetic < 1 ? 'disabled' : ''}>Enchant</button>
+    </div>`;
+  const btn = document.getElementById('enchantAttemptBtn');
+  if (btn) btn.addEventListener('click', () => showToast('Need an upgradable item first'));
+}
+
+function closeEnchant() {
+  const el = document.getElementById('enchantWindow');
+  el.style.display = 'none';
+  el.classList.remove('book-open');
+}
+
+function openCraft() {
+  const el = document.getElementById('craftWindow');
+  el.style.display = 'block';
+  el.classList.add('book-open');
+  const shards = state.inventory.shards.cosmetic || 0;
+  document.getElementById('craftWindowBody').innerHTML = `
+    <div class="card">
+      <div class="settings-row"><div>Cosmetic Shards<div class="l2">${SHARDS_PER_STONE} shards → 1 enchantment stone</div></div><div class="l2 mono">${shards}</div></div>
+      <button class="btn primary" id="craftStoneBtn" ${shards < SHARDS_PER_STONE ? 'disabled' : ''}>Craft Stone</button>
+    </div>`;
+  const btn = document.getElementById('craftStoneBtn');
+  if (btn) btn.addEventListener('click', () => {
+    if ((state.inventory.shards.cosmetic || 0) < SHARDS_PER_STONE) return;
+    state.inventory.shards.cosmetic -= SHARDS_PER_STONE;
+    state.inventory.stones.cosmetic = (state.inventory.stones.cosmetic || 0) + 1;
+    saveState();
+    showToast('Crafted 1 enchantment stone');
+    openCraft();
+    renderInventory();
+    renderHeader();
+  });
+}
+
+function closeCraft() {
+  const el = document.getElementById('craftWindow');
+  el.style.display = 'none';
+  el.classList.remove('book-open');
+}
+
+function openProfile() {
+  document.getElementById('profileOverlay').style.display = 'block';
+  document.getElementById('profileBody').innerHTML = `
+    <div class="card">
+      <div class="settings-row"><div>Name</div><div class="l2">${state.profile.name}</div></div>
+      <div class="settings-row"><div>Level</div><div class="l2 mono">${getLevel(state.xp)}</div></div>
+      <div class="settings-row"><div>XP</div><div class="l2 mono">${state.xp}</div></div>
+      <div class="settings-row"><div>Matches / wins</div><div class="l2 mono">${state.stats.matches} / ${state.stats.wins}</div></div>
+    </div>
+    <div class="section-title">Cosmetics</div>
+    <div class="cosmetic-grid">
+      <div class="cosmetic-slot"><div class="l">Card skin</div><div class="n">${state.equipped.cardSkin || 'Default'}</div></div>
+      <div class="cosmetic-slot"><div class="l">Chat bubble</div><div class="n">${state.equipped.chatBubble || 'Default'}</div></div>
+      <div class="cosmetic-slot"><div class="l">Profile border</div><div class="n">${state.equipped.profileBorder || 'Default'}</div></div>
+      <div class="cosmetic-slot"><div class="l">Emotes</div><div class="n">${state.equipped.emote || 'Default set'}</div></div>
+    </div>`;
+}
+
+function closeProfile() { document.getElementById('profileOverlay').style.display = 'none'; }
+
+function openMode(mode) {
+  if (mode === 'ranked' || mode === 'custom') {
+    showToast(mode === 'ranked' ? 'Ranked is deferred' : 'Custom is a later placeholder');
+    return;
+  }
+  document.getElementById('modeOverlay').style.display = 'block';
+  document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : 'Standard';
+  const body = document.getElementById('modeBody');
+  if (mode === 'practice') {
+    body.innerHTML = `
+      <div class="mode-card" data-practice="standard"><h3>Practice Standard</h3><p>You plus three bots.</p></div>
+      <div class="mode-card" data-practice="duel"><h3>Practice One-on-one</h3><p>You against a single bot.</p></div>
+      <div class="mode-card" data-practice="custom"><h3>Practice Custom</h3><p>Two to four seats, rest bots.</p></div>
+      <div class="section-title">Bot difficulty</div>
+      <div class="tier-row">
+        ${['Easy','Medium','Hard','Expert'].map((d,i) => `<div class="tier-chip${i===0?' active':''}" data-diff="${d}"><div class="n">${d}</div><div class="l">All bots</div></div>`).join('')}
+      </div>
+      <button class="btn primary" id="startPracticeBtn">Start</button>`;
+    body.querySelectorAll('[data-diff]').forEach((chip) => chip.addEventListener('click', () => {
+      body.querySelectorAll('[data-diff]').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+    }));
+    document.getElementById('startPracticeBtn').addEventListener('click', () => showToast('Match play ships with the game spec'));
+    return;
+  }
+  body.innerHTML = `
+    <div class="card">
+      <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--a2);">Buy-in locks difficulty</div>
+      <h3 style="margin-top:6px;">Easy</h3>
+      <div class="tier-row"><div class="tier-chip active" data-buy="30"><div class="n">30</div><div class="l">Easy bots</div></div></div>
+    </div>
+    <div class="card">
+      <h3>Medium</h3>
+      <div class="tier-row">
+        <div class="tier-chip" data-buy="100"><div class="n">100</div><div class="l">Unlocks 200</div></div>
+        <div class="tier-chip locked" data-buy="200"><div class="n">200</div><div class="l">Locked</div></div>
+        <div class="tier-chip locked" data-buy="300"><div class="n">300</div><div class="l">Locked</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Hard</h3>
+      <div class="tier-row">
+        <div class="tier-chip locked" data-buy="500"><div class="n">500</div><div class="l">Locked</div></div>
+        <div class="tier-chip locked" data-buy="700"><div class="n">700</div><div class="l">Locked</div></div>
+        <div class="tier-chip locked" data-buy="900"><div class="n">900</div><div class="l">Locked</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Expert</h3>
+      <div class="tier-row">
+        <div class="tier-chip locked" data-buy="1200"><div class="n">1200</div><div class="l">Locked</div></div>
+        <div class="tier-chip locked" data-buy="1500"><div class="n">1500</div><div class="l">Locked</div></div>
+        <div class="tier-chip locked" data-buy="1800"><div class="n">1800</div><div class="l">Locked</div></div>
+      </div>
+    </div>
+    <button class="btn primary" id="startStandardBtn">Start · 30 coins</button>`;
+  document.getElementById('startStandardBtn').addEventListener('click', () => showToast('Match play ships with the game spec'));
+}
+
+function closeMode() { document.getElementById('modeOverlay').style.display = 'none'; }
+
+function renderFriends() {
+  const list = document.getElementById('friendsList');
+  if (!state.friends.length) {
+    list.innerHTML = `<div class="empty"><div class="big">No friends yet</div>Add by nickname or profile ID. Google login comes with the social pass.</div>`;
+    return;
+  }
+  list.innerHTML = state.friends.map((f) => `<div class="friend-row"><div>${f.name}<div class="l2">Offline</div></div><button class="inv-btn">Invite</button></div>`).join('');
+}
+
+function renderSettings() {
+  document.getElementById('sfxRange').value = state.settings.sfx;
+  document.getElementById('musicRange').value = state.settings.music;
+  document.getElementById('sfxVal').textContent = state.settings.sfx + '%';
+  document.getElementById('musicVal').textContent = state.settings.music + '%';
+  document.getElementById('notifToggle').textContent = state.settings.notifications ? 'On' : 'Off';
+  const grid = document.getElementById('themeGrid');
+  grid.innerHTML = THEMES.map((t) => `<div class="theme-swatch${state.settings.theme === t.id ? ' active' : ''}" data-theme="${t.id}"><div class="dot" style="background:linear-gradient(135deg,${t.a},${t.b})"></div><div class="nm">${t.name}</div></div>`).join('');
+  grid.querySelectorAll('[data-theme]').forEach((el) => el.addEventListener('click', () => {
+    state.settings.theme = el.dataset.theme;
+    saveState();
+    renderHeader();
+    renderSettings();
+  }));
+}
+
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(window.buildBackupPayload(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'palace-backup-' + todayStamp() + '.json';
+  a.click();
+}
+
+function renderAll() {
+  renderHeader();
+  renderInventory();
+  renderShop();
+  renderFriends();
+  renderSettings();
+  syncHeaderHeight();
+}
+
+function init() {
+  state = loadState();
+  maybeDailyLogin();
+  saveState();
+  renderAll();
+
+  document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => showView(tab.dataset.view)));
+  document.querySelectorAll('[data-mode]').forEach((card) => card.addEventListener('click', () => openMode(card.dataset.mode)));
+  document.getElementById('nameBadge').addEventListener('click', openProfile);
+  document.getElementById('nbGold').addEventListener('click', () => showView('shop'));
+  document.getElementById('nbDailyDot').addEventListener('click', () => showToast('Daily login already claimed for today'));
+  document.getElementById('invShopEntry').addEventListener('click', () => showView('shop'));
+  document.getElementById('invEnchantEntry').addEventListener('click', openEnchant);
+  document.getElementById('invCraftEntry').addEventListener('click', openCraft);
+  document.getElementById('enchantWindowLeaveBtn').addEventListener('click', closeEnchant);
+  document.getElementById('craftWindowLeaveBtn').addEventListener('click', closeCraft);
+  document.getElementById('profileLeaveBtn').addEventListener('click', closeProfile);
+  document.getElementById('modeLeaveBtn').addEventListener('click', closeMode);
+  document.getElementById('sfxRange').addEventListener('input', (e) => { state.settings.sfx = Number(e.target.value); document.getElementById('sfxVal').textContent = state.settings.sfx + '%'; saveState(); });
+  document.getElementById('musicRange').addEventListener('input', (e) => { state.settings.music = Number(e.target.value); document.getElementById('musicVal').textContent = state.settings.music + '%'; saveState(); });
+  document.getElementById('notifToggle').addEventListener('click', () => { state.settings.notifications = !state.settings.notifications; saveState(); renderSettings(); });
+  document.getElementById('googleBtn').addEventListener('click', () => showToast('Google sign-in ships with the social pass'));
+  document.getElementById('logoutBtn').addEventListener('click', () => showToast('Signed out locally — Google comes later'));
+  document.getElementById('addFriendBtn').addEventListener('click', () => {
+    const name = document.getElementById('friendSearch').value.trim();
+    if (!name) return showToast('Enter a nickname or ID');
+    showToast('Friend requests need Google login');
+  });
+  document.getElementById('shareBackupBtn').addEventListener('click', async () => {
+    const text = JSON.stringify(window.buildBackupPayload(), null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Backup copied');
+    } catch (_) {
+      showToast('Copy failed — use Download Backup File');
+    }
+  });
+  document.getElementById('exportBtn').addEventListener('click', downloadBackup);
+  document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    applyImportedBackupText(await file.text());
+    e.target.value = '';
+  });
+  document.getElementById('pasteBackupBtn').addEventListener('click', async () => {
+    const text = prompt('Paste PALACE backup JSON');
+    if (text) applyImportedBackupText(text);
+  });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('Reset PALACE save on this device?')) return;
+    state = defaultState();
+    saveState();
+    renderAll();
+    showToast('Save reset — 400 coins');
+  });
+  document.getElementById('addHomeBtn').addEventListener('click', async () => {
+    if (window.__deferredInstallPrompt) {
+      window.__deferredInstallPrompt.prompt();
+      await window.__deferredInstallPrompt.userChoice;
+      window.__deferredInstallPrompt = null;
+    } else {
+      showToast('Open your browser menu (⋮) and tap "Add to Home screen"');
+    }
+  });
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.__deferredInstallPrompt = e;
+  });
+  window.addEventListener('resize', syncHeaderHeight);
+}
+
+init();
+</script>
+</body>
+</html>

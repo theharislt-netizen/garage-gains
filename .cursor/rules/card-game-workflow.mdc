@@ -1,0 +1,19 @@
+---
+description: PALACE card-game build and auto-update rules
+alwaysApply: true
+---
+
+# PALACE (card-game/)
+
+PALACE is a **separate Android app** from RIGCORE. It reuses RIGCORE’s Capacitor + Capgo live-update workflow, not the workout product.
+
+- App title: **PALACE** (working title)
+- Source file: `card-game/card-game.html`
+- Android id: `com.palace.app`
+- APK: `card-game/dist/PALACE.apk`
+- Live-update: `card-game/live-update/` on branch `cursor/card-game-setup-e78b` (then `main`)
+- Save key: `palaceCards_v1` as one JSON object. Never rename it. Never write `garageGains_v1`.
+
+After finished PALACE changes: from `card-game/` run `npm run prepare:www` so `live-update/www.zip` is current, rebuild the APK only when native/Android files change, commit, and push. The installed phone app pulls the zip the next time it opens. Do not tell the user to reinstall the APK for HTML/JS feature work.
+
+Inventory, Enchant, Craft, coins, and Settings backup should keep matching RIGCORE’s layout and behavior where the card-game design overlaps.

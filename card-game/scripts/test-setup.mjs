@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+/**
+ * Guards the PALACE project setup: separate save key, reused inventory shell,
+ * and the same live-update/APK wiring as RIGCORE.
+ */
+import { readFileSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = join(root, '..');
+const fails = [];
+
+function read(rel) {
+  return readFileSync(join(root, rel), 'utf8');
+}
+
+function must(cond, msg) {
+  if (!cond) fails.push(msg);
+}
+
+const html = read('card-game.html');
+const bridge = read('scripts/native-bridge.mjs');
+const makeLive = read('scripts/make-live-bundle.mjs');
+const pkg = JSON.parse(read('package.json'));
+const cap = JSON.parse(read('capacitor.config.json'));
+const gradle = read('android/app/build.gradle');
+const strings = read('android/app/src/main/res/values/strings.xml');
+const workflow = readFileSync(join(repoRoot, '.github/workflows/card-game-android.yml'), 'utf8');
+
+must(html.includes("const STORE_KEY = 'palaceCards_v1'"), 'card-game.html must use palaceCards_v1');
+must(!html.includes("STORE_KEY = 'garageGains_v1'") && !html.includes("getItem('garageGains_v1')"), 'card-game.html must not read/write garageGains_v1');
+must(html.includes('APP_NAME = \'PALACE\''), 'app title must be PALACE');
+must(html.includes('data-view="home"') && html.includes('data-view="shop"') && html.includes('data-view="inventory"'), 'home/shop/inventory tabs required');
+must(html.includes('data-view="subscription"') && html.includes('data-view="friends"') && html.includes('data-view="settings"'), 'subscription/friends/settings tabs required');
+must(html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory must reuse Enchant + Craft entry points');
+must(html.includes('id="enchantWindow"'), 'enchant window overlay required');
+must(html.includes('id="exportBtn"') && html.includes('id="importBtn"') && html.includes('id="addHomeBtn"'), 'settings backup + add-home hooks required for native-bridge');
+must(html.includes('Starting balance') || html.includes('400'), 'starter coins (400) should be in the shell');
+must(html.includes('function buildBackupPayload') || html.includes('window.buildBackupPayload'), 'backup payload must be exposed');
+must(html.includes('applyImportedBackupText'), 'import hook must be exposed');
+must(html.includes('showToast'), 'toast helper required');
+
+must(bridge.includes("STORE_KEY = 'palaceCards_v1'"), 'native-bridge must use palaceCards_v1');
+must(!bridge.includes('garageGains_v1'), 'native-bridge must not use garageGains_v1');
+must(bridge.includes("UPDATE_DIR = 'card-game/live-update'"), 'live-update path must be card-game/live-update');
+must(bridge.includes("cursor/card-game-setup-e78b"), 'live-update must poll this branch first');
+must(bridge.includes('CapacitorUpdater.download'), 'Capgo updater download required');
+must(bridge.includes('checkAndApplyUpdate'), 'auto-update on open required');
+
+must(makeLive.includes("UPDATE_DIR = 'card-game/live-update'"), 'bundle script must publish under card-game/live-update');
+must(pkg.dependencies['@capgo/capacitor-updater'], 'Capgo updater dependency required');
+must(cap.appId === 'com.palace.app', 'applicationId / appId must be com.palace.app');
+must(cap.appName === 'PALACE', 'capacitor appName must be PALACE');
+must(gradle.includes('applicationId "com.palace.app"'), 'Android applicationId must be com.palace.app');
+must(gradle.includes('versionName "0.1.0"'), 'APK versionName must start at 0.1.0');
+must(strings.includes('>PALACE<'), 'Android launcher label must be PALACE');
+must(workflow.includes('card-game/dist/PALACE.apk') || workflow.includes('dist/PALACE.apk'), 'CI must upload PALACE.apk');
+must(existsSync(join(root, 'android/app/keystore/palace-release.p12')), 'release keystore missing');
+must(!existsSync(join(root, 'android/app/keystore/rigcore-release.p12')), 'must not ship the RIGCORE keystore in this app');
+
+if (fails.length) {
+  console.error('SETUP CHECKS FAILED:');
+  for (const f of fails) console.error(' -', f);
+  process.exit(1);
+}
+console.log('PALACE setup checks passed');
+console.log(JSON.stringify({
+  storeKey: 'palaceCards_v1',
+  appId: cap.appId,
+  liveUpdateDir: 'card-game/live-update',
+  updateBranch: 'cursor/card-game-setup-e78b',
+  apk: 'card-game/dist/PALACE.apk',
+}, null, 2));
