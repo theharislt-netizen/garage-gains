@@ -2351,9 +2351,12 @@ function enterBrowse(ev) {
 
 function updateBrowseTarget(ev) {
   if (!gesture) return;
+  const dx = ev.clientX - gesture.startX;
+  if (Math.abs(dx) >= DRAG_PX) gesture.browseMoved = true;
   const hit = cardAtPoint(ev.clientX, ev.clientY, gesture.from);
   clearPeeking();
   if (!hit) return;
+  if (gesture.id && hit.dataset.id !== gesture.id) gesture.browseMoved = true;
   hit.classList.add('peeking');
   gesture.el = hit;
   gesture.id = hit.dataset.id;
@@ -2408,6 +2411,7 @@ function startCardPress(el, ev, from) {
     lastY: ev.clientY,
     startT: Date.now(),
     browsing: false,
+    browseMoved: false,
     swipePlay: false,
     pointerId: ev.pointerId,
     peekTimer: setTimeout(() => {
@@ -2431,20 +2435,20 @@ function finishCardGesture(ev) {
   const dx = clientX - g.startX;
   const dt = Date.now() - g.startT;
   const moved = Math.hypot(dx, dy) >= DRAG_PX;
-  const swipeUp = !g.browsing && (g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx)));
+  const swipeUp = dy >= SWIPE_UP_PX && dy > Math.abs(dx);
   clearPeeking();
   if (g.el) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
-  // Hold / magnifying-glass browse never selects or plays — including off-turn.
-  if (g.browsing) return;
+  // Magnifying-glass browse (left/right across the fan) never selects or plays.
+  if (g.browseMoved) return;
   if (swipeUp) {
     if (!canActOnCards()) return;
     playLiftedCard(g.id);
     return;
   }
-  if (dt >= PEEK_MS || moved) return;
+  if (g.browsing || dt >= PEEK_MS || moved) return;
   onHumanCardTap(g.id);
 }
 
