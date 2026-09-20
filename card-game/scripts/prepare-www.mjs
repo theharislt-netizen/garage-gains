@@ -2,7 +2,7 @@
 /**
  * Copies card-game.html into www/index.html, swaps Google Fonts for
  * locally bundled woff2 files, injects the native bridge, writes the
- * GitHub install landing page (not the web app), and writes
+ * GitHub install landing page plus docs/play web client, and writes
  * live-update/ for the installed Android app.
  */
 import { createWriteStream } from 'node:fs';
@@ -129,6 +129,7 @@ const src = join(root, 'card-game.html');
 const html = patchHtml(await readFile(src, 'utf8'));
 await writeFile(join(www, 'index.html'), html);
 await copyFile(join(root, 'palace-engine.js'), join(www, 'palace-engine.js'));
+await copyFile(join(root, 'palace-lobby.js'), join(www, 'palace-lobby.js'));
 await writeFile(join(www, '.nojekyll'), '');
 await writeFile(
   join(www, 'manifest.webmanifest'),
@@ -165,4 +166,14 @@ if (await exists(apkSrc)) {
 let landing = await readFile(join(root, 'scripts/install-page.html'), 'utf8');
 await writeFile(join(docs, 'index.html'), landing);
 
-console.log('www/ prepared (docs/ is the install page, not the web app)');
+const playDir = join(docs, 'play');
+await mkdir(playDir, { recursive: true });
+await writeFile(join(playDir, '.nojekyll'), '');
+await writeFile(join(playDir, 'index.html'), await readFile(src, 'utf8'));
+await copyFile(join(root, 'palace-engine.js'), join(playDir, 'palace-engine.js'));
+await copyFile(join(root, 'palace-lobby.js'), join(playDir, 'palace-lobby.js'));
+if (await exists(iconSrc)) {
+  await copyFile(iconSrc, join(playDir, 'icon.png'));
+}
+
+console.log('www/ prepared (docs/ install page + docs/play web client)');

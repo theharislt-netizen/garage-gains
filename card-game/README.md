@@ -1,10 +1,11 @@
 # PALACE (working title) — Android APK
 
-This is a **real Android app**, the same kind as RIGCORE: a signed `.apk` you install once on the phone. It is **not** a website, and **not** Safari/Chrome “Add to Home Screen”.
+This is a **real Android app**, the same kind as RIGCORE: a signed `.apk` you install once on the phone.
 
-Install this file on the phone:
+It is also the same single HTML client (`card-game.html`). The cheapest cross-platform test path is to host that file as a browser table — no second codebase, no React rewrite.
 
-- Phone install page (same delivery as RIGCORE): https://theharislt-netizen.github.io/garage-gains/palace/
+- Phone install page: https://theharislt-netizen.github.io/garage-gains/palace/
+- Browser table (no install): https://theharislt-netizen.github.io/garage-gains/palace/play/
 - Direct APK: [`dist/PALACE.apk`](dist/PALACE.apk)
 
 On the phone: allow **Install unknown apps**, open `PALACE.apk`, tap **Install**. After that, later code pushes update the installed app the next time you open it.

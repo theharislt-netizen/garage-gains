@@ -42,6 +42,7 @@ jobs:
         run: |
           npm run test:setup
           npm run test:game
+          npm run test:lobby
           npm run prepare:www
           python3 - <<'PY'
           import json, zipfile

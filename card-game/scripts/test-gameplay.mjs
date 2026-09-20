@@ -75,6 +75,13 @@ must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
 must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
 must(html.includes("cardFaceHtml(c, 'tiny')"), 'opponent face-up cards use the same tiny card size as the player table row');
+must(html.includes('palace-lobby.js') && html.includes('id="lobbyOverlay"') && html.includes('id="joinOverlay"'), 'pre-match lobby and join session overlays required');
+must(html.includes('id="joinSessionBtn"') && html.includes('Play with Friends'), 'Home has a Play with Friends / Join Session entry');
+must(html.includes('function openLobby') && html.includes('startFromLobby') && html.includes('Open lobby'), 'Start opens a lobby instead of launching the table');
+must(html.includes('chooseBotMove(match, easy)') && html.includes('difficulty: \'Easy\''), 'turn-timer AFK uses Easy bot logic');
+must(html.includes("document.visibilityState === 'visible'") && html.includes('tickTurnClock()'), 'returning from background rechecks the turn timer');
+must(!html.includes('<button class="inv-btn">Invite</button>'), 'friends list is not an invite launcher');
+must(html.includes('art-custom') && !html.includes('art-custom locked'), 'Custom opens like the other playable modes');
 
 function seededRng(seed) {
   let s = seed;

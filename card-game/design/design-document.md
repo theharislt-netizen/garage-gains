@@ -26,9 +26,11 @@ Modeled loosely on how UNO's mobile app structures its mode and match selection 
 
 **Mid-match disconnect handling (resolved - bot takeover, penalty still open):** if a human player disconnects mid-match in Standard, a bot matching that match's tier difficulty takes over their seat and continues playing on their behalf. The disconnected player receives a penalty for leaving - the exact penalty (coins, XP, or otherwise) is still to be defined.
 
-**Friend system and social layer (resolved):** every mode (Standard, Ranked, Practice, Custom) starts in a pre-match lobby with up to four slots. Pressing Start immediately fills any empty slots with matchmaking or bots as appropriate to that mode. Tapping an empty slot instead opens the friends panel to invite someone directly into that slot.
+**Friend system and social layer (resolved — lobby codes, not friends-list invites):** every mode (Standard, Practice, Custom, and any buy-in match) opens a pre-match lobby after Start on the mode-select screen. The lobby shows every seat for that match. Open seats stay open until the host starts the match from the lobby; leftover open seats then fill with bots at the selected difficulty. The match never auto-starts from mode select.
 
-Separately, each mode's lobby also has a Join Session option, where a player pastes in a session code to join a specific match directly (distinct from the friends panel - this is the raw code-based join, similar to UNO Mobile's Room Key system).
+Invites are generated only inside that lobby: a short shareable code plus a browser link. The Friends tab is only for adding/managing people by nickname or profile ID — it is not an invite launcher.
+
+Separately, Home has a Play with Friends / Join Session entry, where a player pastes a code (or opens a `?join=` link) to sit in that lobby.
 
 A full friend system exists: players log in with Google, choose a nickname, and get a unique profile ID. Other players can find and add them by nickname or profile ID. Sending a friend request notifies the recipient, who can accept via a button. Once friends, a plus button lets you invite them directly into an open lobby slot.
 
