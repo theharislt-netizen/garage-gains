@@ -214,7 +214,9 @@
     const zone = activeZone(player);
     if (zone === 'out') return [];
     if (zone === 'down') {
-      return player.down.map((c, i) => ({ type: 'flip', seat, index: i, zone: 'down' }));
+      const flips = player.down.map((c, i) => ({ type: 'flip', seat, index: i, zone: 'down' }));
+      if (match.pile.length) flips.push({ type: 'pickup', seat });
+      return flips;
     }
     const cards = zone === 'up' ? player.up : player.hand;
     const groups = groupByRank(cards);
@@ -235,7 +237,7 @@
         }
       }
     });
-    if (!bonus && !moves.length) moves.push({ type: 'pickup', seat });
+    if (!bonus && match.pile.length) moves.push({ type: 'pickup', seat });
     return moves;
   }
 
@@ -319,8 +321,7 @@
 
     if (move.type === 'pickup') {
       if (match.phase === 'bonus') return events;
-      const legal = legalMoves(match, move.seat).filter((m) => m.type === 'play');
-      if (legal.length) return events;
+      if (!match.pile.length) return events;
       const taken = match.pile.splice(0);
       player.hand.push(...taken);
       events.push({ type: 'pickup', seat: player.seat, cards: taken.map(cloneCard) });

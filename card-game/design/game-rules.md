@@ -24,10 +24,10 @@ A standard 52-card deck is used. There are **three special cards — 2, 5, and 1
 
 ## 2. Basic Turn Structure
 
-On your turn, you must either:
+On your turn, you may either:
 
 - **Play** one card, or a matching set of 2, 3, or 4 cards of the *same rank*, from your hand onto the discard pile, **or**
-- If you cannot legally play, **pick up the entire discard pile** into your hand.
+- **Pick up the entire discard pile** into your hand — always available while the pile has cards, including as a strategic choice when you *could* play. If you cannot legally play, pickup is the only option.
 
 ### Rules for playing a card
 
@@ -35,7 +35,7 @@ On your turn, you must either:
 - You may play multiple cards of the same rank together in one turn (e.g., two 6s, three 9s, all four Kings), as long as that rank is equal to or higher than the top card. Choose how many of a matching set to play — you are not forced to dump every copy.
 - **Completing a four-of-a-kind** on the discard pile (the fourth card of the same rank landing on top) automatically **burns the pile** — same effect as playing a 10 (see below).
 - After playing, **draw back up to 2 cards** from the draw pile (once the draw pile is empty, you stop drawing and your hand will start shrinking below 2).
-- If you cannot play a legal card, you must **pick up the whole discard pile** and add it to your hand.
+- You may **pick up the whole discard pile** on your turn even when you have a legal play. If you cannot play a legal card, you must pick it up.
 
 ---
 

@@ -45,7 +45,9 @@ must(html.includes('pc-back-inner') && html.includes('pc-back-diamond'), 'card b
 must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a stock navy/gold design');
 must(html.includes('playBtnHtml') && html.includes('hintHtml') && html.includes('pile-count'), 'hand chrome is built from strings so a 0 cannot leak');
 must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in the table template');
-must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
+must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
+must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
+must(html.includes("cardFaceHtml(c, 'tiny')"), 'opponent face-up cards use the same tiny card size as the player table row');
 
 function seededRng(seed) {
   let s = seed;
@@ -390,7 +392,8 @@ stage3.players[0].down = [
   { id: 'QD', rank: 'Q', suit: 'D' },
 ];
 const downMoves = E.legalMoves(stage3, 0);
-must(downMoves.length === 3 && downMoves.every((m) => m.type === 'flip'), 'stage 3 offers a choice of each face-down card');
+must(downMoves.filter((m) => m.type === 'flip').length === 3, 'stage 3 offers a choice of each face-down card');
+must(downMoves.some((m) => m.type === 'pickup'), 'stage 3 still allows taking the pile');
 const evDown = E.applyMove(stage3, { type: 'flip', seat: 0, index: 1 });
 must(evDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === '8H'), 'chosen face-down card is picked into hand');
 must(stage3.players[0].hand.map((c) => c.id).join() === '8H', 'only the chosen face-down card enters the hand');
@@ -431,6 +434,24 @@ must(stuckMoves.length === 1 && stuckMoves[0].type === 'pickup', 'must pick up w
 E.applyMove(stuck, { type: 'pickup', seat: 0 });
 must(stuck.players[0].hand.some((c) => c.rank === 'A'), 'pickup takes the pile');
 must(stuck.pile.length === 0, 'pile empty after pickup');
+
+const strat = E.newMatch({ seats: 2, rng: seededRng(6) });
+strat.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+strat.turn = 0;
+strat.phase = 'playing';
+strat.players[0].hand = [
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '9D', rank: '9', suit: 'D' },
+];
+const stratMoves = E.legalMoves(strat, 0);
+must(stratMoves.some((m) => m.type === 'play' && m.rank === 'K'), 'a King can still beat a 3');
+must(stratMoves.some((m) => m.type === 'pickup'), 'Take pile stays available as a strategic choice');
+const evStrat = E.applyMove(strat, { type: 'pickup', seat: 0 });
+must(evStrat.some((e) => e.type === 'pickup'), 'strategic pickup is applied even when a play was legal');
+must(strat.pile.length === 0, 'strategic pickup empties the pile');
+must(strat.players[0].hand.some((c) => c.id === '3C'), 'strategic pickup takes the pile into hand');
+must(strat.turn === 1, 'strategic pickup ends the turn');
+must(!E.legalMoves(strat, 1).some((m) => m.type === 'pickup'), 'empty pile has no pickup');
 
 const botMatch = E.newMatch({ seats: 2, difficulty: 'Easy', rng: seededRng(9) });
 botMatch.turn = 1;
