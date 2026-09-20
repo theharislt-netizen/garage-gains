@@ -16,7 +16,7 @@ A standard 52-card deck is used. There are **three special cards — 2, 5, and 1
 2. Deal each player:
    - **3 face-down cards**, placed in front of them, unseen (the "blind" cards).
    - **3 face-up cards**, dealt on top of the face-down cards, visible to everyone.
-   - A **starting hand** of cards, dealt to each player.
+   - A **starting hand of 2 cards**, dealt to each player. After each play you draw back up to 2 (until the draw pile is empty).
 3. Place the remaining cards in the middle of the table, face-down, as the **draw pile**.
 4. Leave space next to the draw pile for the **discard pile**, which starts empty.
 
@@ -34,7 +34,7 @@ On your turn, you must either:
 - A card played onto the discard pile must be **equal to or higher in rank** than the top card currently on the pile.
 - You may play multiple cards of the same rank together in one turn (e.g., two 6s, three 9s, all four Kings), as long as that rank is equal to or higher than the top card.
 - **Completing a four-of-a-kind** on the discard pile (the fourth card of the same rank landing on top) automatically **burns the pile** — same effect as playing a 10 (see below).
-- After playing, **draw back up** from the draw pile so that you return to your normal working hand size (once the draw pile is empty, you stop drawing and your hand will start shrinking).
+- After playing, **draw back up to 2 cards** from the draw pile (once the draw pile is empty, you stop drawing and your hand will start shrinking below 2).
 - If you cannot play a legal card, you must **pick up the whole discard pile** and add it to your hand.
 
 ---

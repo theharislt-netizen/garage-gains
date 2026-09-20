@@ -25,6 +25,9 @@ must(html.includes('avatar-ring') && html.includes('count-badge'), 'turn ring + 
 must(html.includes('fan-backs') && html.includes('emote-btn') && html.includes('speech-bubble'), 'opponent fans + emote bubbles required');
 must(html.includes('accept-ripple') && html.includes('flyArc') && html.includes('comet'), 'play arc + accept ripple required');
 must(html.includes('sp-ov') && html.includes('sp-2') && html.includes('sp-5') && html.includes('sp-10'), '2/5/10 special overlays required');
+must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must render rank and suit, not a suit-only ace pip');
+must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');
+must(html.includes('drag-follow') && html.includes('startCardDrag'), 'cards must be pickable and throwable');
 must(html.includes('pcard.lifted') && html.includes('legalGlow'), 'hold-to-lift and auto legal glow required');
 must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
@@ -42,9 +45,20 @@ function find(player, rank) {
 
 const m0 = E.newMatch({ seats: 4, difficulty: 'Easy', rng: seededRng(7) });
 must(m0.players.length === 4, '4-seat match');
-must(m0.players[0].hand.length === 3, 'starting hand is 3');
+must(E.HAND_SIZE === 2, 'working hand size is 2');
+must(m0.players[0].hand.length === 2, 'starting hand is 2');
 must(m0.players[0].up.length === 3 && m0.players[0].down.length === 3, '3 up and 3 down');
-must(m0.draw.length === 52 - 4 * 9, 'remaining cards form the draw pile');
+must(m0.draw.length === 52 - 4 * 8, 'remaining cards form the draw pile');
+
+const refill = E.newMatch({ seats: 2, rng: seededRng(12) });
+refill.turn = 0;
+refill.pile = [];
+must(refill.players[0].hand.length === 2, '1v1 starting hand is 2');
+const playId = refill.players[0].hand[0].id;
+const drawBefore = refill.draw.length;
+E.applyMove(refill, { type: 'play', seat: 0, cardIds: [playId] });
+must(refill.players[0].hand.length === 2, 'draw back up to 2 after a play');
+must(refill.draw.length === drawBefore - 1 || refill.phase === 'bonus', 'one card is taken from the draw pile (or 5 bonus keeps the floor)');
 
 const pileAce = E.newMatch({ seats: 2, rng: seededRng(1) });
 pileAce.pile = [{ id: 'AH', rank: 'A', suit: 'H' }];

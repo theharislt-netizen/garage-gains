@@ -9,7 +9,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const SUITS = ['S', 'H', 'D', 'C'];
   const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-  const HAND_SIZE = 3;
+  const HAND_SIZE = 2;
   const TABLE_UP = 3;
   const TABLE_DOWN = 3;
   const SPECIALS = { '2': true, '5': true, '10': true };
@@ -152,7 +152,7 @@
   }
 
   function drawFloorBeforeFive(match, player, fiveCount, events) {
-    while (player.hand.length - fiveCount < 2 && match.draw.length) {
+    while (player.hand.length - fiveCount < HAND_SIZE && match.draw.length) {
       drawFromPile(match, player, 1, events);
     }
   }
@@ -272,7 +272,7 @@
     }
 
     if (rank === '5' && !opts.bonus) {
-      while (player.hand.length < 2 && match.draw.length) drawFromPile(match, player, 1, events);
+      while (player.hand.length < HAND_SIZE && match.draw.length) drawFromPile(match, player, 1, events);
       if (zoneCards(player).length) {
         match.phase = 'bonus';
         return events;
