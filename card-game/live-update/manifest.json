@@ -1,8 +1,9 @@
 {
-  "version": "0.1.0-ge5079bddb3",
-  "checksum": "0e1830ca70e25b8323321fdc8556f39c401dc1f381f69c7d997a614304d16e37",
-  "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/card-game-setup-e78b/card-game/live-update/www.zip",
+  "version": "0.1.0-gf32a31711a",
+  "checksum": "9b9536e17b4ef9497e5baf9ba87f707b7e1c7f9566e83a7879fbf8ff620b6d07",
+  "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
   "urls": [
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/card-game-setup-e78b/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/card-game/live-update/www.zip"
   ]

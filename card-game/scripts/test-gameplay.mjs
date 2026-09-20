@@ -40,6 +40,14 @@ must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must rend
 must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');
 must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html.includes('SWIPE_UP_PX'), 'hold-browse and swipe-up play are separate gestures');
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
+must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
+must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
+must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
+must(html.includes('margin-left: -16px') && html.includes('max-width: 96px'), 'east/west table piles use the old tucked Stage 2 overlap');
+must(html.includes('if (empty) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
+must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 'stage 2/3 stay closed without a match or while the stock remains');
+must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
+must(engineSrc.includes('const moves = legalMoves(match, seat);'), 'bot AI uses the same legalMoves list as the human player');
 must(!html.includes('function startCardDrag') && !html.includes('maybeBeginDrag'), 'holding a card does not start a drag clone');
 must(html.includes('if (g.browseMoved) return;'), 'releasing a hold inspects only — it does not select or play');
 must(html.includes('addEventListener(\'mousedown\', down)'), 'mouse fallback starts a press when pointer events are missing');
@@ -428,6 +436,35 @@ must(earlyUp.players[0].up.some((c) => c.id === 'KH'), 'the face-up king stays o
 E.syncSeat(earlyUp, earlyUp.players[0]);
 must(earlyUp.players[0].hand.length === 2, 'syncSeat draws back up to 2 from stock');
 must(earlyUp.players[0].up.length === 3, 'syncSeat does not scoop face-up cards while stock remains');
+
+const botEarly = E.newMatch({ seats: 2, rng: seededRng(19), humanSeat: 0 });
+botEarly.turn = 1;
+botEarly.phase = 'playing';
+botEarly.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+botEarly.draw = [
+  { id: '2C', rank: '2', suit: 'C' },
+  { id: '6D', rank: '6', suit: 'D' },
+  { id: '7H', rank: '7', suit: 'H' },
+];
+botEarly.players[1].hand = [];
+botEarly.players[1].up = [
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '9D', rank: '9', suit: 'D' },
+  { id: '8S', rank: '8', suit: 'S' },
+];
+botEarly.players[1].down = [
+  { id: '4C', rank: '4', suit: 'C' },
+  { id: 'JS', rank: 'J', suit: 'S' },
+  { id: 'QD', rank: 'Q', suit: 'D' },
+];
+const botEarlyMove = E.chooseBotMove(botEarly, botEarly.players[1], seededRng(21));
+must(botEarly.players[1].hand.length === 2, 'a bot with an empty hand draws from stock before table stages');
+must(botEarly.players[1].up.length === 3 && botEarly.players[1].down.length === 3, 'bot Stage 2/3 cards stay on the table while the stock remains');
+must(botEarlyMove && botEarlyMove.zone !== 'up' && botEarlyMove.type !== 'flip', 'bot AI cannot play Stage 2/3 while the draw pile remains');
+must(!E.tableStagesOpen(botEarly, botEarly.players[1]), 'shared tableStagesOpen is false for that bot');
+const stealBotUp = E.applyMove(botEarly, { type: 'play', seat: 1, cardIds: ['KH'], zone: 'up' });
+must(!stealBotUp.some((e) => e.type === 'play'), 'applyMove rejects a bot Stage 2 play while the stock remains');
+must(botEarly.players[1].up.some((c) => c.id === 'KH'), 'the bot face-up king stays on the table');
 
 const fiveEdge = E.newMatch({ seats: 2, rng: seededRng(10) });
 fiveEdge.draw = [];

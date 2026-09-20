@@ -176,7 +176,7 @@ function wireHaptics() {
 }
 
 const UPDATE_REPO = 'theharislt-netizen/garage-gains';
-const UPDATE_REFS = ['cursor/card-game-setup-e78b', 'main'];
+const UPDATE_REFS = ['cursor/winner-kick-rewards-e78b', 'cursor/card-game-setup-e78b', 'main'];
 const UPDATE_DIR = 'card-game/live-update';
 const TOKEN_KEY = 'palace_githubToken';
 let updateCheckInFlight = false;

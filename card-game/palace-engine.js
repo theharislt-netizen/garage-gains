@@ -111,8 +111,8 @@
   function activeZone(player, match) {
     if (!player || player.out) return 'out';
     if (player.hand.length) return 'hand';
-    // Stage 2/3 stay closed while the draw pile can still refill the hand.
-    if (match && !stockEmpty(match)) return 'hand';
+    // Missing match or a live draw pile: stay on Stage 1. Same gate for humans and bots.
+    if (!match || !stockEmpty(match)) return 'hand';
     if (player.up.length) return 'up';
     if (player.down.length) return 'down';
     return 'out';
@@ -231,6 +231,11 @@
     const bonus = match.phase === 'bonus';
     const zone = activeZone(player, match);
     if (zone === 'out') return [];
+    if (zone === 'up' || zone === 'down') {
+      if (!tableStagesOpen(match, player)) return match.pile.length && !bonus
+        ? [{ type: 'pickup', seat }]
+        : [];
+    }
     if (zone === 'down') {
       const flips = player.down.map((c, i) => ({ type: 'flip', seat, index: i, zone: 'down' }));
       if (!bonus && match.pile.length) flips.push({ type: 'pickup', seat });
@@ -362,6 +367,7 @@
     }
 
     if (move.type === 'flip') {
+      if (!tableStagesOpen(match, player) || player.up.length) return events;
       if (activeZone(player, match) !== 'down') return events;
       const card = takeDownToHand(player, move.index | 0, events);
       if (!card) return events;
@@ -371,11 +377,11 @@
 
     if (move.type === 'play') {
       const bonus = match.phase === 'bonus';
-      const zone = move.zone || activeZone(player, match);
-      if (bonus && zone !== 'hand' && activeZone(player, match) !== 'hand') {
-        /* bonus is from current zone if hand empty */
-      }
       const useZone = activeZone(player, match);
+      if ((useZone === 'up' || useZone === 'down' || move.zone === 'up' || move.zone === 'down')
+          && !tableStagesOpen(match, player)) {
+        return events;
+      }
       const cards = takeCards(player, useZone, move.cardIds || []);
       if (!cards.length) return events;
       if (!canPlayCards(match, cards, bonus)) {
@@ -398,6 +404,7 @@
     const rand = rng || Math.random;
     const seat = player.seat;
     syncSeat(match, player);
+    // Same legalMoves / activeZone / tableStagesOpen gate as the human player.
     const moves = legalMoves(match, seat);
     if (!moves.length) return { type: 'pickup', seat };
     if (match.phase === 'bonus') {
@@ -576,7 +583,7 @@
     SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, XP_WIN, BOT_NAMES,
     suitGlyph, isRed, isSpecial, rankValue, faceOrder,
     makeDeck, shuffle, cloneCard, topCard, canPlayCardOnPile, canPlayCards,
-    completesFour, activeZone, zoneCards, legalMoves, applyMove, chooseBotMove, syncSeat,
+    completesFour, activeZone, zoneCards, tableStagesOpen, legalMoves, applyMove, chooseBotMove, syncSeat,
     newMatch, sortHand, payoutFor, nextUnlocks, isBuyInUnlocked, nextSeat, livingSeats,
   };
 });

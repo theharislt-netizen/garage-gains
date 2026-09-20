@@ -14,7 +14,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const www = join(root, 'www');
 const outDir = join(root, 'live-update');
 const REPO = 'theharislt-netizen/garage-gains';
-const REFS = ['cursor/card-game-setup-e78b', 'main'];
+const REFS = ['cursor/winner-kick-rewards-e78b', 'cursor/card-game-setup-e78b', 'main'];
 const UPDATE_DIR = 'card-game/live-update';
 
 async function walk(dir) {
