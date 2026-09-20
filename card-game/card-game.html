@@ -124,45 +124,111 @@
   .mode-card p { margin: 6px 0 0; color: var(--text-dim); font-size: 13px; line-height: 1.4; }
   .mode-card.locked { opacity: 0.55; }
   .play-hand {
-    display: flex; justify-content: center; align-items: flex-end;
-    height: 268px; margin: 4px 0 10px; padding: 8px 4px 18px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(50% - 8px);
+    gap: 14px;
+    width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 16px;
+    padding: 18px 16px 28px;
+    margin: 0 -4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .play-hand::-webkit-scrollbar { display: none; }
+  .play-hand.overlay-row {
+    grid-auto-columns: minmax(132px, 42%);
+    padding: 8px 4px 18px;
   }
   .play-card {
-    width: 108px; height: 164px; margin-left: -18px; border: 0; padding: 0;
-    border-radius: 12px; cursor: pointer; position: relative;
-    background:
-      linear-gradient(180deg, #fffdf8 0%, #efe6d6 100%);
-    box-shadow: 0 14px 24px rgba(0,0,0,0.45), inset 0 0 0 3px #1b1524;
-    color: #1b1524; transform-origin: bottom center;
-    transition: transform 0.22s ease, z-index 0s;
+    width: 100%;
+    height: min(56vh, 268px);
+    min-height: 220px;
+    margin: 0;
+    padding: 9px;
+    border: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    position: relative;
+    scroll-snap-align: start;
+    background: linear-gradient(180deg, #f7f7f7, #e4e4e4);
+    box-shadow: 0 16px 28px rgba(0,0,0,0.42), inset 0 0 0 2px #fff;
+    color: #fff;
     font-family: 'Barlow Condensed';
+    transform-origin: center bottom;
+    transition: transform 0.18s ease;
   }
-  .play-card:first-child { margin-left: 0; }
-  .play-card:nth-child(1) { transform: rotate(-16deg) translateY(22px); z-index: 1; }
-  .play-card:nth-child(2) { transform: rotate(-6deg) translateY(6px); z-index: 2; }
-  .play-card:nth-child(3) { transform: rotate(6deg) translateY(6px); z-index: 3; }
-  .play-card:nth-child(4) { transform: rotate(16deg) translateY(22px); z-index: 4; }
-  .play-card:active, .play-card.lift {
-    transform: rotate(0) translateY(-28px) scale(1.06); z-index: 8;
+  .play-card:nth-child(odd) { transform: rotate(-2.8deg); }
+  .play-card:nth-child(even) { transform: rotate(2.8deg); }
+  .play-card:active, .play-card.lift { transform: rotate(0) scale(1.04); z-index: 3; }
+  .mode-face {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 14px 10px 12px;
+    text-align: center;
   }
-  .play-card .pc-rank {
-    position: absolute; top: 8px; left: 10px; font-size: 22px; font-weight: 800; line-height: 1;
+  .art-standard .mode-face {
+    background:
+      radial-gradient(circle at 50% 38%, #ff2d55 0%, #ff2d55 42%, #14060c 43%, #0c0508 100%);
   }
-  .play-card .pc-suit { position: absolute; top: 30px; left: 11px; font-size: 16px; }
-  .play-card .pc-center {
-    position: absolute; inset: 42px 12px 36px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; text-align: center;
+  .art-ranked .mode-face {
+    background:
+      radial-gradient(circle at 50% 30%, #6ee0ff 0 32%, #141826 33% 100%);
   }
-  .play-card .pc-center h3 { font-size: 17px; letter-spacing: 0.03em; color: #1b1524; }
-  .play-card .pc-center p { margin: 4px 0 0; font-size: 9px; line-height: 1.2; color: #5c5368; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 500; }
-  .play-card .pc-pip-lg { font-size: 36px; line-height: 1; margin-bottom: 4px; }
-  .play-card.red .pc-rank, .play-card.red .pc-suit, .play-card.red .pc-pip-lg { color: #c62828; }
-  .play-card.locked { filter: grayscale(0.55) brightness(0.86); }
+  .art-practice .mode-face {
+    background:
+      radial-gradient(circle at 78% 18%, #ffe566 0 18%, transparent 19%),
+      linear-gradient(165deg, #3a2208 0%, #120c08 55%, #2a1606 100%);
+  }
+  .art-custom .mode-face {
+    background: radial-gradient(circle at 50% 28%, #7d5cff 0 30%, #120c1c 31% 100%);
+  }
+  .mode-illo { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 118px; height: 118px; }
+  .mode-illo svg { width: 100%; height: 100%; display: block; }
+  .mode-copy { position: relative; z-index: 1; width: 100%; }
+  .mode-copy .mode-kicker {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.9; margin-bottom: 2px;
+  }
+  .mode-copy h3 {
+    font-size: 32px; letter-spacing: 0.02em; line-height: 0.9; text-shadow: 0 3px 0 rgba(0,0,0,0.45);
+    color: #fff; font-weight: 800;
+  }
+  .art-standard .mode-copy h3 { color: #ffe14a; }
+  .art-practice .mode-copy h3 { color: #ffe14a; transform: rotate(-6deg); }
+  .mode-copy p { margin: 6px 0 0; font-size: 12px; line-height: 1.25; color: rgba(255,255,255,0.88); text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 600; }
+  .play-card.locked .mode-face { filter: saturate(0.55) brightness(0.82); }
   .play-card .lock-ribbon {
-    position: absolute; bottom: 10px; left: 8px; right: 8px;
-    background: #1b1524; color: #efe6d6; font-size: 10px; letter-spacing: 0.12em;
-    text-transform: uppercase; border-radius: 100px; padding: 4px 0;
+    position: absolute; top: 10px; right: 8px; left: auto; z-index: 2;
+    background: #e53935; color: #fff; font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; border-radius: 5px; padding: 4px 7px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.25);
   }
+  .home-stage {
+    position: relative;
+    min-height: calc(100vh - 210px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+    margin: 0 -8px;
+  }
+  .home-globe {
+    position: absolute; left: 50%; bottom: 18px; width: 170%; height: 310px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 12%, rgba(90, 170, 255, 0.40), transparent 42%),
+      radial-gradient(circle at 50% 72%, #1b7a4d 0%, #0c2b1d 52%, transparent 70%);
+    pointer-events: none;
+  }
+  .mode-dots { display: flex; gap: 7px; z-index: 1; margin-top: -6px; }
+  .mode-dots span {
+    width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.28);
+  }
+  .mode-dots span.on { background: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
   .pcard {
     position: relative; width: 58px; height: 86px; border-radius: 8px;
     background: linear-gradient(180deg, #fffdf8, #efe6d6);
@@ -449,28 +515,59 @@
 
 <main>
   <section id="view-home" class="view active">
-    <div class="section-title" style="margin-top:0;">Play — pick a card</div>
-    <div class="play-hand" id="modeHand">
-      <button type="button" class="play-card red" data-mode="standard">
-        <div class="pc-rank">S</div><div class="pc-suit">♥</div>
-        <div class="pc-center"><div class="pc-pip-lg">♥</div><h3>Standard</h3><p>Buy-in table vs bots</p></div>
-      </button>
-      <button type="button" class="play-card locked" data-mode="ranked">
-        <div class="pc-rank">R</div><div class="pc-suit">♠</div>
-        <div class="pc-center"><div class="pc-pip-lg">♠</div><h3>Ranked</h3><p>Built last</p></div>
-        <div class="lock-ribbon">Locked</div>
-      </button>
-      <button type="button" class="play-card red" data-mode="practice">
-        <div class="pc-rank">P</div><div class="pc-suit">♦</div>
-        <div class="pc-center"><div class="pc-pip-lg">♦</div><h3>Practice</h3><p>Bots · no coin risk</p></div>
-      </button>
-      <button type="button" class="play-card locked" data-mode="custom">
-        <div class="pc-rank">C</div><div class="pc-suit">♣</div>
-        <div class="pc-center"><div class="pc-pip-lg">♣</div><h3>Custom</h3><p>Later placeholder</p></div>
-        <div class="lock-ribbon">Locked</div>
-      </button>
+    <div class="home-stage">
+      <div class="home-globe" aria-hidden="true"></div>
+      <div class="play-hand" id="modeHand">
+        <button type="button" class="play-card art-standard" data-mode="standard">
+          <div class="mode-face">
+            <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
+              <ellipse cx="58" cy="52" rx="46" ry="36" fill="#ff2a4f"/>
+              <path d="M70 96c18-6 32-28 34-48 1-8-6-12-12-9-8 18-20 30-34 36-8 3-6 14 12 21z" fill="#fff" stroke="#1a0a10" stroke-width="3"/>
+              <path d="M86 52c2 8-2 16-10 20" stroke="#1a0a10" stroke-width="3" stroke-linecap="round"/>
+            </svg></div>
+            <div class="mode-copy"><div class="mode-kicker">Classic</div><h3>Standard</h3><p>Tap to play</p></div>
+          </div>
+        </button>
+        <button type="button" class="play-card art-practice" data-mode="practice">
+          <div class="mode-face">
+            <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
+              <circle cx="88" cy="28" r="22" fill="#ffe566"/>
+              <path d="M18 70l42-32 42 32" fill="#ffd24a"/>
+              <rect x="28" y="68" width="64" height="40" fill="#ffcc33"/>
+              <rect x="52" y="80" width="16" height="28" fill="#6b3a10"/>
+              <circle cx="36" cy="84" r="6" fill="#fff3b0"/>
+            </svg></div>
+            <div class="mode-copy"><div class="mode-kicker">Vs bots</div><h3>Practice</h3><p>No coin risk</p></div>
+          </div>
+        </button>
+        <button type="button" class="play-card art-ranked locked" data-mode="ranked">
+          <div class="lock-ribbon">Locked</div>
+          <div class="mode-face">
+            <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
+              <ellipse cx="60" cy="58" rx="40" ry="32" fill="#5ad8ff"/>
+              <path d="M38 44h44v14c0 16-10 28-22 32-12-4-22-16-22-32V44z" fill="#bff3ff"/>
+              <rect x="52" y="78" width="16" height="12" fill="#fff"/>
+              <rect x="42" y="90" width="36" height="10" rx="2" fill="#e7fbff"/>
+            </svg></div>
+            <div class="mode-copy"><div class="mode-kicker">Later</div><h3>Ranked</h3><p>Coming last</p></div>
+          </div>
+        </button>
+        <button type="button" class="play-card art-custom locked" data-mode="custom">
+          <div class="lock-ribbon">Locked</div>
+          <div class="mode-face">
+            <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
+              <ellipse cx="60" cy="70" rx="44" ry="22" fill="#a888ff"/>
+              <ellipse cx="60" cy="62" rx="36" ry="14" fill="#d2c2ff"/>
+              <circle cx="28" cy="58" r="8" fill="#fff"/>
+              <circle cx="92" cy="58" r="8" fill="#fff"/>
+              <circle cx="60" cy="50" r="8" fill="#fff"/>
+            </svg></div>
+            <div class="mode-copy"><div class="mode-kicker">Later</div><h3>Custom</h3><p>Your table</p></div>
+          </div>
+        </button>
+      </div>
+      <div class="mode-dots" id="modeDots"><span class="on"></span><span></span></div>
     </div>
-    <p class="empty" style="padding-top:0;">Tap a card the way you would in UNO. Ranked and Custom stay face-down for now.</p>
   </section>
 
   <section id="view-shop" class="view">
@@ -1596,10 +1693,10 @@ function openMode(mode) {
     let seats = 4;
     let sub = 'standard';
     body.innerHTML = `
-      <div class="play-hand" style="height:210px;">
-        <button type="button" class="play-card red lift" data-practice="standard"><div class="pc-rank">4</div><div class="pc-suit">♥</div><div class="pc-center"><h3>Standard</h3><p>You + 3 bots</p></div></button>
-        <button type="button" class="play-card" data-practice="duel"><div class="pc-rank">1</div><div class="pc-suit">♠</div><div class="pc-center"><h3>1v1</h3><p>You vs one bot</p></div></button>
-        <button type="button" class="play-card red" data-practice="custom"><div class="pc-rank">C</div><div class="pc-suit">♦</div><div class="pc-center"><h3>Custom</h3><p>2–4 seats</p></div></button>
+      <div class="play-hand overlay-row">
+        <button type="button" class="play-card art-standard lift" data-practice="standard"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">4 seats</div><h3>Standard</h3><p>You + 3 bots</p></div></div></button>
+        <button type="button" class="play-card art-ranked" data-practice="duel"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">Duel</div><h3>1v1</h3><p>You vs one bot</p></div></div></button>
+        <button type="button" class="play-card art-practice" data-practice="custom"><div class="mode-face"><div class="mode-copy"><div class="mode-kicker">Seats</div><h3>Custom</h3><p>2–4 players</p></div></div></button>
       </div>
       <div id="practiceExtra"></div>
       <div class="section-title">Bot difficulty</div>
@@ -1716,6 +1813,15 @@ function init() {
 
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => showView(tab.dataset.view)));
   document.querySelectorAll('[data-mode]').forEach((card) => card.addEventListener('click', () => openMode(card.dataset.mode)));
+  const modeHand = document.getElementById('modeHand');
+  const modeDots = document.getElementById('modeDots');
+  if (modeHand && modeDots) {
+    const syncDots = () => {
+      const page = modeHand.scrollLeft > modeHand.clientWidth * 0.4 ? 1 : 0;
+      modeDots.innerHTML = `<span class="${page === 0 ? 'on' : ''}"></span><span class="${page === 1 ? 'on' : ''}"></span>`;
+    };
+    modeHand.addEventListener('scroll', syncDots, { passive: true });
+  }
   document.getElementById('nameBadge').addEventListener('click', openProfile);
   document.getElementById('nbGold').addEventListener('click', () => showView('shop'));
   document.getElementById('nbDailyDot').addEventListener('click', () => showToast('Daily login already claimed for today'));

@@ -13,6 +13,7 @@ function must(cond, msg) { if (!cond) fails.push(msg); }
 
 must(html.includes('palace-engine.js'), 'card-game.html must load palace-engine.js');
 must(html.includes('play-hand') && html.includes('play-card'), 'home must use playing-card mode tiles');
+must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must be UNO-style illustrated cards');
 must(html.includes('inv-slot-grid'), 'inventory must be a Rigcore slot grid');
 must(html.includes('enchant-table') && html.includes('enchant-drop'), 'enchanting table layout required');
 must(html.includes('craft-stone-card'), 'craft must use stone cards');
