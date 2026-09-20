@@ -2836,10 +2836,11 @@ function finishMatch() {
   renderHeader();
   const over = document.getElementById('matchOver');
   over.innerHTML = `<div class="card" style="max-width:420px; width:100%;">
-    <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">${won ? 'You win' : 'Match over'}</div>
+    <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">${won ? 'You win' : "You're out"}</div>
     <h3 style="font-size:28px; margin:6px 0 10px;">${place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : place + 'th'}</h3>
     ${payRows}
     ${rows}
+    <p style="color:var(--text-dim); font-size:13px; margin:8px 0 14px;">Out of the match — play again or head home. You never sit and watch the rest.</p>
     <button class="btn primary" id="againBtn">Play again</button>
     <button class="btn" id="leaveMatchBtn">Home</button>
   </div>`;
@@ -2884,8 +2885,9 @@ function startMatch(cfg) {
   animateDeal().then(() => runTurn());
 }
 
-function seedLastCardWin() {
+function seedLastCardFinish(place) {
   if (!match) return false;
+  const want = Math.max(1, place | 0);
   matchToken += 1;
   uiBusy = false;
   selectedIds = [];
@@ -2896,19 +2898,34 @@ function seedLastCardWin() {
   match.ended = false;
   match.settled = false;
   match.finishOrder = [];
-  match.players.forEach((p) => {
-    p.out = false;
-    p.place = 0;
-    if (p.seat === match.humanSeat) {
-      p.hand = [{ id: '9H', rank: '9', suit: 'H' }];
+  const others = match.players.filter((p) => p.seat !== match.humanSeat);
+  const alreadyOut = Math.max(0, Math.min(others.length, want - 1));
+  others.forEach((p, i) => {
+    if (i < alreadyOut) {
+      p.out = true;
+      p.place = i + 1;
+      p.hand = [];
       p.up = [];
       p.down = [];
-    } else if (!p.hand.length) {
-      p.hand = [{ id: '8' + p.seat, rank: '8', suit: 'H' }];
+      match.finishOrder.push(p.seat);
+    } else {
+      p.out = false;
+      p.place = 0;
+      p.hand = p.hand.length ? p.hand : [{ id: '8' + p.seat, rank: '8', suit: 'H' }];
     }
   });
+  const human = match.players[match.humanSeat];
+  human.out = false;
+  human.place = 0;
+  human.hand = [{ id: '9H', rank: '9', suit: 'H' }];
+  human.up = [];
+  human.down = [];
   renderTable();
   return true;
+}
+
+function seedLastCardWin() {
+  return seedLastCardFinish(1);
 }
 
 function paintModeGold() {
