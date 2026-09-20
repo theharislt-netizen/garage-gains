@@ -2362,11 +2362,21 @@ function updateBrowseTarget(ev) {
   gesture.id = hit.dataset.id;
 }
 
+let lastPointerTs = 0;
+function notePointer(ev) {
+  if (ev && ev.pointerType != null) lastPointerTs = Date.now();
+}
+function isMouseEcho(ev) {
+  return !!(ev && ev.pointerType == null && Date.now() - lastPointerTs < 80);
+}
+
 function ensureDragListeners() {
   if (dragListenersBound) return;
   dragListenersBound = true;
   const move = (ev) => {
     if (!gesture) return;
+    if (isMouseEcho(ev)) return;
+    notePointer(ev);
     gesture.lastX = ev.clientX;
     gesture.lastY = ev.clientY;
     const dx = ev.clientX - gesture.startX;
@@ -2391,10 +2401,16 @@ function ensureDragListeners() {
       enterBrowse(ev);
     }
   };
-  const end = (ev) => finishCardGesture(ev);
+  const end = (ev) => {
+    if (isMouseEcho(ev)) return;
+    notePointer(ev);
+    finishCardGesture(ev);
+  };
   document.addEventListener('pointermove', move);
   document.addEventListener('pointerup', end);
   document.addEventListener('pointercancel', end);
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', end);
 }
 
 function startCardPress(el, ev, from) {
@@ -2473,15 +2489,19 @@ function bindTableGestures(zone) {
 }
 
 function bindCardGesture(el, from) {
-  el.addEventListener('pointerdown', (ev) => {
+  const down = (ev) => {
     if (!match || match.ended || match.settled) return;
     if (ev.button && ev.button !== 0) return;
+    if (isMouseEcho(ev)) return;
+    notePointer(ev);
     ev.preventDefault();
     ev.stopPropagation();
     hideEmotePicker();
     try { el.setPointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
     startCardPress(el, ev, from);
-  });
+  };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('mousedown', down);
 }
 
 function playLiftedCard(id) {

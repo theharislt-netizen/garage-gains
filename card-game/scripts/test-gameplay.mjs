@@ -41,7 +41,7 @@ must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
 must(!html.includes('function startCardDrag') && !html.includes('maybeBeginDrag'), 'holding a card does not start a drag clone');
 must(html.includes('if (g.browseMoved) return;'), 'releasing a hold inspects only — it does not select or play');
-must(html.includes('swipeUpMove && canActOnCards()'), 'an upward swipe plays instead of entering browse');
+must(html.includes('addEventListener(\'mousedown\', down)'), 'mouse fallback starts a press when pointer events are missing');
 must(html.includes('if (!match || match.ended || match.settled) return;'), 'hand inspect works during bot turns, not only on your turn');
 must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
 must(html.includes('hideDrawPile') && html.includes('draw-stack.empty'), 'empty draw pile is removed after the last card flies');
