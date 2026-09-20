@@ -54,6 +54,10 @@ must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matchin
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
+must(html.includes('humanFinishedMatch') && html.includes('shouldLeaveForRewards') && html.includes('settleIfDone'), 'going out settles the local client immediately');
+must(html.includes('remainingAreOnlyBots') && html.includes('are not spectated'), 'remaining bots are not spectated after a win');
+must(html.includes('if (settleIfDone()) return;'), 'runMove/runTurn leave for rewards before the next bot turn');
+must(html.includes("if (match && ev.seat === match.humanSeat) break;"), 'winning out event skips leftover table animations');
 must(!html.includes('id="turnBanner"') && !html.includes('turn-banner') && !html.includes('function flashBanner'), 'turn-status element under the pile is deleted');
 must(!html.includes('Your turn') && !html.includes('is thinking'), 'no YOUR TURN / thinking text anywhere');
 must(!html.includes('pc-pip">P') && !html.includes('pc-pip">pile'), 'card backs have no placeholder letter');
@@ -549,6 +553,7 @@ must(evWin.some((e) => e.type === 'out' && e.seat === 0 && e.place === 1), '1st 
 must(!winEarly.ended, 'the match keeps running for everyone else after 1st');
 must(winEarly.turn !== 0, 'the winner does not take another turn');
 must(winEarly.players.filter((p) => !p.out).length === 3, 'three players remain after 1st goes out');
+must(html.includes('humanFinishedMatch()') && html.includes('settleIfDone()'), 'the UI leaves as soon as the local player is out even if the engine match continues');
 must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Easy', 30), 'easy 30 always unlocked');
 must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 200), 'medium 200 starts locked');
 const unlocked = E.nextUnlocks({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100, true);

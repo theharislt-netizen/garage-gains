@@ -2614,7 +2614,8 @@ async function animateEvents(events) {
     } else if (ev.type === 'reset') {
       /* 5 bonus play / 2 pile reset — avatar ring + pulse, no center label */
     } else if (ev.type === 'out') {
-      /* player is last / is out — seat name updates; no center label */
+      /* Local player is out: skip leftover engine events and leave for rewards. */
+      if (match && ev.seat === match.humanSeat) break;
     }
   }
 }
@@ -2645,17 +2646,15 @@ async function runMove(move) {
   if (!stillThisMatch(token)) return;
   selectedIds = [];
   uiBusy = false;
+  if (settleIfDone()) return;
   renderTable();
-  if (humanWonMatch() || match.ended) {
-    finishMatch();
-    return;
-  }
   await runTurn();
 }
 
 async function runTurn() {
   const token = matchToken;
   while (stillThisMatch(token) && !match.ended && !match.settled) {
+    if (settleIfDone()) return;
     let p = match.players[match.turn];
     if (!p || p.out) {
       match.turn = PalaceEngine.nextSeat(match, match.turn);
@@ -2679,12 +2678,9 @@ async function runTurn() {
     if (!stillThisMatch(token)) return;
     selectedIds = [];
     uiBusy = false;
-    if (humanWonMatch() || match.ended) {
-      renderTable();
-      finishMatch();
-      return;
-    }
+    if (settleIfDone()) return;
   }
+  if (stillThisMatch(token)) settleIfDone();
 }
 
 async function animateDeal() {
@@ -2766,21 +2762,49 @@ function closeTable() {
   renderHeader();
 }
 
+function remainingAreOnlyBots() {
+  if (!match) return true;
+  return !match.players.some((p) => !p.out && !p.isBot && p.seat !== match.humanSeat);
+}
+
+function humanFinishedMatch() {
+  if (!match) return false;
+  const human = match.players[match.humanSeat];
+  return !!(human && human.out);
+}
+
 function humanWonMatch() {
   if (!match) return false;
   const human = match.players[match.humanSeat];
   return !!(human && human.out && human.place === 1);
 }
 
+function shouldLeaveForRewards() {
+  if (!match || match.settled) return false;
+  if (match.ended) return true;
+  if (!humanFinishedMatch()) return false;
+  // Local player is out: this client always leaves for rewards. Remaining bots
+  // are not spectated (`remainingAreOnlyBots`). Remaining real players keep
+  // playing on their own clients.
+  return true;
+}
+
+function settleIfDone() {
+  if (!shouldLeaveForRewards()) return false;
+  finishMatch();
+  return true;
+}
+
 function finishMatch() {
   if (!match || match.settled) return;
   match.settled = true;
+  matchToken += 1;
   stopTurnClock();
   const human = match.players[match.humanSeat];
   const place = human.place || match.players.length;
   const won = place === 1;
   const seats = match.players.length;
-  const earlyWin = won && !match.ended;
+  const earlyExit = !match.ended;
   let baseline = 0;
   let speedBonus = 0;
   let payout = 0;
@@ -2798,7 +2822,7 @@ function finishMatch() {
   state.stats.matches += 1;
   if (won) state.stats.wins += 1;
   saveState();
-  const rows = earlyWin ? '' : match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
+  const rows = earlyExit ? '' : match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
     `<div class="settings-row"><div>${p.place}. ${p.name}${p.seat === match.humanSeat ? ' (you)' : ''}</div><div class="l2">${p.out ? 'out' : ''}</div></div>`
   ).join('');
   const payRows = match.mode === 'standard'
@@ -2858,6 +2882,33 @@ function startMatch(cfg) {
   closeMode();
   openTable();
   animateDeal().then(() => runTurn());
+}
+
+function seedLastCardWin() {
+  if (!match) return false;
+  matchToken += 1;
+  uiBusy = false;
+  selectedIds = [];
+  match.draw = [];
+  match.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+  match.turn = match.humanSeat;
+  match.phase = 'playing';
+  match.ended = false;
+  match.settled = false;
+  match.finishOrder = [];
+  match.players.forEach((p) => {
+    p.out = false;
+    p.place = 0;
+    if (p.seat === match.humanSeat) {
+      p.hand = [{ id: '9H', rank: '9', suit: 'H' }];
+      p.up = [];
+      p.down = [];
+    } else if (!p.hand.length) {
+      p.hand = [{ id: '8' + p.seat, rank: '8', suit: 'H' }];
+    }
+  });
+  renderTable();
+  return true;
 }
 
 function paintModeGold() {
