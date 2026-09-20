@@ -37,7 +37,7 @@ must(html.includes('#humanTableCards') && html.includes('pointer-events: none'),
 must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matching ranks can be selected together before Play');
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
-must(html.includes('humanWonMatch') && html.includes('match.settled') && html.includes('Baseline share'), '1st place leaves immediately to a rewards summary');
+must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
 must(!html.includes("'Your turn'") && !html.includes('is thinking'), 'no YOUR TURN / thinking text under the pile');
 must(!html.includes('pc-pip">P') && !html.includes('pc-pip">pile'), 'card backs have no placeholder letter');
 must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a stock navy/gold design');

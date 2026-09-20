@@ -635,10 +635,15 @@
   }
   .turn-banner.show { opacity: 1; }
   .match-over {
-    position: absolute; inset: 0; background: rgba(6,8,10,0.72); z-index: 8;
+    position: fixed; inset: 0; z-index: 300;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(var(--a1-rgb),0.14), transparent 45%),
+      radial-gradient(circle at 100% 20%, rgba(var(--a2-rgb),0.10), transparent 40%),
+      var(--bg);
     display: none; align-items: center; justify-content: center; padding: 18px;
   }
   .match-over.show { display: flex; }
+  body.rewards-open .tabbar, body.rewards-open .sticky-header, body.rewards-open main { display: none !important; }
   #flyLayer { position: fixed; inset: 0; z-index: 360; pointer-events: none; }
   .count-chip {
     display: inline-flex; gap: 6px; background: var(--panel); border: 1px solid var(--line);
@@ -924,8 +929,9 @@
   </div>
   <div class="table-felt" id="tableFelt"></div>
   <div id="emotePicker"></div>
-  <div class="match-over" id="matchOver"></div>
 </div>
+
+<div class="match-over" id="matchOver"></div>
 
 <div id="itemDetailPopupBackdrop"></div>
 <div id="itemDetailPopup"><div id="itemDetailModalBody"></div></div>
@@ -2359,15 +2365,15 @@ async function animateDeal() {
 
 function openTable() {
   matchToken += 1;
+  hideRewards();
   document.body.classList.add('in-match');
   document.getElementById('tableWindow').classList.add('show');
   document.getElementById('matchOver').classList.remove('show');
   document.getElementById('matchOver').innerHTML = '';
 }
 
-function closeTable() {
+function leaveMatchView() {
   matchToken += 1;
-  match = null;
   selectedIds = [];
   uiBusy = false;
   gesture = null;
@@ -2376,9 +2382,25 @@ function closeTable() {
   clearDragClone();
   stopTurnClock();
   hideEmotePicker();
+  const layer = document.getElementById('flyLayer');
+  if (layer) layer.innerHTML = '';
   document.body.classList.remove('in-match');
   document.body.classList.remove('overlay-open');
   document.getElementById('tableWindow').classList.remove('show');
+}
+
+function hideRewards() {
+  document.body.classList.remove('rewards-open');
+  const over = document.getElementById('matchOver');
+  if (!over) return;
+  over.classList.remove('show');
+  over.innerHTML = '';
+}
+
+function closeTable() {
+  match = null;
+  leaveMatchView();
+  hideRewards();
   renderHeader();
 }
 
@@ -2414,7 +2436,6 @@ function finishMatch() {
   state.stats.matches += 1;
   if (won) state.stats.wins += 1;
   saveState();
-  renderHeader();
   const rows = earlyWin ? '' : match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
     `<div class="settings-row"><div>${p.place}. ${p.name}${p.seat === match.humanSeat ? ' (you)' : ''}</div><div class="l2">${p.out ? 'out' : ''}</div></div>`
   ).join('');
@@ -2423,6 +2444,10 @@ function finishMatch() {
       + (speedBonus ? `<div class="settings-row"><div>Speed bonus</div><div class="l2 mono">+${speedBonus} coins</div></div>` : '')
       + `<div class="settings-row"><div>Payout</div><div class="l2 mono">+${payout} coins</div></div>`
     : '<p style="color:var(--text-dim); font-size:13px;">Practice — no coins on the line.</p>';
+  leaveMatchView();
+  match = null;
+  document.body.classList.add('rewards-open');
+  renderHeader();
   const over = document.getElementById('matchOver');
   over.innerHTML = `<div class="card" style="max-width:420px; width:100%;">
     <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">${won ? 'You win' : 'Match over'}</div>
@@ -2430,13 +2455,18 @@ function finishMatch() {
     ${payRows}
     ${rows}
     <button class="btn primary" id="againBtn">Play again</button>
-    <button class="btn" id="leaveMatchBtn">${won ? 'Home' : 'Leave table'}</button>
+    <button class="btn" id="leaveMatchBtn">Home</button>
   </div>`;
   over.classList.add('show');
   document.getElementById('againBtn').addEventListener('click', () => {
+    hideRewards();
     if (pendingCfg) startMatch(pendingCfg);
   });
-  document.getElementById('leaveMatchBtn').addEventListener('click', closeTable);
+  document.getElementById('leaveMatchBtn').addEventListener('click', () => {
+    hideRewards();
+    showView('home');
+    renderHeader();
+  });
 }
 
 function startMatch(cfg) {
