@@ -579,13 +579,15 @@
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
     height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
-    padding: 0 8px 6px; touch-action: none;
+    padding: 0 8px 6px; touch-action: none; pointer-events: none;
   }
   .human-hand .pcard {
-    margin-left: -16px; cursor: grab; z-index: var(--z, 1);
+    margin-left: -16px; cursor: grab; z-index: var(--z, 1); pointer-events: auto;
     transition: transform 0.16s ease; transform-origin: bottom center;
     transform: rotate(var(--fan, 0deg));
   }
+  #humanTableCards { position: relative; z-index: 7; }
+  #humanTableCards .pcard.back.legal { cursor: pointer; }
   .human-hand .pcard:first-child { margin-left: 0; }
   .human-hand .pcard.selected { transform: translateY(-16px) scale(1.06) rotate(var(--fan, 0deg)); }
   .table-actions {
@@ -1582,6 +1584,11 @@ function autoHumanTimeout() {
     commitHumanPlay();
     return;
   }
+  const flip = legal.find((m) => m.type === 'flip');
+  if (flip) {
+    onHumanFlip(flip.index);
+    return;
+  }
   if (legal.some((m) => m.type === 'pickup')) humanPickup();
 }
 
@@ -1810,6 +1817,7 @@ function renderTable(opts) {
       ${selectedIds.length ? '<button class="btn primary" id="playSelBtn">Play ' + selectedIds.length + '</button>' : ''}
       ${canPickup ? '<button class="btn danger" id="pickupBtn">Take pile</button>' : ''}
       ${match.phase === 'bonus' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Bonus card — any rank</div>' : ''}
+      ${zone === 'down' && match.turn === match.humanSeat && !dealing ? '<div class="seat-name">Tap a face-down card</div>' : ''}
     </div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
@@ -1934,9 +1942,12 @@ function bindTableGestures(zone) {
   document.querySelectorAll('#humanTableCards .pcard.tiny').forEach((el) => {
     if (zone === 'up' && el.dataset.id) bindCardGesture(el, 'up');
   });
-  document.querySelectorAll('#humanTableCards .pcard.back.legal').forEach((el) => {
-    el.addEventListener('pointerup', (ev) => {
+  document.querySelectorAll('#humanTableCards .pcard.back[data-id^="down"]').forEach((el) => {
+    el.addEventListener('pointerdown', (ev) => {
+      if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
+      if (PalaceEngine.activeZone(match.players[match.humanSeat]) !== 'down') return;
       ev.preventDefault();
+      ev.stopPropagation();
       onHumanFlip(Number((el.dataset.id || 'down-0').split('-')[1]));
     });
   });
@@ -2062,9 +2073,17 @@ async function animateEvents(events) {
       if (stack) stack.classList.add('burn');
       playTone(180, 0.18);
       await sleep(560);
-    } else if (ev.type === 'flip') {
-      playTone(440, 0.1);
-      await sleep(280);
+    } else if (ev.type === 'stageDown' || ev.type === 'flip') {
+      const dest = seatDestRect(ev.seat);
+      const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
+        || document.querySelector('#seat-' + ev.seat + ' .pcard.back.tiny');
+      const from = src ? src.getBoundingClientRect() : dest;
+      if (src) src.classList.add('ghost');
+      const face = ev.card ? cardFaceHtml(ev.card) : cardBackHtml();
+      await flyArc(from || dest, dest, face, { duration: 480, spin: 140, comet: false });
+      updateSeatHud(ev.seat);
+      playTone(400, 0.1);
+      flashBanner('Face-down card to hand');
     } else if (ev.type === 'stageUp') {
       const dest = seatDestRect(ev.seat);
       await Promise.all((ev.cards || []).map((card, i) => {
@@ -2141,7 +2160,11 @@ async function runTurn() {
       continue;
     }
     renderTable({
-      banner: p.isBot ? p.name + ' is thinking' : (match.phase === 'bonus' ? 'Bonus play' : 'Your turn'),
+      banner: p.isBot
+        ? p.name + ' is thinking'
+        : (match.phase === 'bonus'
+          ? 'Bonus play'
+          : (PalaceEngine.activeZone(p) === 'down' ? 'Pick a face-down card' : 'Your turn')),
       thinking: p.isBot ? p.seat : -1,
     });
     restartTurnClock();

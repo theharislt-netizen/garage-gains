@@ -30,6 +30,8 @@ must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait wit
 must(html.includes('drag-follow') && html.includes('startCardDrag'), 'cards must be pickable and throwable');
 must(html.includes('pcard.lifted') && html.includes('legalGlow'), 'hold-to-lift and auto legal glow required');
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
+must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
+must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
 must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
 function seededRng(seed) {
@@ -201,6 +203,47 @@ const fiveBonus = E.legalMoves(fiveEdge, 0);
 must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone === 'hand' && m.count === 1), 'bonus is chosen from the scooped hand, not the table');
 must(fiveBonus.some((m) => m.cardIds.includes('3S')), 'bonus can pick a scooped face-up card');
 must(!evFiveEdge.some((e) => e.type === 'draw'), 'empty draw pile does not draw before the scooped bonus');
+
+const stage3 = E.newMatch({ seats: 2, rng: seededRng(13) });
+stage3.draw = [];
+stage3.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
+stage3.turn = 0;
+stage3.phase = 'playing';
+stage3.players[0].hand = [];
+stage3.players[0].up = [];
+stage3.players[0].down = [
+  { id: '3S', rank: '3', suit: 'S' },
+  { id: '8H', rank: '8', suit: 'H' },
+  { id: 'QD', rank: 'Q', suit: 'D' },
+];
+const downMoves = E.legalMoves(stage3, 0);
+must(downMoves.length === 3 && downMoves.every((m) => m.type === 'flip'), 'stage 3 offers a choice of each face-down card');
+const evDown = E.applyMove(stage3, { type: 'flip', seat: 0, index: 1 });
+must(evDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === '8H'), 'chosen face-down card is picked into hand');
+must(stage3.players[0].hand.map((c) => c.id).join() === '8H', 'only the chosen face-down card enters the hand');
+must(stage3.players[0].down.length === 2, 'the other face-down cards stay on the table');
+must(stage3.pile.map((c) => c.id).join() === 'KH', 'the face-down card is not played off the table');
+must(stage3.turn === 0, 'picking a face-down card into hand keeps the turn');
+must(E.activeZone(stage3.players[0]) === 'hand', 'after the pickup, play continues from hand');
+
+const fiveDown = E.newMatch({ seats: 2, rng: seededRng(14) });
+fiveDown.draw = [];
+fiveDown.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];
+fiveDown.turn = 0;
+fiveDown.phase = 'playing';
+fiveDown.players[0].hand = [{ id: '5C', rank: '5', suit: 'C' }];
+fiveDown.players[0].up = [];
+fiveDown.players[0].down = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '9H', rank: '9', suit: 'H' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+const evFiveDown = E.applyMove(fiveDown, { type: 'play', seat: 0, cardIds: ['5C'], zone: 'hand' });
+must(evFiveDown.some((e) => e.type === 'stageDown'), '5 at stage 3 auto-places one face-down card into hand');
+must(fiveDown.players[0].hand.length === 1, 'exactly one face-down card is placed for the 5 bonus');
+must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
+must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, '5 at stage 3 still grants bonus play');
+must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is played from the revealed hand card');
 
 const stuck = E.newMatch({ seats: 2, rng: seededRng(5) });
 stuck.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];

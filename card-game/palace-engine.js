@@ -155,6 +155,22 @@
     return true;
   }
 
+  function takeDownToHand(player, index, events) {
+    if (!player || !player.down.length) return null;
+    const idx = Math.max(0, Math.min(player.down.length - 1, index | 0));
+    const card = player.down.splice(idx, 1)[0];
+    player.hand.push(card);
+    player.hand = sortHand(player.hand);
+    if (events) events.push({ type: 'stageDown', seat: player.seat, card: cloneCard(card), index: idx });
+    return card;
+  }
+
+  function pickupOneDownIfStageThree(match, player, events, index) {
+    if (!player || player.out) return null;
+    if (player.hand.length || match.draw.length || player.up.length || !player.down.length) return null;
+    return takeDownToHand(player, index == null ? 0 : index, events);
+  }
+
   function drawUp(match, player, events) {
     pickupFaceUpIfStageTwo(match, player, events);
     if (activeZone(player) !== 'hand' && player.hand.length === 0) return;
@@ -274,8 +290,11 @@
       return events;
     }
 
-    // Stage 1→2: scoop all face-up cards into hand BEFORE the 5 bonus / draw-up-to-2 check.
+    // Stage 1→2 scoop, then Stage 3 auto-pick, BEFORE the 5 bonus / draw-up-to-2 check.
     pickupFaceUpIfStageTwo(match, player, events);
+    if (rank === '5' && !opts.bonus && !burn) {
+      pickupOneDownIfStageThree(match, player, events);
+    }
 
     if (rank === '5' && !opts.bonus && !burn) {
       drawFloorBeforeFive(match, player, 0, events);
@@ -314,18 +333,9 @@
 
     if (move.type === 'flip') {
       if (activeZone(player) !== 'down') return events;
-      const idx = Math.max(0, Math.min(player.down.length - 1, move.index | 0));
-      const card = player.down.splice(idx, 1)[0];
-      events.push({ type: 'flip', seat: player.seat, card: cloneCard(card) });
-      if (canPlayCards(match, [card], false)) {
-        return applyPlay(match, player, [card], events, { from: 'down', bonus: false });
-      }
-      const taken = match.pile.splice(0);
-      taken.push(card);
-      player.hand.push(...taken);
-      events.push({ type: 'pickup', seat: player.seat, cards: taken.map(cloneCard), failedFlip: true });
-      match.phase = 'playing';
-      match.turn = nextSeat(match, player.seat);
+      const card = takeDownToHand(player, move.index | 0, events);
+      if (!card) return events;
+      match.phase = match.phase === 'bonus' ? 'bonus' : 'playing';
       return events;
     }
 

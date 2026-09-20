@@ -69,9 +69,9 @@ Special cards can be played **on top of any card, regardless of rank**, and **at
 - The instant both your hand **and** the draw pile are empty, all **3 face-up cards** move into your hand as a batch (all 3 at once — not one at a time, and not played directly off the table). From that point you play those cards from your hand as normal.
 - This pickup happens **before** any 5 bonus play or draw-up-to-2 check. If you empty your hand-minus-draw-pile by playing a 5 at this exact boundary, the sequence is: scoop the 3 face-up cards into hand, **then** draw up to 2 if needed and pick the bonus card from that new hand.
 - Once those cards (and any later hand cards) are gone, you move on to your **3 face-down (blind) cards**:
-  - Flip one over blind — you don't know what it is until it's revealed.
-  - If it beats the top of the pile, it's played.
-  - If it doesn't, you pick up the entire discard pile (including the blind card you just flipped) into your hand, and go back to playing from your hand again.
+  - Pick **one** face-down card at a time **into your hand** (tap to choose which one). You do not play them directly off the table.
+  - If a card must enter your hand automatically (bots, or a 5 bonus with an empty hand), one face-down card is placed into your hand for you.
+  - Then play from your hand as normal: beat the pile, or pick the pile up if you cannot.
 
 ---
 
