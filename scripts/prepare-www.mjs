@@ -155,9 +155,20 @@ if (await exists(gearSrc)) {
 
 await makeLiveBundle();
 
+const palaceDocs = join(docs, 'palace');
+const palaceBackup = join(root, '.palace-docs-tmp');
+if (await exists(palaceDocs)) {
+  await rm(palaceBackup, { recursive: true, force: true });
+  await cp(palaceDocs, palaceBackup, { recursive: true });
+}
+
 await rm(docs, { recursive: true, force: true });
 await mkdir(docs, { recursive: true });
 await writeFile(join(docs, '.nojekyll'), '');
+if (await exists(palaceBackup)) {
+  await cp(palaceBackup, join(docs, 'palace'), { recursive: true });
+  await rm(palaceBackup, { recursive: true, force: true });
+}
 if (await exists(iconSrc)) {
   await copyFile(iconSrc, join(docs, 'icon.png'));
 }
