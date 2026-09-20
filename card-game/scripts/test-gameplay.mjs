@@ -24,6 +24,8 @@ must(html.includes('id="turnClock"') && html.includes('TURN_SECS'), 'per-turn mm
 must(html.includes('avatar-ring') && html.includes('count-badge'), 'turn ring + remaining-card badges required');
 must(html.includes('fan-backs') && html.includes('emote-btn') && html.includes('speech-bubble'), 'opponent fans + emote bubbles required');
 must(html.includes('accept-ripple') && html.includes('flyArc') && html.includes('comet'), 'play arc + accept ripple required');
+must(html.includes('PLAY_FLY_MS') && html.includes('land: true') && html.includes('fireSpecialPulse'), 'play animation must fly, land, then pulse specials only');
+must(html.includes('pileLandBounce') && html.includes('specialPulseKind'), 'landing bounce and 2/5/10-only pulse required');
 must(html.includes('sp-ov') && html.includes('sp-2') && html.includes('sp-5') && html.includes('sp-10'), '2/5/10 special overlays required');
 must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must render rank and suit, not a suit-only ace pip');
 must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');

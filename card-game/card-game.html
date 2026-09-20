@@ -506,18 +506,36 @@
     100% { transform: scale(1.4) rotate(40deg); opacity: 0; }
   }
   .accept-ripple {
-    position: absolute; left: 50%; top: 50%; width: 24px; height: 24px;
-    margin: -12px 0 0 -12px; border-radius: 50%;
-    border: 3px solid rgba(80, 220, 120, 0.0);
-    pointer-events: none; z-index: 4;
+    position: absolute; left: 50%; top: 50%; width: 28px; height: 28px;
+    margin: -14px 0 0 -14px; border-radius: 50%;
+    border: 3px solid transparent;
+    pointer-events: none; z-index: 6;
   }
   .accept-ripple.go {
-    animation: acceptPulse 0.55s ease-out forwards;
+    animation: acceptPulse 0.34s ease-out forwards;
   }
+  .accept-ripple.special-2.go { animation-name: acceptPulse2; }
+  .accept-ripple.special-5.go { animation-name: acceptPulse5; }
+  .accept-ripple.special-10.go, .accept-ripple.special-burn.go { animation-name: acceptPulse10; }
   @keyframes acceptPulse {
-    0% { transform: scale(0.4); opacity: 0; border-color: rgba(80,220,120,0.0); box-shadow: 0 0 0 0 rgba(80,220,120,0.0); }
-    25% { opacity: 1; border-color: rgba(90,230,130,0.95); }
-    100% { transform: scale(8.5); opacity: 0; box-shadow: 0 0 24px 8px rgba(80,220,120,0.35); }
+    0% { transform: scale(0.5); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: scale(3.2); opacity: 0; }
+  }
+  @keyframes acceptPulse2 {
+    0% { transform: scale(0.5); opacity: 0; border-color: rgba(62,198,240,0); box-shadow: 0 0 0 0 rgba(62,198,240,0); }
+    30% { opacity: 1; border-color: #3ec6f0; box-shadow: 0 0 14px 4px rgba(62,198,240,0.45); }
+    100% { transform: scale(3.2); opacity: 0; border-color: rgba(62,198,240,0); }
+  }
+  @keyframes acceptPulse5 {
+    0% { transform: scale(0.5); opacity: 0; border-color: rgba(56,226,154,0); box-shadow: 0 0 0 0 rgba(56,226,154,0); }
+    30% { opacity: 1; border-color: #38e29a; box-shadow: 0 0 14px 4px rgba(56,226,154,0.45); }
+    100% { transform: scale(3.2); opacity: 0; border-color: rgba(56,226,154,0); }
+  }
+  @keyframes acceptPulse10 {
+    0% { transform: scale(0.5); opacity: 0; border-color: rgba(255,210,74,0); box-shadow: 0 0 0 0 rgba(255,210,74,0); }
+    30% { opacity: 1; border-color: #ffe14a; box-shadow: 0 0 16px 5px rgba(255,210,74,0.5); }
+    100% { transform: scale(3.2); opacity: 0; border-color: rgba(255,210,74,0); }
   }
   #emotePicker {
     position: absolute; z-index: 9; display: none;
@@ -532,17 +550,26 @@
   }
   .fly-card { position: fixed; left: 0; top: 0; transform-origin: center center; pointer-events: none; z-index: 361; }
   .fly-card.comet .pcard {
-    box-shadow: 0 0 18px 8px rgba(255,220,90,0.55), -18px 8px 22px rgba(255,180,60,0.25);
+    box-shadow: 0 0 16px 6px rgba(255,255,255,0.18), -14px 6px 18px rgba(255,210,74,0.28);
   }
   .fly-card.comet::after {
     content: '';
     position: absolute;
-    left: -46%; top: 18%; width: 70%; height: 64%;
-    background: linear-gradient(90deg, rgba(255,210,74,0), rgba(255,210,74,0.5));
-    filter: blur(7px);
+    left: -52%; top: 22%; width: 78%; height: 56%;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,210,74,0.42));
+    filter: blur(8px);
     z-index: -1;
     pointer-events: none;
     border-radius: 40%;
+  }
+  .pile-stack .pcard.just-landed {
+    animation: pileLandBounce 0.1s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  @keyframes pileLandBounce {
+    0% { transform: scale(1, 1); }
+    40% { transform: scale(0.9, 0.82); }
+    75% { transform: scale(1.06, 1.04); }
+    100% { transform: scale(1, 1); }
   }
   .pcard.ghost { visibility: hidden; }
   .pile-stack, .draw-stack { position: relative; width: 72px; height: 106px; }
@@ -1485,6 +1512,10 @@ function closeProfile() {
   document.getElementById('profileOverlay').style.display = 'none';
 }
 
+const PLAY_FLY_MS = 260;
+const PLAY_LAND_MS = 100;
+const SPECIAL_PULSE_MS = 340;
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -1656,30 +1687,84 @@ function flyArc(fromRect, toRect, html, opts) {
     const sx = toRect.width / Math.max(1, fromRect.width);
     const sy = toRect.height / Math.max(1, fromRect.height);
     const mx = (x0 + x1) / 2 + (o.curveX || 0);
-    const my = Math.min(y0, y1) - Math.max(36, Math.abs(x1 - x0) * 0.28) - 24 + (o.curveY || 0);
-    const spin = o.spin === false ? 0 : (o.spin || 360);
-    const duration = o.duration || 520;
+    const my = Math.min(y0, y1) - Math.max(28, Math.abs(x1 - x0) * 0.32) - 18 + (o.curveY || 0);
+    const spin = o.spin === false ? 0 : (o.spin == null ? 16 : o.spin);
+    const duration = o.duration || 280;
+    const endRot = o.endRot == null ? Math.max(-10, Math.min(12, spin * 0.4)) : o.endRot;
+    const start = `translate(${x0}px, ${y0}px) rotate(${o.startRot || 0}deg) scale(1)`;
+    const mid = `translate(${mx}px, ${my}px) rotate(${spin}deg) scale(1.05)`;
+    const end = `translate(${x1}px, ${y1}px) rotate(${endRot}deg) scale(${sx}, ${sy})`;
+    function finish() {
+      wrap.remove();
+      resolve();
+    }
+    function bounceThenFinish() {
+      wrap.classList.remove('comet');
+      if (typeof o.onArrive === 'function') o.onArrive();
+      if (!o.land || typeof wrap.animate !== 'function') {
+        finish();
+        return;
+      }
+      const bounce = wrap.animate([
+        { transform: end },
+        { transform: `translate(${x1}px, ${y1}px) rotate(${endRot}deg) scale(${sx * 0.88}, ${sy * 0.8})` },
+        { transform: `translate(${x1}px, ${y1}px) rotate(${endRot}deg) scale(${sx * 1.05}, ${sy * 1.04})` },
+        { transform: end },
+      ], { duration: o.landMs || PLAY_LAND_MS, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)', fill: 'forwards' });
+      bounce.onfinish = finish;
+      bounce.oncancel = finish;
+    }
     if (typeof wrap.animate !== 'function') {
-      wrap.style.transform = `translate(${x1}px, ${y1}px)`;
-      setTimeout(() => { wrap.remove(); resolve(); }, duration);
+      wrap.style.transform = end;
+      setTimeout(o.land ? bounceThenFinish : finish, duration);
       return;
     }
     const anim = wrap.animate([
-      { transform: `translate(${x0}px, ${y0}px) rotate(0deg) scale(1)` },
-      { transform: `translate(${mx}px, ${my}px) rotate(${spin / 2}deg) scale(1.08)` },
-      { transform: `translate(${x1}px, ${y1}px) rotate(${spin}deg) scale(${sx}, ${sy})` },
+      { transform: start },
+      { transform: mid },
+      { transform: end },
     ], { duration, easing: 'cubic-bezier(0.22, 0.72, 0.18, 1)', fill: 'forwards' });
-    anim.onfinish = () => { wrap.remove(); resolve(); };
-    anim.oncancel = () => { wrap.remove(); resolve(); };
+    anim.onfinish = o.land ? bounceThenFinish : finish;
+    anim.oncancel = finish;
   });
 }
 
-function fireAcceptRipple() {
+function paintDiscardPile(landedId) {
+  const stack = document.getElementById('discardPile');
+  if (!stack || !match) return;
+  const pileCards = match.pile.slice(-3);
+  const ripple = '<div class="accept-ripple" id="acceptRipple"></div>';
+  stack.innerHTML = (pileCards.length
+    ? pileCards.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
+    : '<div class="pcard back" style="opacity:.25"><div class="pc-pip">pile</div></div>') + ripple;
+}
+
+function fireSpecialPulse(kind) {
   const el = document.getElementById('acceptRipple');
-  if (!el) return;
-  el.classList.remove('go');
+  if (!el || !kind) return Promise.resolve();
+  el.className = 'accept-ripple special-' + kind;
   void el.offsetWidth;
   el.classList.add('go');
+  return sleep(SPECIAL_PULSE_MS);
+}
+
+function playOriginRect(seat, card) {
+  if (card) {
+    const src = document.querySelector('[data-id="' + card.id + '"]');
+    if (src) {
+      const r = src.getBoundingClientRect();
+      if (r.width >= 8 && r.height >= 8) return r;
+    }
+  }
+  if (gesture && gesture.origin && gesture.origin.width >= 8) return gesture.origin;
+  return seatDestRect(seat) || drawRect();
+}
+
+function specialPulseKind(card, events, idx) {
+  if (card.rank === '2' || card.rank === '5' || card.rank === '10') return card.rank;
+  const next = events[idx + 1];
+  if (next && next.type === 'burn') return next.fourKind ? 'burn' : '10';
+  return null;
 }
 
 function setFanCount(seat, count) {
@@ -1803,13 +1888,12 @@ function renderTable(opts) {
   felt.innerHTML = `
     ${seatsHtml}
     <div class="table-center">
-      <div class="accept-ripple" id="acceptRipple"></div>
       <div class="draw-stack" id="drawPile">${cardBackHtml()}${match.draw.length ? '<div class="inv-slot-count" style="right:4px;bottom:4px;color:#fff;">' + match.draw.length + '</div>' : ''}</div>
       <div class="pile-stack" id="discardPile">${
         pileCards.length
           ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
           : '<div class="pcard back" style="opacity:.25"><div class="pc-pip">pile</div></div>'
-      }</div>
+      }<div class="accept-ripple" id="acceptRipple"></div></div>
     </div>
     <div class="turn-banner ${opts && opts.banner ? 'show' : ''}" id="turnBanner">${opts && opts.banner ? opts.banner : ''}</div>
     <div class="human-hand" id="humanHand">${handHtml}</div>
@@ -1914,7 +1998,7 @@ function finishCardGesture(ev) {
   const dt = Date.now() - g.startT;
   const thrown = g.commit || dy > 52 || nearPile(ev.clientX || g.startX, ev.clientY || g.startY);
   if (g.wrap) {
-    pendingFlyFrom = g.wrap.getBoundingClientRect();
+    pendingFlyFrom = g.origin || g.wrap.getBoundingClientRect();
     g.wrap.remove();
   }
   if (g.el) {
@@ -2043,20 +2127,27 @@ function stillThisMatch(token) {
 async function animateEvents(events) {
   if (!match) return;
   const token = matchToken;
-  for (const ev of events) {
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
     if (!stillThisMatch(token)) return;
     if (ev.type === 'play') {
-      updateSeatHud(ev.seat);
       for (const card of ev.cards) {
         const src = document.querySelector('[data-id="' + card.id + '"]');
-        let from = pendingFlyFrom;
-        pendingFlyFrom = null;
-        if (!from || from.width < 2) from = src ? src.getBoundingClientRect() : seatDestRect(ev.seat);
+        const from = playOriginRect(ev.seat, card);
         if (src) src.classList.add('ghost');
-        if (!from || from.width < 2) from = seatDestRect(ev.seat) || drawRect();
-        await flyArc(from, pileRect() || from, cardFaceHtml(card), { duration: 560, spin: 420, comet: true });
-        fireAcceptRipple();
+        pendingFlyFrom = null;
+        await flyArc(from, pileRect() || from, cardFaceHtml(card), {
+          duration: PLAY_FLY_MS,
+          spin: ev.seat === match.humanSeat ? -18 : 22,
+          comet: true,
+          land: true,
+          landMs: PLAY_LAND_MS,
+          onArrive: () => paintDiscardPile(card.id),
+        });
       }
+      updateSeatHud(ev.seat);
+      const pulse = specialPulseKind(ev.cards[ev.cards.length - 1], events, i);
+      if (pulse) await fireSpecialPulse(pulse);
       playTone(520, 0.08);
       if (ev.seat !== match.humanSeat) maybeBotEmote(ev.seat);
     } else if (ev.type === 'draw') {
@@ -2110,10 +2201,16 @@ async function animateEvents(events) {
 }
 
 function flashBanner(text) {
-  renderTable({ banner: text });
+  const b = document.getElementById('turnBanner');
+  if (!b) {
+    renderTable({ banner: text });
+  } else {
+    b.textContent = text;
+    b.classList.add('show');
+  }
   setTimeout(() => {
-    const b = document.getElementById('turnBanner');
-    if (b) b.classList.remove('show');
+    const el = document.getElementById('turnBanner');
+    if (el) el.classList.remove('show');
   }, 900);
 }
 
