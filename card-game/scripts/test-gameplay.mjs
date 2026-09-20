@@ -20,6 +20,13 @@ must(html.includes('craft-stone-card'), 'craft must use stone cards');
 must(html.includes('id="tableWindow"'), 'full-screen match table required');
 must(!html.includes('Match play ships with the game spec'), 'placeholder play toast must be gone');
 must(html.includes('id="itemDetailPopup"'), 'item detail popup required');
+must(html.includes('id="turnClock"') && html.includes('TURN_SECS'), 'per-turn mm:ss clock required');
+must(html.includes('avatar-ring') && html.includes('count-badge'), 'turn ring + remaining-card badges required');
+must(html.includes('fan-backs') && html.includes('emote-btn') && html.includes('speech-bubble'), 'opponent fans + emote bubbles required');
+must(html.includes('accept-ripple') && html.includes('flyArc') && html.includes('comet'), 'play arc + accept ripple required');
+must(html.includes('sp-ov') && html.includes('sp-2') && html.includes('sp-5') && html.includes('sp-10'), '2/5/10 special overlays required');
+must(html.includes('pcard.lifted') && html.includes('legalGlow'), 'hold-to-lift and auto legal glow required');
+must(!/call[\s-]?out/i.test(html), 'no Call Out mechanic');
 
 function seededRng(seed) {
   let s = seed;
