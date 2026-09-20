@@ -723,6 +723,12 @@
   #humanTableCards .pcard.back.legal { cursor: pointer; }
   .human-hand .pcard:first-child { margin-left: 0; }
   .human-hand .pcard.selected { transform: translateY(-16px) scale(1.06) rotate(var(--fan, 0deg)); }
+  .human-hand .pcard.peeking, .human-hand .pcard.selected.peeking {
+    transform: translateY(-78px) scale(1.48) rotate(0deg) !important;
+    z-index: 40;
+    box-shadow: 0 0 0 3px #ffe14a, 0 22px 40px rgba(0,0,0,0.5);
+    transition: transform 0.14s ease;
+  }
   .table-actions {
     position: absolute; right: 10px; bottom: calc(128px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 8px; z-index: 6;
@@ -1737,9 +1743,9 @@ function closeProfile() {
 const PLAY_FLY_MS = 260;
 const PLAY_LAND_MS = 100;
 const SPECIAL_PULSE_MS = 340;
-const PEEK_MS = 280;
+const PEEK_MS = 200;
 const DRAG_PX = 14;
-const TAP_PLAY_MS = 420;
+const SWIPE_UP_PX = 64;
 const HAND_CARD_W = 64;
 
 function sleep(ms) {
@@ -2248,6 +2254,9 @@ function renderTable(opts) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
       const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
       if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
+      else hintHtml = '<div class="table-hint">Swipe up to play</div>';
+    } else {
+      hintHtml = '<div class="table-hint">Tap to select · swipe up to play</div>';
     }
   }
   felt.innerHTML = `
@@ -2288,6 +2297,36 @@ function nearPile(x, y) {
   return Math.hypot(x - cx, y - cy) < 130;
 }
 
+function canActOnCards() {
+  return !!(match && !match.ended && !match.settled && !uiBusy && match.turn === match.humanSeat);
+}
+
+function clearPeeking() {
+  document.querySelectorAll('.pcard.peeking').forEach((el) => el.classList.remove('peeking'));
+}
+
+function cardAtPoint(x, y, from) {
+  const root = from === 'up'
+    ? document.getElementById('humanTableCards')
+    : document.getElementById('humanHand');
+  if (!root) return null;
+  const cards = [...root.querySelectorAll('.pcard')];
+  let best = null;
+  let bestDist = Infinity;
+  cards.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    if (y < r.top - 48 || y > r.bottom + 28) return;
+    const dist = Math.abs(x - cx) + Math.abs(y - cy) * 0.25;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = el;
+    }
+  });
+  return best;
+}
+
 function clearDragClone() {
   if (gesture && gesture.wrap) {
     gesture.wrap.remove();
@@ -2296,13 +2335,21 @@ function clearDragClone() {
   document.querySelectorAll('.fly-card.drag-follow').forEach((el) => el.remove());
 }
 
-function positionDragClone(ev) {
-  if (!gesture || !gesture.wrap || !gesture.origin) return;
-  const dx = ev.clientX - gesture.startX;
-  const dy = ev.clientY - gesture.startY;
-  const lift = Math.min(36, 18 + Math.max(0, -dy) * 0.08);
-  gesture.wrap.style.transform = `translate(${gesture.origin.left + dx}px, ${gesture.origin.top + dy - lift}px) scale(1.2) rotate(${dx * 0.12}deg)`;
-  if (dy < -36 || nearPile(ev.clientX, ev.clientY)) gesture.commit = true;
+function enterBrowse(ev) {
+  if (!gesture || gesture.browsing) return;
+  gesture.browsing = true;
+  gesture.swipePlay = false;
+  updateBrowseTarget(ev);
+}
+
+function updateBrowseTarget(ev) {
+  if (!gesture) return;
+  const hit = cardAtPoint(ev.clientX, ev.clientY, gesture.from);
+  clearPeeking();
+  if (!hit) return;
+  hit.classList.add('peeking');
+  gesture.el = hit;
+  gesture.id = hit.dataset.id;
 }
 
 function ensureDragListeners() {
@@ -2310,11 +2357,21 @@ function ensureDragListeners() {
   dragListenersBound = true;
   const move = (ev) => {
     if (!gesture) return;
-    if (!gesture.dragging) {
-      maybeBeginDrag(ev);
-      if (!gesture || !gesture.dragging) return;
+    const dx = ev.clientX - gesture.startX;
+    const dy = ev.clientY - gesture.startY;
+    const dt = Date.now() - gesture.startT;
+    if (gesture.browsing) {
+      updateBrowseTarget(ev);
+      return;
     }
-    positionDragClone(ev);
+    const horiz = Math.abs(dx) >= DRAG_PX && Math.abs(dx) >= Math.abs(dy);
+    if (dt >= PEEK_MS || horiz) {
+      enterBrowse(ev);
+      return;
+    }
+    if (canActOnCards() && -dy >= SWIPE_UP_PX && -dy > Math.abs(dx)) {
+      gesture.swipePlay = true;
+    }
   };
   const end = (ev) => finishCardGesture(ev);
   document.addEventListener('pointermove', move);
@@ -2322,56 +2379,21 @@ function ensureDragListeners() {
   document.addEventListener('pointercancel', end);
 }
 
-function startCardPress(el, ev) {
+function startCardPress(el, ev, from) {
   el.classList.add('peeking');
   gesture = {
     id: el.dataset.id,
     el,
+    from: from || 'hand',
     wrap: null,
     origin: el.getBoundingClientRect(),
     startX: ev.clientX,
     startY: ev.clientY,
     startT: Date.now(),
-    commit: false,
-    dragging: false,
+    browsing: false,
+    swipePlay: false,
     pointerId: ev.pointerId,
   };
-}
-
-function maybeBeginDrag(ev) {
-  if (!gesture || gesture.dragging) return;
-  const dx = ev.clientX - gesture.startX;
-  const dy = ev.clientY - gesture.startY;
-  if (Math.hypot(dx, dy) < DRAG_PX) return;
-  startCardDrag(gesture.el, ev);
-}
-
-function startCardDrag(el, ev) {
-  if (!gesture) return;
-  if (gesture.dragging) return;
-  gesture.dragging = true;
-  const origin = gesture.origin || el.getBoundingClientRect();
-  el.classList.remove('peeking');
-  el.classList.add('lifted', 'ghost');
-  const layer = document.getElementById('flyLayer');
-  const wrap = document.createElement('div');
-  wrap.className = 'fly-card drag-follow comet';
-  wrap.style.width = origin.width + 'px';
-  wrap.style.height = origin.height + 'px';
-  wrap.innerHTML = el.outerHTML;
-  const inner = wrap.firstElementChild;
-  if (inner) {
-    inner.classList.remove('ghost', 'lifted', 'legal', 'peeking', 'selected');
-    inner.style.width = '100%';
-    inner.style.height = '100%';
-    inner.style.marginLeft = '0';
-    inner.style.transform = 'none';
-  }
-  wrap.style.transform = `translate(${origin.left}px, ${origin.top - 20}px) scale(1.2)`;
-  layer.appendChild(wrap);
-  gesture.wrap = wrap;
-  gesture.origin = origin;
-  if (ev) positionDragClone(ev);
 }
 
 function finishCardGesture(ev) {
@@ -2384,27 +2406,20 @@ function finishCardGesture(ev) {
   const dx = clientX - g.startX;
   const dt = Date.now() - g.startT;
   const moved = Math.hypot(dx, dy) >= DRAG_PX;
-  const toPile = nearPile(clientX, clientY);
-  const thrown = g.dragging && (g.commit || toPile || dy > 80);
-  if (g.wrap) {
-    pendingFlyFrom = g.origin || g.wrap.getBoundingClientRect();
-    g.wrap.remove();
-  }
+  const swipeUp = g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx) && dt < PEEK_MS + 80);
+  clearPeeking();
   if (g.el) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
-  if (thrown) {
-    if (g.el) g.el.classList.add('ghost');
+  if (g.browsing) return;
+  if (swipeUp) {
+    if (!canActOnCards()) return;
     playLiftedCard(g.id);
     return;
   }
-  pendingFlyFrom = null;
-  if (g.el) g.el.classList.remove('ghost');
-  if (g.dragging || moved) return;
-  const peekRelease = dt >= TAP_PLAY_MS;
-  if (peekRelease && selectedIds.includes(g.id)) return;
-  onHumanCardTap(g.id, { skipAuto: peekRelease });
+  if (moved) return;
+  onHumanCardTap(g.id);
 }
 
 function bindTableGestures(zone) {
@@ -2418,7 +2433,7 @@ function bindTableGestures(zone) {
   });
   document.querySelectorAll('#humanTableCards .pcard.back[data-id^="down"]').forEach((el) => {
     el.addEventListener('pointerdown', (ev) => {
-      if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
+      if (!canActOnCards()) return;
       if (PalaceEngine.activeZone(match.players[match.humanSeat], match) !== 'down') return;
       ev.preventDefault();
       ev.stopPropagation();
@@ -2429,18 +2444,18 @@ function bindTableGestures(zone) {
 
 function bindCardGesture(el, from) {
   el.addEventListener('pointerdown', (ev) => {
-    if (uiBusy || !match || match.ended || match.turn !== match.humanSeat) return;
+    if (!match || match.ended || match.settled || uiBusy) return;
     if (ev.button && ev.button !== 0) return;
     ev.preventDefault();
     ev.stopPropagation();
     hideEmotePicker();
     try { el.setPointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
-    startCardPress(el, ev);
+    startCardPress(el, ev, from);
   });
 }
 
 function playLiftedCard(id) {
-  if (!id || !match) return;
+  if (!id || !match || !canActOnCards()) return;
   pruneSelectedIds();
   const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
@@ -2475,20 +2490,15 @@ function selectedPlayIds(thrownId) {
   return [thrown.id];
 }
 
-function onHumanCardTap(id, opts) {
-  if (uiBusy || !match || match.ended || match.settled || match.turn !== match.humanSeat) return;
+function onHumanCardTap(id) {
+  if (!canActOnCards()) return;
   pruneSelectedIds();
   const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
-  const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
-  if (!legal.some((m) => m.rank === card.rank)) {
-    showToast('That card does not beat the pile');
-    return;
-  }
   if (match.phase === 'bonus') {
-    selectedIds = [id];
-    commitHumanPlay();
+    selectedIds = selectedIds.includes(id) ? [] : [id];
+    renderTable();
     return;
   }
   if (!selectedIds.length) {
@@ -2502,16 +2512,6 @@ function onHumanCardTap(id, opts) {
       selectedIds = [id];
       showToast('Matching ranks play together');
     }
-  }
-  if (!selectedIds.length) {
-    renderTable();
-    return;
-  }
-  const sameRank = cards.filter((c) => c.rank === card.rank);
-  const skipAuto = !!(opts && opts.skipAuto);
-  if (!skipAuto && selectedIds.length === 1 && sameRank.length === 1) {
-    commitHumanPlay();
-    return;
   }
   renderTable();
 }
