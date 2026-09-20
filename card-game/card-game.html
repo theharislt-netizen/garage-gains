@@ -295,9 +295,10 @@
   .pcard.legal { box-shadow: 0 0 0 2px #ffd24a, 0 0 14px 4px rgba(255,210,74,0.62); }
   .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
   .pcard.tiny { width: 40px; height: 58px; border-radius: 6px; }
+  .pcard.tiny .pc-center { inset: 10px 1px 11px; }
   .pcard.tiny .pc-corner { font-size: 10px; }
-  .pcard.tiny .pc-rank { font-size: 18px; }
-  .pcard.tiny .pc-rank.ten { font-size: 14px; }
+  .pcard.tiny .pc-rank { font-size: 16px; }
+  .pcard.tiny .pc-rank.ten { font-size: 12px; letter-spacing: -0.06em; }
   .pcard.tiny .pc-suit { font-size: 12px; }
   .pcard.tiny .pc-pip { font-size: 14px; }
   .pcard.mini { width: 28px; height: 40px; }
@@ -687,7 +688,9 @@
   .seat.east, .seat.west { max-width: 46%; }
   .seat.east { align-items: flex-end; }
   .seat.west { align-items: flex-start; }
-  .seat.east .seat-row, .seat.west .seat-row { flex-wrap: nowrap; justify-content: center; }
+  .seat.east .seat-row, .seat.west .seat-row { flex-wrap: nowrap; justify-content: center; gap: 0; max-width: 96px; }
+  .seat.east .seat-row .pcard, .seat.west .seat-row .pcard { margin-left: -16px; }
+  .seat.east .seat-row .pcard:first-child, .seat.west .seat-row .pcard:first-child { margin-left: 0; }
   .seat-name {
     font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
     background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 100px; color: #f7efe0;
@@ -764,6 +767,15 @@
     font-family: 'Barlow Condensed'; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
   }
   .instance-leave-btn:active { border-color: var(--a1); color: var(--text); }
+  .instance-leave-btn.table-leave-btn {
+    background: rgba(110, 22, 28, 0.72);
+    border: 1px solid rgba(255, 132, 132, 0.7);
+    color: #ffd6d6;
+    border-radius: 100px;
+    padding: 8px 14px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 4px 10px rgba(80, 0, 0, 0.28);
+  }
+  .instance-leave-btn.table-leave-btn:active { border-color: #ff9a9a; color: #fff; }
   .instance-title { font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
   #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
