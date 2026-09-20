@@ -125,10 +125,10 @@
   .mode-card.locked { opacity: 0.55; }
   .play-hand {
     display: flex; justify-content: center; align-items: flex-end;
-    height: 250px; margin: 8px 0 18px; padding: 0 8px;
+    height: 268px; margin: 4px 0 10px; padding: 8px 4px 18px;
   }
   .play-card {
-    width: 118px; height: 176px; margin-left: -42px; border: 0; padding: 0;
+    width: 108px; height: 164px; margin-left: -18px; border: 0; padding: 0;
     border-radius: 12px; cursor: pointer; position: relative;
     background:
       linear-gradient(180deg, #fffdf8 0%, #efe6d6 100%);
@@ -153,8 +153,8 @@
     position: absolute; inset: 42px 12px 36px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center;
   }
-  .play-card .pc-center h3 { font-size: 22px; letter-spacing: 0.04em; color: #1b1524; }
-  .play-card .pc-center p { margin: 4px 0 0; font-size: 10px; line-height: 1.25; color: #5c5368; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 500; }
+  .play-card .pc-center h3 { font-size: 17px; letter-spacing: 0.03em; color: #1b1524; }
+  .play-card .pc-center p { margin: 4px 0 0; font-size: 9px; line-height: 1.2; color: #5c5368; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 500; }
   .play-card .pc-pip-lg { font-size: 36px; line-height: 1; margin-bottom: 4px; }
   .play-card.red .pc-rank, .play-card.red .pc-suit, .play-card.red .pc-pip-lg { color: #c62828; }
   .play-card.locked { filter: grayscale(0.55) brightness(0.86); }
@@ -199,7 +199,7 @@
     cursor: pointer; padding: 4px; gap: 2px;
   }
   .inv-slot.equipped-slot { border-color: var(--gain); box-shadow: 0 0 0 1px rgba(255,182,72,0.3); }
-  .inv-slot.empty { border: 1.5px dashed var(--line); background: transparent; cursor: default; }
+  .inv-slot.empty { border: 1.5px dashed #3d354c; background: rgba(255,255,255,0.02); cursor: default; }
   .inv-slot.new-item-glow {
     animation: newItemGlowPulse 1.15s ease-in-out infinite;
     border-color: rgba(var(--a2-rgb), 0.85);
@@ -290,7 +290,8 @@
     35% { opacity: 1; }
     100% { transform: scale(1.15) rotate(220deg); opacity: 0.15; }
   }
-  body.in-match { padding-bottom: 0; }
+  body.overlay-open .tabbar { display: none !important; }
+  body.overlay-open { padding-bottom: 0; }
   body.in-match .tabbar, body.in-match .sticky-header, body.in-match main { display: none !important; }
   #tableWindow {
     position: fixed; inset: 0; z-index: 280; display: none; flex-direction: column;
@@ -307,11 +308,11 @@
   }
   .table-felt { flex: 1; position: relative; min-height: 0; }
   .table-center {
-    position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%);
-    display: flex; align-items: center; gap: 18px; z-index: 2;
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: 14px; z-index: 2;
   }
-  .pile-stack, .draw-stack { position: relative; width: 64px; height: 94px; }
-  .pile-stack .pcard, .draw-stack .pcard { position: absolute; inset: 0; width: 64px; height: 94px; }
+  .pile-stack, .draw-stack { position: relative; width: 54px; height: 80px; }
+  .pile-stack .pcard, .draw-stack .pcard { position: absolute; inset: 0; width: 54px; height: 80px; }
   .pile-stack.burn .pcard {
     animation: burnUp 0.55s ease-in forwards;
   }
@@ -326,8 +327,10 @@
   }
   .seat.south { bottom: 122px; left: 50%; transform: translateX(-50%); }
   .seat.north { top: 6px; left: 50%; transform: translateX(-50%); }
-  .seat.east { right: 8px; top: 36%; }
-  .seat.west { left: 8px; top: 36%; }
+  .seat.east { right: 4px; top: 16%; max-width: 38%; }
+  .seat.west { left: 4px; top: 16%; max-width: 38%; }
+  .seat.east .seat-row, .seat.west .seat-row { flex-wrap: wrap; max-width: 96px; justify-content: center; }
+  .seat.east .pcard.mini, .seat.west .pcard.mini { margin: -6px -8px 0 0; }
   .seat-name {
     font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
     background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 100px;
@@ -761,6 +764,7 @@ function seedCosmetics(s) {
 
 let state = defaultState();
 let match = null;
+let matchToken = 0;
 let uiBusy = false;
 let selectedIds = [];
 let enchantSel = { itemId: null, stone: false };
@@ -1023,7 +1027,8 @@ function renderInventory() {
     </div>`);
   }
   const filled = slots.length;
-  const total = Math.max(INV_GRID_COLUMNS * 2, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) * INV_GRID_COLUMNS);
+  const rows = Math.max(3, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) + 1);
+  const total = rows * INV_GRID_COLUMNS;
   for (let i = filled; i < total; i++) slots.push('<div class="inv-slot empty"></div>');
   list.innerHTML = `<div class="inv-slot-grid">${slots.join('')}</div>`;
   list.querySelectorAll('[data-slot-item]').forEach((el) => el.addEventListener('click', () => openItemDetail('item', el.dataset.slotItem, el)));
@@ -1104,6 +1109,7 @@ function renderEnchantTable() {
 }
 
 function openEnchant() {
+  document.body.classList.add('overlay-open');
   const el = document.getElementById('enchantWindow');
   el.style.display = 'block';
   el.classList.add('book-open');
@@ -1111,12 +1117,14 @@ function openEnchant() {
 }
 
 function closeEnchant() {
+  document.body.classList.remove('overlay-open');
   const el = document.getElementById('enchantWindow');
   el.style.display = 'none';
   el.classList.remove('book-open');
 }
 
 function openCraft() {
+  document.body.classList.add('overlay-open');
   const el = document.getElementById('craftWindow');
   el.style.display = 'block';
   el.classList.add('book-open');
@@ -1149,12 +1157,14 @@ function openCraft() {
 }
 
 function closeCraft() {
+  document.body.classList.remove('overlay-open');
   const el = document.getElementById('craftWindow');
   el.style.display = 'none';
   el.classList.remove('book-open');
 }
 
 function openProfile() {
+  document.body.classList.add('overlay-open');
   document.getElementById('profileOverlay').style.display = 'block';
   const eqName = (key) => {
     const id = state.equipped[key];
@@ -1177,7 +1187,10 @@ function openProfile() {
     </div>`;
 }
 
-function closeProfile() { document.getElementById('profileOverlay').style.display = 'none'; }
+function closeProfile() {
+  document.body.classList.remove('overlay-open');
+  document.getElementById('profileOverlay').style.display = 'none';
+}
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -1358,9 +1371,16 @@ async function humanPickup() {
   await runMove({ type: 'pickup', seat: match.humanSeat });
 }
 
+function stillThisMatch(token) {
+  return !!match && matchToken === token;
+}
+
 async function animateEvents(events) {
+  if (!match) return;
+  const token = matchToken;
   const pile = pileRect();
   for (const ev of events) {
+    if (!stillThisMatch(token)) return;
     if (ev.type === 'play') {
       for (const card of ev.cards) {
         const src = document.querySelector('[data-id="' + card.id + '"]');
@@ -1418,9 +1438,11 @@ function playTone(freq, dur) {
 
 async function runMove(move) {
   if (!match || uiBusy) return;
+  const token = matchToken;
   uiBusy = true;
   const events = PalaceEngine.applyMove(match, move);
   await animateEvents(events);
+  if (!stillThisMatch(token)) return;
   selectedIds = [];
   uiBusy = false;
   renderTable();
@@ -1432,7 +1454,8 @@ async function runMove(move) {
 }
 
 async function runTurn() {
-  while (match && !match.ended) {
+  const token = matchToken;
+  while (stillThisMatch(token) && !match.ended) {
     let p = match.players[match.turn];
     if (!p || p.out) {
       match.turn = PalaceEngine.nextSeat(match, match.turn);
@@ -1442,6 +1465,7 @@ async function runTurn() {
     if (!p.isBot) return;
     uiBusy = true;
     await sleep(p.difficulty === 'Easy' ? 520 : 780);
+    if (!stillThisMatch(token)) return;
     let mv = PalaceEngine.chooseBotMove(match, p);
     let events = PalaceEngine.applyMove(match, mv);
     if (!events.length) {
@@ -1449,6 +1473,7 @@ async function runTurn() {
       if (fallback) events = PalaceEngine.applyMove(match, fallback);
     }
     await animateEvents(events);
+    if (!stillThisMatch(token)) return;
     selectedIds = [];
     uiBusy = false;
     if (match.ended) {
@@ -1460,15 +1485,18 @@ async function runTurn() {
 }
 
 async function animateDeal() {
+  const token = matchToken;
   uiBusy = true;
   renderTable({ banner: 'Dealing' });
   playTone(360, 0.2);
   await sleep(700);
+  if (!stillThisMatch(token)) return;
   uiBusy = false;
   renderTable();
 }
 
 function openTable() {
+  matchToken += 1;
   document.body.classList.add('in-match');
   document.getElementById('tableWindow').classList.add('show');
   document.getElementById('matchOver').classList.remove('show');
@@ -1476,10 +1504,12 @@ function openTable() {
 }
 
 function closeTable() {
+  matchToken += 1;
   match = null;
   selectedIds = [];
   uiBusy = false;
   document.body.classList.remove('in-match');
+  document.body.classList.remove('overlay-open');
   document.getElementById('tableWindow').classList.remove('show');
   renderHeader();
 }
@@ -1559,6 +1589,7 @@ function openMode(mode) {
     return;
   }
   document.getElementById('modeOverlay').style.display = 'block';
+  document.body.classList.add('overlay-open');
   document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : 'Standard';
   const body = document.getElementById('modeBody');
   if (mode === 'practice') {
@@ -1630,7 +1661,10 @@ function openMode(mode) {
   });
 }
 
-function closeMode() { document.getElementById('modeOverlay').style.display = 'none'; }
+function closeMode() {
+  document.getElementById('modeOverlay').style.display = 'none';
+  if (!match) document.body.classList.remove('overlay-open');
+}
 
 function renderFriends() {
   const list = document.getElementById('friendsList');
