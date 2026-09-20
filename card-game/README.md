@@ -1,25 +1,15 @@
-# PALACE (working title)
+# PALACE (working title) — Android APK
 
-Separate card-game Android app. Same **install once, auto-update on open** workflow as RIGCORE.
+This is a **real Android app**, the same kind as RIGCORE: a signed `.apk` you install once on the phone. It is **not** a website, and **not** Safari/Chrome “Add to Home Screen”.
 
-This is not a RIGCORE reskin of the workout tracker. The game lives in `card-game/` with its own:
+Install this file on the phone:
 
-- App id `com.palace.app` (installs next to RIGCORE, not over it)
-- Save key `palaceCards_v1` (never `garageGains_v1`)
-- APK `card-game/dist/PALACE.apk`
-- Live-update zip `card-game/live-update/www.zip`
+- Phone install page (same delivery as RIGCORE): https://theharislt-netizen.github.io/garage-gains/palace/
+- Direct APK: [`dist/PALACE.apk`](dist/PALACE.apk)
 
-Working title is **PALACE**. Rename later if you want; keep the application id and save key stable so the installed phone copy keeps updating.
+On the phone: allow **Install unknown apps**, open `PALACE.apk`, tap **Install**. After that, later code pushes update the installed app the next time you open it.
 
-## Install once
-
-Download [`dist/PALACE.apk`](dist/PALACE.apk). On the phone: allow **Install unknown apps**, open the APK, tap **Install**.
-
-Minimum Android **8.0**. Progress stays on the phone.
-
-Direct link after this branch is pushed:
-
-`https://github.com/theharislt-netizen/garage-gains/raw/cursor/card-game-setup-e78b/card-game/dist/PALACE.apk`
+Package id: `com.palace.app` (installs **next to** RIGCORE, not over it). Save key: `palaceCards_v1`.
 
 ## How updates reach the phone
 

@@ -157,9 +157,11 @@ if (await exists(iconSrc)) {
   await copyFile(iconSrc, join(docs, 'icon.png'));
 }
 
-const apkUrl = 'https://github.com/theharislt-netizen/garage-gains/raw/cursor/card-game-setup-e78b/card-game/dist/PALACE.apk';
+const apkSrc = join(root, 'dist/PALACE.apk');
+if (await exists(apkSrc)) {
+  await copyFile(apkSrc, join(docs, 'PALACE.apk'));
+}
 let landing = await readFile(join(root, 'scripts/install-page.html'), 'utf8');
-landing = landing.replaceAll('__APK_URL__', apkUrl);
 await writeFile(join(docs, 'index.html'), landing);
 
 console.log('www/ prepared (docs/ is the install page, not the web app)');
