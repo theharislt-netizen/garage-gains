@@ -2373,13 +2373,19 @@ function ensureDragListeners() {
       updateBrowseTarget(ev);
       return;
     }
-    const horiz = Math.abs(dx) >= DRAG_PX && Math.abs(dx) >= Math.abs(dy);
-    if (dt >= PEEK_MS || horiz) {
+    const horiz = Math.abs(dx) >= DRAG_PX && Math.abs(dx) > Math.abs(dy);
+    const goingUp = -dy >= DRAG_PX && -dy > Math.abs(dx);
+    const swipeUpMove = -dy >= SWIPE_UP_PX && -dy > Math.abs(dx);
+    if (swipeUpMove && canActOnCards()) {
+      gesture.swipePlay = true;
+      return;
+    }
+    if (horiz) {
       enterBrowse(ev);
       return;
     }
-    if (canActOnCards() && -dy >= SWIPE_UP_PX && -dy > Math.abs(dx)) {
-      gesture.swipePlay = true;
+    if (dt >= PEEK_MS && !gesture.swipePlay && !goingUp) {
+      enterBrowse(ev);
     }
   };
   const end = (ev) => finishCardGesture(ev);
@@ -2405,7 +2411,10 @@ function startCardPress(el, ev, from) {
     swipePlay: false,
     pointerId: ev.pointerId,
     peekTimer: setTimeout(() => {
-      if (!gesture) return;
+      if (!gesture || gesture.swipePlay || gesture.browsing) return;
+      const dx = gesture.lastX - gesture.startX;
+      const dy = gesture.lastY - gesture.startY;
+      if (-dy >= DRAG_PX && -dy > Math.abs(dx)) return;
       enterBrowse({ clientX: gesture.lastX, clientY: gesture.lastY });
     }, PEEK_MS),
   };
@@ -2422,20 +2431,20 @@ function finishCardGesture(ev) {
   const dx = clientX - g.startX;
   const dt = Date.now() - g.startT;
   const moved = Math.hypot(dx, dy) >= DRAG_PX;
-  const swipeUp = !g.browsing && dt < PEEK_MS && (g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx)));
+  const swipeUp = !g.browsing && (g.swipePlay || (dy >= SWIPE_UP_PX && dy > Math.abs(dx)));
   clearPeeking();
   if (g.el) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
   // Hold / magnifying-glass browse never selects or plays — including off-turn.
-  if (g.browsing || dt >= PEEK_MS) return;
+  if (g.browsing) return;
   if (swipeUp) {
     if (!canActOnCards()) return;
     playLiftedCard(g.id);
     return;
   }
-  if (moved) return;
+  if (dt >= PEEK_MS || moved) return;
   onHumanCardTap(g.id);
 }
 

@@ -40,7 +40,8 @@ must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait wit
 must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html.includes('SWIPE_UP_PX'), 'hold-browse and swipe-up play are separate gestures');
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
 must(!html.includes('function startCardDrag') && !html.includes('maybeBeginDrag'), 'holding a card does not start a drag clone');
-must(html.includes('if (g.browsing || dt >= PEEK_MS) return;'), 'releasing a hold inspects only — it does not select or play');
+must(html.includes('if (g.browsing) return;'), 'releasing a hold inspects only — it does not select or play');
+must(html.includes('swipeUpMove && canActOnCards()'), 'an upward swipe plays instead of entering browse');
 must(html.includes('if (!match || match.ended || match.settled) return;'), 'hand inspect works during bot turns, not only on your turn');
 must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
 must(html.includes('hideDrawPile') && html.includes('draw-stack.empty'), 'empty draw pile is removed after the last card flies');
