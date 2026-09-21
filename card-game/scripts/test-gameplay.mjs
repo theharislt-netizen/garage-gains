@@ -928,6 +928,14 @@ must(html.includes('.inv-btn') && html.includes('border-radius: 100px') && html.
 
 const Net = require(join(root, 'palace-net.js'));
 must(typeof Net.topic === 'function' && Net.topic('l', 'ABC12') === 'pal1labc12', 'lobby topic is compact');
+must(typeof Net.resume === 'function', 'net can resume lobby and presence subscriptions');
+{
+  const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
+  must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
+  must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
+}
+must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
+must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
 
 const twoHumans = E.newMatch({
   roster: [
