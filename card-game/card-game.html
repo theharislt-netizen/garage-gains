@@ -1058,62 +1058,102 @@
   .seat-toggle button.on { background: var(--a2); color: #081018; font-weight: 700; }
   .seat-toggle.static button { cursor: default; }
   .stake-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-  .stake-rail {
-    display: flex; align-items: center; gap: 14px; flex: 1;
-    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 20px;
-    padding: 12px 20px 18px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  .table-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(50% - 8px);
+    gap: 14px;
+    flex: 1;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 16px;
+    padding: 10px 16px 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
   }
-  .stake-rail::-webkit-scrollbar { display: none; }
-  .stake-card {
-    flex: 0 0 132px; width: 132px; height: 196px; margin: 0; padding: 7px;
-    border: 0; border-radius: 16px; cursor: pointer; scroll-snap-align: center;
-    background: linear-gradient(180deg, #f7f3ea, #d9d0c2);
-    box-shadow: 0 12px 22px rgba(0,0,0,0.38), inset 0 0 0 2px #fff;
-    position: relative; color: #fff; font-family: 'Barlow Condensed';
-    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  .table-rail::-webkit-scrollbar { display: none; }
+  .table-card {
+    width: 100%;
+    min-height: min(52vh, 340px);
+    height: 100%;
+    margin: 0;
+    padding: 9px;
+    border: 0;
+    border-radius: 16px;
+    scroll-snap-align: start;
+    background: linear-gradient(180deg, #f7f7f7, #e4e4e4);
+    box-shadow: 0 16px 28px rgba(0,0,0,0.42), inset 0 0 0 2px #fff;
+    position: relative;
+    color: #fff;
+    font-family: 'Barlow Condensed';
+    transform: none;
   }
-  .stake-card .stake-face {
-    position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: hidden;
-    background: #120e16; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-    padding: 12px 8px 10px; text-align: center;
+  .table-face {
+    position: relative;
+    width: 100%; height: 100%;
+    min-height: min(48vh, 318px);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 14px 10px 10px;
+    text-align: left;
+    transform: none;
   }
-  .stake-oval {
-    position: absolute; left: -14%; right: -14%; top: 10%; height: 58%; border-radius: 50%;
-    transform: rotate(-24deg); pointer-events: none;
+  .table-card.art-easy .table-face {
+    background:
+      radial-gradient(circle at 50% 18%, #ff6a7a 0 28%, transparent 29%),
+      linear-gradient(180deg, #2a0c12 0%, #12080c 100%);
   }
-  .stake-card.diff-easy .stake-oval { background: radial-gradient(circle at 40% 30%, #ff6a7a, #e0233a 62%); }
-  .stake-card.diff-medium .stake-oval { background: radial-gradient(circle at 40% 30%, #ffc36a, #e08a2b 62%); }
-  .stake-card.diff-hard .stake-oval { background: radial-gradient(circle at 40% 30%, #b089ff, #6b3dff 62%); }
-  .stake-card.diff-expert .stake-oval { background: radial-gradient(circle at 40% 30%, #7ee7ff, #1aa8c8 62%); }
-  .stake-hero {
-    position: relative; z-index: 1; font-size: 34px; font-weight: 800; letter-spacing: -0.03em;
-    line-height: 0.9; text-shadow: 0 3px 0 rgba(0,0,0,0.45); color: #fff;
+  .table-card.art-medium .table-face {
+    background:
+      radial-gradient(circle at 50% 18%, #ffc36a 0 28%, transparent 29%),
+      linear-gradient(180deg, #2a1808 0%, #120c08 100%);
   }
-  .stake-card.diff-easy .stake-hero { color: #ffe14a; font-size: 28px; }
-  .stake-kicker {
-    position: relative; z-index: 1; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
-    opacity: 0.9; margin-bottom: 4px;
+  .table-card.art-hard .table-face {
+    background:
+      radial-gradient(circle at 50% 18%, #b089ff 0 28%, transparent 29%),
+      linear-gradient(180deg, #1a1028 0%, #100c18 100%);
   }
-  .stake-need {
-    position: relative; z-index: 1; margin-top: 8px; font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 700;
-    background: rgba(0,0,0,0.45); border-radius: 100px; padding: 4px 8px; color: #ffe7a3;
+  .table-card.art-expert .table-face {
+    background:
+      radial-gradient(circle at 50% 18%, #7ee7ff 0 28%, transparent 29%),
+      linear-gradient(180deg, #082028 0%, #081014 100%);
   }
-  .stake-card.selected {
-    transform: translateY(-8px);
-    box-shadow: 0 0 0 3px #ffe14a, 0 0 18px rgba(255,210,74,0.55), 0 14px 24px rgba(0,0,0,0.4);
+  .table-copy { position: relative; z-index: 1; padding: 2px 2px 10px; }
+  .table-kicker {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.72); margin-bottom: 4px;
   }
-  .stake-card.locked { cursor: default; }
-  .stake-card.locked .stake-face { filter: saturate(0.45) brightness(0.72); }
-  .stake-lock {
-    position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2;
-    width: 22px; height: 22px; border-radius: 50%; background: #1b1520; color: #f4efe4;
-    display: flex; align-items: center; justify-content: center; font-size: 12px;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+  .table-copy h3 {
+    font-size: 24px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase;
+    line-height: 1.05; margin: 0; text-shadow: 0 2px 0 rgba(0,0,0,0.35);
   }
-  .stake-unlock {
-    position: relative; z-index: 1; margin-top: 8px; font-size: 11px; line-height: 1.25;
-    color: #ffe7a3; text-transform: none; letter-spacing: 0; font-family: Inter, sans-serif; font-weight: 600;
-    padding: 0 4px;
+  .table-copy p {
+    margin: 6px 0 0; font-family: Inter, sans-serif; font-size: 12px; font-weight: 500;
+    line-height: 1.35; color: rgba(255,255,255,0.78); letter-spacing: 0; text-transform: none;
+  }
+  .table-tiers { display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; }
+  .tier-play {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; min-height: 40px; padding: 0 12px; margin: 0;
+    border-radius: 100px;
+    background: rgba(18, 16, 25, 0.78);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'Barlow Condensed'; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    font-size: 13px; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.28);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tier-play .tier-price { font-family: 'JetBrains Mono'; font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--gain); }
+  .tier-play:active { border-color: var(--a1); }
+  .tier-play.locked {
+    opacity: 0.46; cursor: default; filter: grayscale(0.2);
   }
   .stake-custom { padding: 0 16px 8px; }
   .stake-footer {
@@ -1500,6 +1540,49 @@ const SEAT_POS = {
   3: ['south', 'east', 'west'],
   4: ['south', 'east', 'north', 'west'],
 };
+const DIFF_ORDER = ['Easy', 'Medium', 'Hard', 'Expert'];
+const TABLE_THEMES = {
+  Easy: {
+    name: 'Candlelight',
+    blurb: 'Lantern tables and easygoing bots.',
+    art: 'easy',
+    rows: [{ label: 'Entry' }],
+  },
+  Medium: {
+    name: 'Velvet Room',
+    blurb: 'Red felt. The stakes start to climb.',
+    art: 'medium',
+    rows: [{ label: 'Side Table' }, { label: 'Main Felt' }, { label: 'High Roller' }],
+  },
+  Hard: {
+    name: 'High Court',
+    blurb: 'The court plays for keeps.',
+    art: 'hard',
+    rows: [{ label: 'Audience' }, { label: 'Council' }, { label: 'Throne' }],
+  },
+  Expert: {
+    name: 'Midnight Crown',
+    blurb: 'Late tables. The sharpest bots.',
+    art: 'expert',
+    rows: [{ label: 'Night Watch' }, { label: 'Inner Vault' }, { label: 'Crown Table' }],
+  },
+};
+function tableThemeOf(diff) {
+  return TABLE_THEMES[diff] || TABLE_THEMES.Easy;
+}
+function tableThemeLabel(diff) {
+  return tableThemeOf(diff).name;
+}
+function tableThemeRows(diff) {
+  const theme = tableThemeOf(diff);
+  const buys = (window.PalaceEngine && PalaceEngine.BUYINS[diff]) || [];
+  return buys.map((buyIn, i) => ({
+    buyIn,
+    label: (theme.rows[i] && theme.rows[i].label) || ('Table ' + (i + 1)),
+  }));
+}
+window.TABLE_THEMES = TABLE_THEMES;
+window.tableThemeLabel = tableThemeLabel;
 
 function samePlayerId(a, b) {
   if (a == null || b == null || a === '' || b === '') return false;
@@ -1646,6 +1729,7 @@ function loadState() {
     merged.inventory.stones = { cosmetic: 0, ...(merged.inventory.stones || {}) };
     merged.inventory.items = Array.isArray(merged.inventory.items) ? merged.inventory.items : [];
     merged.friends = Array.isArray(merged.friends) ? merged.friends.map((f) => ({
+      ...f,
       id: String((f && (f.id || f.name)) || ''),
       name: String((f && (f.name || f.id)) || 'Friend'),
     })).filter((f) => f.id) : [];
@@ -2864,7 +2948,7 @@ function renderTable(opts) {
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
     <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
-  document.getElementById('tableSub').textContent = match.difficulty + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
+  document.getElementById('tableSub').textContent = tableThemeLabel(match.difficulty) + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
 
   bindTableGestures(zone);
   felt.querySelectorAll('.emote-btn').forEach((btn) => {
@@ -4514,23 +4598,44 @@ function paintModeGold() {
   if (el) el.textContent = String(state.coins);
 }
 
-function stakeCardHtml(opts) {
-  const locked = !!opts.locked;
-  const selected = !!opts.selected && !locked;
-  const diff = (opts.difficulty || 'Easy').toLowerCase();
-  const lock = locked ? '<div class="stake-lock">🔒</div>' : '';
-  const need = locked
-    ? '<div class="stake-unlock">Win previous stake</div>'
-    : '<div class="stake-need">🪙 ' + (opts.need || opts.hero) + '</div>';
-  return `<button type="button" class="stake-card diff-${diff}${selected ? ' selected' : ''}${locked ? ' locked' : ''}" data-diff="${opts.difficulty}" data-buy="${opts.buyIn == null ? '' : opts.buyIn}" data-open="${locked ? '0' : '1'}">
-    <div class="stake-face">
-      ${lock}
-      <div class="stake-oval"></div>
-      <div class="stake-kicker">${opts.kicker}</div>
-      <div class="stake-hero">${opts.hero}</div>
-      ${need}
+function tableCardHtml(diff, opts) {
+  const theme = tableThemeOf(diff);
+  const paid = !!(opts && opts.paid);
+  const rows = paid
+    ? tableThemeRows(diff).map((row) => {
+      const open = PalaceEngine.isBuyInUnlocked(state.unlocks, diff, row.buyIn);
+      return { ...row, open };
+    })
+    : [{ label: 'Play', buyIn: 0, open: true }];
+  const buttons = rows.map((row) => {
+    const lock = row.open ? '' : ' locked';
+    const price = paid ? `<span class="tier-price">🪙 ${row.buyIn}</span>` : '<span class="tier-price">No risk</span>';
+    return `<button type="button" class="tier-play${lock}" data-diff="${diff}" data-buy="${row.buyIn}" data-open="${row.open ? '1' : '0'}">
+      <span>${row.open ? '' : '🔒 '}${row.label}</span>${price}
+    </button>`;
+  }).join('');
+  return `<article class="table-card art-${theme.art}" data-diff="${diff}">
+    <div class="table-face">
+      <div class="table-copy">
+        <div class="table-kicker">${(opts && opts.kicker) || 'Table'}</div>
+        <h3>${theme.name}</h3>
+        <p>${theme.blurb}</p>
+      </div>
+      <div class="table-tiers">${buttons}</div>
     </div>
-  </button>`;
+  </article>`;
+}
+
+function bindTierPlays(root, onPick) {
+  root.querySelectorAll('.tier-play').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.open !== '1' || btn.disabled) {
+        showToast('Win the previous stake to unlock this');
+        return;
+      }
+      onPick(btn.dataset.diff, Number(btn.dataset.buy || 0));
+    });
+  });
 }
 
 function openMode(mode) {
@@ -4544,10 +4649,8 @@ function openMode(mode) {
   paintModeGold();
   const body = document.getElementById('modeBody');
   if (mode === 'practice' || mode === 'custom') {
-    let seats = mode === 'custom' ? 4 : 4;
+    let seats = 4;
     let sub = mode === 'custom' ? 'custom' : 'standard';
-    let difficulty = 'Easy';
-    const diffs = ['Easy', 'Medium', 'Hard', 'Expert'];
     function paint() {
       const custom = (mode === 'custom' || sub === 'custom')
         ? `<div class="stake-custom"><div class="tier-row">${[2,3,4].map((n) => `<div class="tier-chip${n===seats?' active':''}" data-seats="${n}"><div class="n">${n}</div><div class="l">players</div></div>`).join('')}</div></div>`
@@ -4562,18 +4665,11 @@ function openMode(mode) {
         <div class="stake-screen">
           ${toggles}
           ${custom}
-          <div class="stake-rail">
-            ${diffs.map((d) => stakeCardHtml({
-              difficulty: d,
-              kicker: mode === 'custom' ? 'Table' : 'Bots',
-              hero: d.toUpperCase(),
-              need: d,
-              selected: d === difficulty,
-            })).join('')}
+          <div class="table-rail">
+            ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: false, kicker: mode === 'custom' ? 'Custom table' : 'Practice table' })).join('')}
           </div>
           <div class="stake-footer">
-            <div class="stake-hint">${mode === 'custom' ? 'Invite friends in the lobby · empty seats become bots' : 'No coin risk · invite friends or fill with bots'}</div>
-            <button class="btn primary" id="startPracticeBtn">Start ${difficulty}</button>
+            <div class="stake-hint">${mode === 'custom' ? 'Tap a table · invite friends in the lobby' : 'No coin risk · tap a table to open the lobby'}</div>
           </div>
         </div>`;
       body.querySelectorAll('[data-practice]').forEach((btn) => btn.addEventListener('click', () => {
@@ -4586,58 +4682,25 @@ function openMode(mode) {
         seats = Number(chip.dataset.seats);
         paint();
       }));
-      body.querySelectorAll('.stake-card').forEach((card) => card.addEventListener('click', () => {
-        difficulty = card.dataset.diff;
-        paint();
-        const sel = body.querySelector('.stake-card.selected');
-        if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-      }));
-      document.getElementById('startPracticeBtn').addEventListener('click', () => {
+      bindTierPlays(body, (difficulty) => {
         openLobby({ mode: mode === 'custom' ? 'custom' : 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
       });
     }
     paint();
     return;
   }
-  const stakes = ['Easy', 'Medium', 'Hard', 'Expert'].flatMap((d) =>
-    PalaceEngine.BUYINS[d].map((b) => ({ difficulty: d, buyIn: b }))
-  );
-  let buyIn = 30;
-  let difficulty = 'Easy';
   function paintStandard() {
     body.innerHTML = `
       <div class="stake-screen">
         <div class="seat-toggle static"><button type="button" class="on">4 seats</button></div>
-        <div class="stake-rail">
-          ${stakes.map((s) => {
-            const open = PalaceEngine.isBuyInUnlocked(state.unlocks, s.difficulty, s.buyIn);
-            const hero = s.difficulty === 'Easy' ? 'EASY' : String(s.buyIn);
-            const kicker = s.difficulty === 'Easy' ? 'Classic' : s.difficulty;
-            return stakeCardHtml({
-              difficulty: s.difficulty,
-              buyIn: s.buyIn,
-              kicker,
-              hero,
-              need: s.buyIn,
-              locked: !open,
-              selected: open && s.buyIn === buyIn && s.difficulty === difficulty,
-            });
-          }).join('')}
+        <div class="table-rail">
+          ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: true, kicker: 'Standard table' })).join('')}
         </div>
         <div class="stake-footer">
-          <div class="stake-hint">Lobby first · empty seats fill with bots</div>
-          <button class="btn primary" id="startStandardBtn">Start ${difficulty} · ${buyIn} coins</button>
+          <div class="stake-hint">Tap a stake · empty seats fill with bots</div>
         </div>
       </div>`;
-    body.querySelectorAll('.stake-card').forEach((card) => card.addEventListener('click', () => {
-      if (card.dataset.open !== '1') return showToast('Win the previous stake to unlock this');
-      buyIn = Number(card.dataset.buy);
-      difficulty = card.dataset.diff;
-      paintStandard();
-      const sel = body.querySelector('.stake-card.selected');
-      if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-    }));
-    document.getElementById('startStandardBtn').addEventListener('click', () => {
+    bindTierPlays(body, (difficulty, buyIn) => {
       openLobby({ mode: 'standard', seats: 4, difficulty, buyIn });
     });
   }

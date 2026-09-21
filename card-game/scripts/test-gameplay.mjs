@@ -15,7 +15,11 @@ function must(cond, msg) { if (!cond) fails.push(msg); }
 must(html.includes('palace-engine.js'), 'card-game.html must load palace-engine.js');
 must(html.includes('play-hand') && html.includes('play-card'), 'home must use playing-card mode tiles');
 must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must be UNO-style illustrated cards');
-must(html.includes('stake-rail') && html.includes('stake-card') && html.includes('seat-toggle'), 'mode setup is a UNO-style horizontal stake rail');
+must(html.includes('table-rail') && html.includes('table-card') && html.includes('tier-play') && html.includes('seat-toggle'), 'mode setup uses upright table cards with stacked tiers');
+must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
+must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
+must(html.includes('grid-auto-columns: calc(50% - 8px)'), 'about two table cards fit on screen');
+must(html.includes('.table-card') && html.includes('transform: none'), 'table cards are straight, not tilted');
 must(html.includes('header-currency') && html.includes('modeGold'), 'mode overlay header shows coins beside the title');
 must(html.includes('header-copy') && html.includes('min-height: 36px'), 'header rows share a 36px control height');
 must(!html.includes('Start · 30 coins'), 'standard setup is not the stacked difficulty card list');
@@ -815,6 +819,9 @@ must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Easy', 30), 'easy 3
 must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 200), 'medium 200 starts locked');
 const unlocked = E.nextUnlocks({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100, true);
 must(E.isBuyInUnlocked(unlocked, 'Medium', 200), 'winning medium 100 unlocks 200');
+must(E.BUYINS.Easy[0] === 30 && E.BUYINS.Medium[0] === 100 && E.BUYINS.Hard[0] === 500 && E.BUYINS.Expert[0] === 1200, 'coin ladder is unchanged');
+must(html.includes("unlocks: { ...defaultState().unlocks, ...(src.unlocks || {}) }"), 'imports keep existing unlocks');
+must(html.includes("const STORE_KEY = 'palaceCards_v1'"), 'save key is still palaceCards_v1');
 
 const groupCards = [
   { id: '4S', rank: '4', suit: 'S' },
