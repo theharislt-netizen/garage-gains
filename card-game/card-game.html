@@ -1045,8 +1045,8 @@
     box-shadow: 0 12px 32px rgba(0,0,0,0.45); display: none;
   }
   .invite-banner.show { display: block; }
-  .dot-on { width: 8px; height: 8px; border-radius: 50%; background: #38e29a; display: inline-block; margin-right: 6px; }
-  .dot-off { width: 8px; height: 8px; border-radius: 50%; background: #5a5268; display: inline-block; margin-right: 6px; }
+  .dot-on { width: 8px; height: 8px; border-radius: 50%; background: #38e29a; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+  .dot-off { width: 8px; height: 8px; border-radius: 50%; background: #5a5268; display: inline-block; margin-right: 6px; flex-shrink: 0; }
   #modeOverlay {
     background:
       radial-gradient(circle at 50% 12%, rgba(var(--a2-rgb),0.20), transparent 48%),
@@ -1312,26 +1312,24 @@
   .cosmetic-slot { background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px 12px; min-height: 92px; }
   .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
   .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
-  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; cursor: pointer; }
-  .friend-row .friend-copy, .friend-row > div:not(.friend-ava):not(.friend-menu) { min-width: 0; flex: 1; }
-  .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; }
-  .friend-ava { width: 44px; height: 44px; flex: 0 0 44px; }
-  .friend-ava .avatar-wrap { width: 44px; height: 44px; }
-  .friend-ava .avatar { width: 44px; height: 44px; border-width: 2px; }
-  .friend-menu { display: flex; gap: 6px; flex-shrink: 0; }
-  .friend-menu .inv-btn { margin: 0; padding: 6px 10px; min-height: 32px; font-size: 11px; }
-  .social-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .mail-btn {
+  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); gap: 12px; cursor: pointer; }
+  .friend-row .friend-copy { min-width: 0; flex: 1; display: flex; align-items: center; gap: 12px; }
+  .friend-row .friend-status { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 10px; }
+  .friend-row .friend-status .dot-on, .friend-row .friend-status .dot-off { margin: 0; }
+  .friend-row .friend-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .friend-row .friend-name { font-size: 16px; line-height: 1.2; font-weight: 600; }
+  .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+  .friend-ava { width: 48px; height: 48px; flex: 0 0 48px; }
+  .friend-ava .avatar-wrap { width: 48px; height: 48px; }
+  .friend-ava .avatar { width: 48px; height: 48px; border-width: 2px; }
+  .friend-menu { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+  .friend-ico {
     width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
     background: var(--panel); color: var(--text); display: flex; align-items: center; justify-content: center;
-    position: relative; flex-shrink: 0; cursor: pointer;
+    padding: 0; margin: 0; cursor: pointer; flex-shrink: 0;
   }
-  .mail-btn svg { width: 20px; height: 20px; }
-  .mail-btn .mail-dot {
-    position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%;
-    background: var(--gain); box-shadow: 0 0 6px rgba(56,226,154,0.8); display: none;
-  }
-  .mail-btn .mail-dot.show { display: block; }
+  .friend-ico svg { width: 18px; height: 18px; pointer-events: none; }
+  .friend-ico:active { border-color: var(--a1); }
   .tab { position: relative; }
   .tab .tab-badge {
     position: absolute; top: 4px; right: calc(50% - 14px);
@@ -1468,29 +1466,6 @@
     <div class="card" id="shopBody"></div>
   </section>
 
-  <section id="view-inventory" class="view">
-    <h2 class="page-title">Inventory</h2>
-    <div class="inv-primary-actions" id="invPrimaryActions">
-      <div class="inv-primary-btn" id="invShopEntry">
-        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>
-        <div class="inv-primary-label">Store</div>
-        <div class="inv-primary-sub" id="invGoldGems"></div>
-      </div>
-      <div class="inv-primary-btn" id="invEnchantEntry">
-        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/><circle cx="12" cy="12" r="2.5"/></svg></span>
-        <div class="inv-primary-label">Enchant</div>
-        <div class="inv-primary-sub" id="invGemsCount"></div>
-      </div>
-      <div class="inv-primary-btn" id="invCraftEntry">
-        <span class="inv-primary-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></span>
-        <div class="inv-primary-label">Craft</div>
-        <div class="inv-primary-sub" id="invShardCount"></div>
-      </div>
-    </div>
-    <div class="inv-filter-row" id="invFilterRow"></div>
-    <div id="invItemList"></div>
-  </section>
-
   <section id="view-subscription" class="view">
     <h2 class="page-title">Subscription</h2>
     <div class="card">
@@ -1501,13 +1476,7 @@
   </section>
 
   <section id="view-friends" class="view">
-    <div class="social-head">
-      <h2 class="page-title" style="margin:4px 0;">Social</h2>
-      <button type="button" class="mail-btn" id="mailBtn" aria-label="Messages">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
-        <span class="mail-dot" id="mailDot"></span>
-      </button>
-    </div>
+    <h2 class="page-title">Social</h2>
     <div class="card">
       <div class="log-form">
         <input id="friendSearch" placeholder="Nickname or profile ID">
@@ -1516,6 +1485,8 @@
     </div>
     <div class="section-title">Friends list</div>
     <div class="card" id="friendsList"></div>
+    <div class="section-title">Messages</div>
+    <div class="card" id="threadList"></div>
   </section>
 
   <section id="view-settings" class="view">
@@ -1745,9 +1716,8 @@ const INV_FILTERS = [
   { id: 'emote', label: 'Emotes' },
   { id: 'chatBubble', label: 'Bubbles' },
   { id: 'profileBorder', label: 'Borders' },
-  { id: 'shards', label: 'Shards' },
-  { id: 'stones', label: 'Stones' },
 ];
+const COSMETIC_SLOTS = { profileBorder: 1, emote: 1, chatBubble: 1 };
 const INV_SLOT_FILTERS = {
   cardSkin: 1,
   tableTheme: 1,
@@ -2000,10 +1970,15 @@ let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
 let lastMatchInboxTurn = null;
+let lastMatchInboxAt = 0;
 let inboxSnapSent = false;
+let matchSnapSeq = 0;
+let lastSnapSeq = 0;
 let lastHostSnapAt = 0;
 let lastTimeoutAt = 0;
 let pendingNet = [];
+let pendingGuestMove = null;
+let pendingGuestRetry = 0;
 let joinRetryTimer = 0;
 let lobbyPulseTimer = 0;
 const INVITE_COOL_MS = 5000;
@@ -2126,7 +2101,6 @@ function showView(id, opts) {
   document.body.classList.toggle('on-home', id === 'home');
   document.documentElement.classList.toggle('on-home', id === 'home');
   if (id === 'home') window.scrollTo(0, 0);
-  if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
   if (id === 'friends') {
     state.socialPing = false;
@@ -2399,8 +2373,7 @@ function openItemDetail(kind, key, anchor) {
       <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">${cat.desc}</p>
       <div class="settings-row"><div>Slot</div><div class="l2">${inst.slot}</div></div>
       <div class="settings-row"><div>Tier</div><div class="l2 mono">${inst.tier} / 3</div></div>
-      <button class="btn primary" id="detailEquipBtn">${equipped ? 'Equipped' : 'Equip'}</button>
-      ${inst.upgradable ? '<button class="btn" id="detailEnchantBtn">Enchant</button>' : ''}`;
+      <button class="btn primary" id="detailEquipBtn">${equipped ? 'Equipped' : 'Equip'}</button>`;
     body.innerHTML = html;
     document.getElementById('detailEquipBtn').addEventListener('click', () => {
       if (eqKey) state.equipped[eqKey] = inst.id;
@@ -2415,30 +2388,20 @@ function openItemDetail(kind, key, anchor) {
       renderHeader();
       showToast('Equipped ' + inst.name);
     });
-    const en = document.getElementById('detailEnchantBtn');
-    if (en) en.addEventListener('click', () => {
-      closeItemDetail();
-      enchantSel.itemId = inst.id;
-      openEnchant();
-    });
   } else if (kind === 'shards') {
     html = `
       <div class="item-detail-icon" style="color:var(--a1)">${itemIconSvg('shards')}</div>
       <h3 style="text-align:center; font-size:20px;">Cosmetic Shards</h3>
-      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">${SHARDS_PER_STONE} shards craft 1 enchantment stone.</p>
-      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.shards.cosmetic || 0}</div></div>
-      <button class="btn primary" id="detailCraftBtn">Open Craft</button>`;
+      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">Held for a later crafting update.</p>
+      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.shards.cosmetic || 0}</div></div>`;
     body.innerHTML = html;
-    document.getElementById('detailCraftBtn').addEventListener('click', () => { closeItemDetail(); openCraft(); });
   } else if (kind === 'stones') {
     html = `
       <div class="item-detail-icon" style="color:var(--gain)">${itemIconSvg('stones')}</div>
       <h3 style="text-align:center; font-size:20px;">Enchantment Stone</h3>
-      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">Spent at the Enchanting Table to regrade an upgradable cosmetic.</p>
-      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.stones.cosmetic || 0}</div></div>
-      <button class="btn primary" id="detailEnBtn">Open Enchant</button>`;
+      <p style="color:var(--text-dim); font-size:13px; line-height:1.45; margin:8px 0 12px;">Held for a later enchanting update.</p>
+      <div class="settings-row"><div>Owned</div><div class="l2 mono">${state.inventory.stones.cosmetic || 0}</div></div>`;
     body.innerHTML = html;
-    document.getElementById('detailEnBtn').addEventListener('click', () => { closeItemDetail(); openEnchant(); });
   }
   pop.style.display = 'block';
   backdrop.style.display = 'block';
@@ -2457,17 +2420,15 @@ function openItemDetail(kind, key, anchor) {
 
 function inventorySlotsHtml() {
   const items = state.inventory.items || [];
-  const shards = state.inventory.shards.cosmetic || 0;
-  const stones = state.inventory.stones.cosmetic || 0;
   const f = state.invFilter || 'all';
   const slotOnly = !!INV_SLOT_FILTERS[f];
-  const showItems = f === 'all' || f === 'cosmetics' || slotOnly;
-  const showShards = f === 'all' || f === 'shards';
-  const showStones = f === 'all' || f === 'stones';
+  const cosmeticOnly = f === 'cosmetics';
+  const showItems = f === 'all' || cosmeticOnly || slotOnly;
   const slots = [];
   if (showItems) {
     items.forEach((it) => {
       if (slotOnly && it.slot !== f) return;
+      if (cosmeticOnly && !COSMETIC_SLOTS[it.slot]) return;
       const eqKey = SLOT_TO_EQUIP[it.slot];
       const equipped = eqKey && state.equipped[eqKey] === it.id;
       const glow = it.new ? ' new-item-glow' : '';
@@ -2477,18 +2438,6 @@ function inventorySlotsHtml() {
       </div>`);
     });
   }
-  if (showShards) {
-    slots.push(`<div class="inv-slot" data-slot-mat="shards">
-      <div class="inv-slot-icon" style="color:var(--a1)">${itemIconSvg('shards')}</div>
-      <div class="inv-slot-count">x${shards}</div>
-    </div>`);
-  }
-  if (showStones) {
-    slots.push(`<div class="inv-slot" data-slot-mat="stones">
-      <div class="inv-slot-icon" style="color:var(--gain)">${itemIconSvg('stones')}</div>
-      <div class="inv-slot-count">x${stones}</div>
-    </div>`);
-  }
   const filled = slots.length;
   const rows = Math.max(3, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) + 1);
   const total = rows * INV_GRID_COLUMNS;
@@ -2496,9 +2445,26 @@ function inventorySlotsHtml() {
   return `<div class="inv-slot-grid">${slots.join('')}</div>`;
 }
 
+function ownedInvFilters() {
+  const items = state.inventory.items || [];
+  const ownedSlots = {};
+  items.forEach((it) => { if (it && it.slot) ownedSlots[it.slot] = true; });
+  const hasCosmetics = items.some((it) => COSMETIC_SLOTS[it.slot]);
+  return INV_FILTERS.filter((f) => {
+    if (f.id === 'all') return items.length > 0;
+    if (f.id === 'cosmetics') return hasCosmetics;
+    if (INV_SLOT_FILTERS[f.id]) return !!ownedSlots[f.id];
+    return false;
+  });
+}
+
 function bindInvFilterRow(row) {
   if (!row) return;
-  row.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
+  const chips = ownedInvFilters();
+  if (chips.length && !chips.some((f) => f.id === state.invFilter)) {
+    state.invFilter = chips[0].id;
+  }
+  row.innerHTML = chips.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
   row.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
     state.invFilter = chip.dataset.invFilter;
     saveState();
@@ -2514,21 +2480,7 @@ function bindInvList(list) {
 }
 
 function renderInventory() {
-  const gold = document.getElementById('invGoldGems');
-  if (gold) gold.textContent = state.coins + ' coins';
-  const gems = document.getElementById('invGemsCount');
-  if (gems) gems.textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
-  const shardEl = document.getElementById('invShardCount');
-  if (shardEl) shardEl.textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
-  const profileGems = document.getElementById('profileInvGems');
-  if (profileGems) {
-    profileGems.textContent = state.coins + ' coins · '
-      + (state.inventory.stones.cosmetic || 0) + ' stones · '
-      + (state.inventory.shards.cosmetic || 0) + ' shards';
-  }
-  bindInvFilterRow(document.getElementById('invFilterRow'));
   bindInvFilterRow(document.getElementById('profileInvFilter'));
-  bindInvList(document.getElementById('invItemList'));
   bindInvList(document.getElementById('profileInvList'));
 }
 
@@ -2686,13 +2638,8 @@ function paintProfile() {
     : '';
   const itemsBlock = own
     ? `<div class="section-title">Items</div>
-       <div class="l2" id="profileInvGems"></div>
        <div class="inv-filter-row" id="profileInvFilter"></div>
-       <div id="profileInvList"></div>
-       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
-         <button class="btn" id="profileEnchantBtn" type="button">Enchant</button>
-         <button class="btn" id="profileCraftBtn" type="button">Craft</button>
-       </div>`
+       <div id="profileInvList"></div>`
     : `<button class="btn primary" id="friendMsgBtn" type="button">Message</button>`;
   document.getElementById('profileBody').innerHTML = `
     <div class="profile-hero">
@@ -2729,10 +2676,6 @@ function paintProfile() {
       renderHeader();
     }));
     renderInventory();
-    const en = document.getElementById('profileEnchantBtn');
-    if (en) en.addEventListener('click', () => openEnchant());
-    const cr = document.getElementById('profileCraftBtn');
-    if (cr) cr.addEventListener('click', () => openCraft());
   } else {
     const msg = document.getElementById('friendMsgBtn');
     if (msg) msg.addEventListener('click', () => openThread(friend.id));
@@ -3022,7 +2965,7 @@ function tickTurnClock() {
   }
   if (isNetGuest() && Date.now() - lastHostSnapAt > 4000) {
     lastHostSnapAt = Date.now();
-    if (window.PalaceNet && session) PalaceNet.matchPub(session.code, { type: 'want-snap', id: state.profile.id });
+    netSendMatch({ type: 'want-snap', id: state.profile.id });
   }
   if (left <= 0 && !match.ended && !match.settled) {
     if (uiBusy) return;
@@ -3035,6 +2978,15 @@ function tickTurnClock() {
   }
 }
 
+function chooseTimeoutMove(seat) {
+  const legal = PalaceEngine.legalMoves(match, seat) || [];
+  return legal.find((m) => m.type === 'play')
+    || legal.find((m) => m.type === 'flip')
+    || legal.find((m) => m.type === 'pickup')
+    || legal[0]
+    || null;
+}
+
 function autoTurnTimeout() {
   if (!match || uiBusy || match.ended || match.settled) return;
   const seat = match.turn;
@@ -3043,19 +2995,10 @@ function autoTurnTimeout() {
   if (isNetGuest()) {
     if (Date.now() - lastTimeoutAt < 2500) return;
     lastTimeoutAt = Date.now();
-    if (window.PalaceNet && session) {
-      PalaceNet.matchPub(session.code, { type: 'timeout', seat });
-    }
+    netSendMatch({ type: 'timeout', seat });
     return;
   }
-  const saved = p.difficulty;
-  p.difficulty = 'Easy';
-  let mv = PalaceEngine.chooseBotMove(match, p);
-  p.difficulty = saved;
-  if (!mv) {
-    const legal = PalaceEngine.legalMoves(match, seat);
-    mv = legal.find((m) => m.type === 'play') || legal.find((m) => m.type === 'flip') || legal[0];
-  }
+  const mv = chooseTimeoutMove(seat);
   if (mv) runMove(mv);
 }
 function autoHumanTimeout() { autoTurnTimeout(); }
@@ -4085,26 +4028,36 @@ function flushPendingNet() {
 async function runMove(move) {
   if (!match || uiBusy || match.settled) return;
   if (isNetGuest()) {
-    if (window.PalaceNet && session) {
-      PalaceNet.matchPub(session.code, { type: 'move', seat: mySeat(), move });
-    }
+    netSendMatch({ type: 'move', seat: mySeat(), move });
+    armGuestMoveRetry(move);
+    renderTable();
+    return;
+  }
+  if (netMoveAlreadyApplied(move)) {
+    publishMatchSnap(true);
     return;
   }
   const token = matchToken;
   uiBusy = true;
+  let applied = false;
   try {
     const events = PalaceEngine.applyMove(match, move);
-    publishMatchSnap(true);
-    await animateEvents(events);
-    if (!stillThisMatch(token)) return;
-    selectedIds = [];
-    if (settleIfDone()) return;
-    renderTable();
+    if (events.length) {
+      applied = true;
+      publishMatchSnap(true);
+      await animateEvents(events);
+      if (!stillThisMatch(token)) return;
+      selectedIds = [];
+      if (settleIfDone()) return;
+      renderTable();
+    } else {
+      publishMatchSnap(true);
+    }
   } finally {
     if (stillThisMatch(token)) uiBusy = false;
   }
   flushPendingNet();
-  if (stillThisMatch(token) && match && !match.settled) await runTurn();
+  if (applied && stillThisMatch(token) && match && !match.settled) await runTurn();
 }
 
 async function runTurn() {
@@ -4526,21 +4479,89 @@ function startLobbyPulse() {
     publishLobby();
   }, 8000);
 }
+function matchHumanIds() {
+  const ids = [];
+  const me = state.profile && state.profile.id;
+  function add(id) {
+    if (!id || samePlayerId(id, me) || ids.some((x) => samePlayerId(x, id))) return;
+    ids.push(id);
+  }
+  if (session && session.hostId) add(session.hostId);
+  (session && session.seats || []).forEach((row) => {
+    if (row && row.id && !row.bot) add(row.id);
+  });
+  return ids;
+}
+
+function netSendMatch(payload) {
+  if (!window.PalaceNet || !session) return;
+  const msg = Object.assign({ code: session.code }, payload || {});
+  PalaceNet.matchPub(session.code, msg);
+  const kind = payload && payload.type;
+  if (kind === 'move' || kind === 'timeout' || kind === 'want-snap') {
+    const hostId = session.hostId;
+    if (hostId && !samePlayerId(hostId, state.profile.id)) PalaceNet.inbox(hostId, msg);
+    return;
+  }
+  matchHumanIds().forEach((id) => PalaceNet.inbox(id, msg));
+}
+
+function playerHoldsIds(p, ids) {
+  if (!p || !ids || !ids.length) return false;
+  const have = {};
+  [].concat(p.hand || [], p.up || [], p.down || []).forEach((c) => {
+    if (c && c.id) have[c.id] = true;
+  });
+  return ids.every((id) => have[id]);
+}
+
+function netMoveAlreadyApplied(move) {
+  if (!match || !move) return false;
+  if (move.type === 'play' && move.cardIds && move.cardIds.length) {
+    return !playerHoldsIds(match.players[move.seat], move.cardIds);
+  }
+  if (move.type === 'pickup') return !(match.pile && match.pile.length);
+  return false;
+}
+
+function armGuestMoveRetry(move) {
+  pendingGuestMove = move;
+  if (pendingGuestRetry) clearTimeout(pendingGuestRetry);
+  pendingGuestRetry = setTimeout(() => {
+    pendingGuestRetry = 0;
+    if (!pendingGuestMove || !isNetGuest() || !match || match.settled) return;
+    if (netMoveAlreadyApplied(pendingGuestMove)) {
+      pendingGuestMove = null;
+      return;
+    }
+    netSendMatch({ type: 'move', seat: mySeat(), move: pendingGuestMove });
+  }, 1800);
+}
+
+function clearGuestMoveIfApplied() {
+  if (!pendingGuestMove) return;
+  if (netMoveAlreadyApplied(pendingGuestMove) || (match && pendingGuestMove.seat !== match.turn && pendingGuestMove.type === 'play' && netMoveAlreadyApplied(pendingGuestMove))) {
+    pendingGuestMove = null;
+    if (pendingGuestRetry) { clearTimeout(pendingGuestRetry); pendingGuestRetry = 0; }
+  }
+}
+
 function publishMatchSnap(force) {
   if (!match || !session || !window.PalaceNet || !isLobbyHost()) return;
   const now = Date.now();
   if (!force && now - lastMatchSnapAt < 40) return;
   lastMatchSnapAt = now;
   const packed = PalaceEngine.packMatch(match);
-  PalaceNet.matchPub(session.code, { type: 'snap', match: packed, code: session.code });
-  if (!inboxSnapSent) {
+  packed.b = [];
+  packed.seq = ++matchSnapSeq;
+  const body = { type: 'snap', match: packed, code: session.code };
+  PalaceNet.matchPub(session.code, body);
+  const turnChanged = lastMatchInboxTurn !== match.turn;
+  if (force && (turnChanged || !inboxSnapSent || now - lastMatchInboxAt > 2000)) {
     inboxSnapSent = true;
     lastMatchInboxTurn = match.turn;
-    (session.seats || []).forEach((row) => {
-      if (row && row.id && !samePlayerId(row.id, state.profile.id)) {
-        PalaceNet.inbox(row.id, { type: 'snap', match: packed, code: session.code });
-      }
-    });
+    lastMatchInboxAt = now;
+    matchHumanIds().forEach((id) => PalaceNet.inbox(id, body));
   }
 }
 
@@ -4563,9 +4584,15 @@ function leaveSession() {
   stopLobbyPulse();
   if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
   pendingNet = [];
+  lastMatchInboxTurn = null;
+  lastMatchInboxAt = 0;
   inboxSnapSent = false;
+  matchSnapSeq = 0;
+  lastSnapSeq = 0;
   lastHostSnapAt = 0;
   lastTimeoutAt = 0;
+  pendingGuestMove = null;
+  if (pendingGuestRetry) { clearTimeout(pendingGuestRetry); pendingGuestRetry = 0; }
   tableChatLog = [];
   matchFriendChat = {};
   tableChatUnread = false;
@@ -4747,7 +4774,9 @@ function localPlayerSeated() {
 function applyLobbyState(msg) {
   if (!msg || !session) return;
   if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
-  session.hostId = msg.hostId || session.hostId;
+  if (!(session.started && isLobbyHost())) {
+    session.hostId = msg.hostId || session.hostId;
+  }
   session.cfg = msg.cfg || session.cfg;
   session.seats = Array.isArray(msg.seats) ? msg.seats : session.seats;
   session.started = !!msg.started;
@@ -4874,6 +4903,9 @@ function startLobbyMatch() {
 
 function applyHostSnap(raw) {
   if (!raw || !window.PalaceEngine) return;
+  const seq = Number(raw.seq) || 0;
+  if (seq && lastSnapSeq && seq <= lastSnapSeq) return;
+  if (seq) lastSnapSeq = seq;
   const packedPlayers = (raw.pl || []).map((x) => ({ id: x && x.id, profileId: x && x.id, seat: x && x.s }));
   const packedSeat = seatIndexForLocalPlayer(packedPlayers);
   const seat = packedSeat >= 0 ? packedSeat : mySeatIndex();
@@ -4884,6 +4916,8 @@ function applyHostSnap(raw) {
   match.humanSeat = seat;
   lastHostSnapAt = Date.now();
   pendingCfg = session && session.cfg ? session.cfg : pendingCfg;
+  uiBusy = false;
+  clearGuestMoveIfApplied();
   if (first) {
     if (match.mode === 'standard' && match.buyIn && !session._paid) {
       if (state.coins < match.buyIn) {
@@ -4899,7 +4933,6 @@ function applyHostSnap(raw) {
     hideJoin();
     closeMode();
     openTable();
-    uiBusy = false;
     renderTable();
     restartTurnClock();
     if (isLobbyHost()) animateDeal().then(() => runTurn());
@@ -5163,7 +5196,14 @@ function handleNetMessage(msg) {
       const seat = msg.seat;
       const p = match.players[seat];
       if (!p || p.isBot || p.out) return;
-      if (match.turn !== seat) return;
+      if (netMoveAlreadyApplied(msg.move)) {
+        publishMatchSnap(true);
+        return;
+      }
+      if (match.turn !== seat) {
+        publishMatchSnap(true);
+        return;
+      }
       if (uiBusy) {
         pendingNet.push(run);
         return;
@@ -5184,7 +5224,8 @@ function handleNetMessage(msg) {
 
 function resumeNetSession() {
   if (!window.PalaceNet) return;
-  PalaceNet.resume(true);
+  const keepMux = !!(session && session.started && document.body.classList.contains('in-match'));
+  PalaceNet.resume(!keepMux);
   (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
   if (session && session.code) {
     PalaceNet.watchLobby(session.code);
@@ -5192,7 +5233,11 @@ function resumeNetSession() {
       publishLobby();
       startLobbyPulse();
     }
-    if (session.started) PalaceNet.watchMatch(session.code);
+    if (session.started) {
+      PalaceNet.watchMatch(session.code);
+      if (isLobbyHost() && match && !match.settled) publishMatchSnap(true);
+      else if (!isLobbyHost()) netSendMatch({ type: 'want-snap', id: state.profile.id });
+    }
   }
 }
 
@@ -5210,6 +5255,7 @@ function bootNet() {
     PalaceNet.on(handleNetMessage);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        if (document.body.classList.contains('in-match')) return;
         if (window.PalaceNet && typeof PalaceNet.away === 'function') PalaceNet.away();
         return;
       }
@@ -5311,6 +5357,8 @@ window.localHumanSeat = localHumanSeat;
 window.isMyTurn = isMyTurn;
 window.mySeat = mySeat;
 window.autoTurnTimeout = autoTurnTimeout;
+window.chooseTimeoutMove = chooseTimeoutMove;
+window.netSendMatch = netSendMatch;
 window.tickTurnClock = tickTurnClock;
 window.leaveSession = leaveSession;
 window.closeTable = closeTable;
@@ -5555,7 +5603,10 @@ function threadKey(id) {
 function getThread(id) {
   state.messages = state.messages || {};
   const k = threadKey(id);
-  if (!Array.isArray(state.messages[k])) state.messages[k] = [];
+  if (!Array.isArray(state.messages[k])) {
+    const alt = Object.keys(state.messages).find((x) => String(x).toUpperCase() === k);
+    state.messages[k] = alt && Array.isArray(state.messages[alt]) ? state.messages[alt] : [];
+  }
   return state.messages[k];
 }
 
@@ -5580,10 +5631,8 @@ function unreadMailCount() {
 
 function paintSocialBadge() {
   const tab = document.getElementById('socialTabBadge');
-  const mail = document.getElementById('mailDot');
   const unread = unreadMailCount();
   if (tab) tab.classList.toggle('show', !!(state.socialPing || unread));
-  if (mail) mail.classList.toggle('show', unread > 0);
   const tableDot = document.getElementById('tableChatDot');
   if (tableDot) tableDot.classList.toggle('show', !!tableChatUnread);
 }
@@ -5664,23 +5713,28 @@ function closeMessages() {
 }
 
 function paintMessages() {
-  const body = document.getElementById('messagesBody');
-  if (!body) return;
-  const friends = state.friends || [];
-  if (!friends.length) {
-    body.innerHTML = '<div class="empty"><div class="big">No conversations</div>Add a friend first, then send a message.</div>';
-    return;
-  }
-  body.innerHTML = friends.map((f) => {
-    const t = getThread(f.id);
-    const last = t.length ? t[t.length - 1] : null;
-    const preview = last ? ((last.me ? 'You: ' : '') + (last.text || '')) : 'Start a chat';
-    return `<div class="thread-row" data-thread="${f.id}">
-      <div class="friend-ava">${framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border })}</div>
-      <div style="min-width:0;flex:1;"><div>${f.name}</div><div class="preview">${preview}</div></div>
-    </div>`;
-  }).join('');
-  body.querySelectorAll('[data-thread]').forEach((el) => el.addEventListener('click', () => openThread(el.getAttribute('data-thread'))));
+  const bodies = [document.getElementById('threadList'), document.getElementById('messagesBody')].filter(Boolean);
+  if (!bodies.length) return;
+  const friends = (state.friends || []).filter((f) => {
+    const t = (state.messages && (state.messages[threadKey(f.id)] || state.messages[f.id])) || [];
+    return t.length > 0;
+  });
+  const html = friends.length
+    ? friends.map((f) => {
+      const t = getThread(f.id);
+      const last = t.length ? t[t.length - 1] : null;
+      const preview = last ? ((last.me ? 'You: ' : '') + (last.text || '')) : 'Start a chat';
+      const unread = t.some((m) => m && !m.me && !m.read);
+      return `<div class="thread-row" data-thread="${f.id}">
+        <div class="friend-ava">${framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border })}</div>
+        <div style="min-width:0;flex:1;"><div>${f.name}${unread ? ' <span class="dot-on"></span>' : ''}</div><div class="preview">${preview}</div></div>
+      </div>`;
+    }).join('')
+    : '<div class="empty"><div class="big">No messages yet</div>Tap the chat icon on a friend to start a conversation.</div>';
+  bodies.forEach((body) => {
+    body.innerHTML = html;
+    body.querySelectorAll('[data-thread]').forEach((el) => el.addEventListener('click', () => openThread(el.getAttribute('data-thread'))));
+  });
 }
 
 function openThread(id) {
@@ -5750,8 +5804,8 @@ function receiveDm(msg) {
   }
   pushDm(msg.id, { me: false, text: String(msg.text).slice(0, 160), t: Date.now(), name: msg.name || 'Friend', read: !!(activeThreadId && samePlayerId(activeThreadId, msg.id)) });
   paintSocialBadge();
+  paintMessages();
   if (activeThreadId && samePlayerId(activeThreadId, msg.id)) paintThread();
-  if (layerOpen('messagesOverlay')) paintMessages();
   if (document.body.classList.contains('in-match') && matchChatTab === 'friend' && layerOpen('matchChatOverlay')) paintMatchChat();
   showToast((msg.name || 'Friend') + ': ' + String(msg.text).slice(0, 40));
 }
@@ -5855,19 +5909,28 @@ function renderFriends() {
   const list = document.getElementById('friendsList');
   if (!list) return;
   paintSocialBadge();
+  paintMessages();
   if (!(state.friends || []).length) {
     list.innerHTML = `<div class="empty"><div class="big">No friends yet</div>Add by nickname or profile ID. Match lobbies are where you send a play request.</div>`;
     return;
   }
+  const chatIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>';
+  const delIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
   list.innerHTML = state.friends.map((f) => {
     const on = friendOnline(f.id);
     const av = framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border });
     return `<div class="friend-row" data-fid="${f.id}">
       <div class="friend-ava">${av}</div>
-      <div class="friend-copy"><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div>
+      <div class="friend-copy">
+        <span class="friend-status"><span class="${on ? 'dot-on' : 'dot-off'}"></span></span>
+        <div class="friend-meta">
+          <div class="friend-name">${f.name}</div>
+          <div class="l2">${friendPresenceLine(f)}</div>
+        </div>
+      </div>
       <div class="friend-menu">
-        <button class="inv-btn" data-friend-msg="${f.id}" type="button">Chat</button>
-        <button class="inv-btn" data-friend-del="${f.id}" type="button">Remove</button>
+        <button class="friend-ico" data-friend-msg="${f.id}" type="button" aria-label="Chat">${chatIco}</button>
+        <button class="friend-ico" data-friend-del="${f.id}" type="button" aria-label="Remove">${delIco}</button>
       </div>
     </div>`;
   }).join('');
@@ -5950,9 +6013,6 @@ function init() {
     showView('shop');
   });
   document.getElementById('nbDailyDot').addEventListener('click', () => showToast('Daily login already claimed for today'));
-  document.getElementById('invShopEntry').addEventListener('click', () => showView('shop'));
-  document.getElementById('invEnchantEntry').addEventListener('click', openEnchant);
-  document.getElementById('invCraftEntry').addEventListener('click', openCraft);
   document.getElementById('enchantWindowLeaveBtn').addEventListener('click', closeEnchant);
   document.getElementById('craftWindowLeaveBtn').addEventListener('click', closeCraft);
   document.getElementById('profileLeaveBtn').addEventListener('click', closeProfile);
@@ -5982,8 +6042,6 @@ function init() {
     const name = document.getElementById('friendSearch').value.trim();
     sendFriendRequest(name);
   });
-  const mailBtn = document.getElementById('mailBtn');
-  if (mailBtn) mailBtn.addEventListener('click', openMessages);
   const messagesLeave = document.getElementById('messagesLeaveBtn');
   if (messagesLeave) messagesLeave.addEventListener('click', closeMessages);
   const threadLeave = document.getElementById('threadLeaveBtn');

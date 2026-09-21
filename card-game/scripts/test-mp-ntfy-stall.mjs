@@ -166,6 +166,11 @@ function dumpView() {
     south: ((document.querySelector('.seat.south .seat-name') || {}).textContent || '').trim(),
     active: ((document.querySelector('.seat.active .seat-name') || {}).textContent || '').trim(),
     pile: (match && match.pile || []).map((c) => c.id),
+    pileLen: match && match.pile ? match.pile.length : 0,
+    handLen: (() => {
+      const seat = typeof mySeat === 'function' ? mySeat() : 0;
+      return match && match.players && match.players[seat] ? match.players[seat].hand.length : 0;
+    })(),
     inMatch: document.body.classList.contains('in-match'),
     esOpen: window.__esOpen || 0,
     ntfyFail: (window.__netLog || []).filter((x) => x.kind === 'ntfy' && x.status >= 400).slice(-6),
@@ -249,22 +254,36 @@ try {
   // Play up to 4 real turns over ntfy (the phone path).
   for (let i = 0; i < 4; i++) {
     views = await Promise.all([host.evaluate(dumpView), guest.evaluate(dumpView)]);
+    const readyAt = Date.now();
+    while (Date.now() - readyAt < 8000) {
+      views = await Promise.all([host.evaluate(dumpView), guest.evaluate(dumpView)]);
+      if (!views[0].uiBusy && !views[1].uiBusy && views[0].myTurn !== views[1].myTurn) break;
+      await sleep(200);
+    }
     const turnBefore = views[0].turn;
+    const pileBeforePlay = views[0].pile.join();
     const actor = views[0].myTurn ? host : guest;
     const actorName = views[0].myTurn ? 'host' : 'guest';
     const played = await playIfMine(actor);
-    note('play-' + i, { actorName, played, turnBefore, hostBusy: views[0].uiBusy, guestBusy: views[1].uiBusy });
+    note('play-' + i, { actorName, played, turnBefore, pileBeforePlay, hostBusy: views[0].uiBusy, guestBusy: views[1].uiBusy });
     const startWait = Date.now();
-    while (Date.now() - startWait < 15000) {
+    while (Date.now() - startWait < 18000) {
       views = await Promise.all([host.evaluate(dumpView), guest.evaluate(dumpView)]);
-      if (views[0].turn === views[1].turn && views[0].myTurn !== views[1].myTurn && views[0].pile.join() === views[1].pile.join() && (views[0].turn !== turnBefore || views[0].pile.length)) break;
+      const synced = views[0].turn === views[1].turn && views[0].myTurn !== views[1].myTurn && views[0].pile.join() === views[1].pile.join();
+      const progressed = views[0].turn !== turnBefore || views[0].pile.join() !== pileBeforePlay;
+      if (synced && progressed) break;
       await sleep(300);
     }
     views = await Promise.all([host.evaluate(dumpView), guest.evaluate(dumpView)]);
     note('after-play-' + i, views);
     must(views[0].turn === views[1].turn, 'after play ' + i + ' both clients still share turn');
     must(views[0].myTurn !== views[1].myTurn, 'after play ' + i + ' exactly one client has the turn');
-    must(views[0].turn !== turnBefore || views[0].pile.length > 0, 'turn did not stall after play ' + i);
+    must(views[0].turn !== turnBefore || views[0].pile.join() !== pileBeforePlay, 'turn did not stall after play ' + i);
+    if (played && played.played && played.mv && played.mv.type === 'play' && played.mv.ids) {
+      const onPile = played.mv.ids.every((id) => views[0].pile.includes(id) && views[1].pile.includes(id));
+      const burnedAway = views[0].turn !== turnBefore && views[0].pile.join() === views[1].pile.join();
+      must(onPile || burnedAway, 'played cards from ' + actorName + ' landed on both clients (or burned the pile)');
+    }
   }
 
   views = await Promise.all([host.evaluate(dumpView), guest.evaluate(dumpView)]);
@@ -287,6 +306,7 @@ try {
   note('after-afk', { turnBefore, moved, afterAfk });
   must(moved, 'AFK timeout auto-played over ntfy');
   must(afterAfk[0].turn === afterAfk[1].turn, 'guest received the AFK play over ntfy');
+  must(!(afterAfk[0].handLen > views[0].handLen && afterAfk[0].pileLen === 0), 'AFK timeout must not pick up the pile and grow the hand');
   await host.screenshot({ path: join(artifacts, 'mp_stall_afk_host.png') });
   await guest.screenshot({ path: join(artifacts, 'mp_stall_afk_guest.png') });
 
@@ -303,15 +323,24 @@ try {
   must(onlineAfter[0] && onlineAfter[1], 'friends still Online after leaving the match');
   await host.screenshot({ path: join(artifacts, 'mp_stall_presence_after.png') });
 
+  await sleep(6000);
   await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 2, difficulty: 'Easy', buyIn: 0 }));
   await host.evaluate(() => {
     pendingInviteSeat = 1;
     inviteFriendToLobby('GUESTTEST1');
   });
-  const invited = await waitEval(guest, () => {
+  let invited = await waitEval(guest, () => {
     const el = document.getElementById('inviteBanner');
     return !!(el && el.classList.contains('show') && /invited you/i.test(el.innerText || ''));
-  }, 15000);
+  }, 12000);
+  if (!invited) {
+    await sleep(8000);
+    await host.evaluate(() => inviteFriendToLobby('GUESTTEST1'));
+    invited = await waitEval(guest, () => {
+      const el = document.getElementById('inviteBanner');
+      return !!(el && el.classList.contains('show') && /invited you/i.test(el.innerText || ''));
+    }, 12000);
+  }
   note('reinvite', invited);
   must(invited, 'guest receives a lobby invite after the match over ntfy');
   await guest.screenshot({ path: join(artifacts, 'mp_stall_invite_after.png') });
