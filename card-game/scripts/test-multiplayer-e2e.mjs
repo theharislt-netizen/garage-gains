@@ -142,7 +142,7 @@ try {
   must(hostFriends.includes('GUESTTEST1'), 'host added guest after accept');
 
   console.log('open practice lobby');
-  await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 2, difficulty: 'Easy', buyIn: 0 }));
+  await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 4, difficulty: 'Easy', buyIn: 0 }));
   const lobbyOpen = await host.evaluate(() => document.getElementById('lobbyOverlay').style.display === 'flex' && !!document.getElementById('lobbyCodeText'));
   must(lobbyOpen, 'practice Start opens the lobby, not the table');
   const tableHidden = await host.evaluate(() => !document.getElementById('tableWindow').classList.contains('show'));
@@ -151,8 +151,32 @@ try {
   console.log('lobby code', code);
   must(code.length >= 4, 'lobby has a shareable code');
 
-  const inviteBtn = await host.evaluate(() => !!document.querySelector('[data-invite-friend="GUESTTEST1"]'));
-  must(inviteBtn, 'lobby friends list has Invite for the guest');
+  const hostLobbyUi = await host.evaluate(() => {
+    const start = document.getElementById('lobbyStartBtn');
+    const r = start ? start.getBoundingClientRect() : { top: -1, bottom: -1 };
+    return {
+      pads: document.querySelectorAll('.lobby-pad').length,
+      plus: document.querySelectorAll('.lobby-pad.open').length,
+      you: ((document.querySelector('.lobby-pad.you .pad-name') || {}).textContent || '').trim(),
+      slots: document.querySelectorAll('.lobby-slot').length,
+      startInView: r.top >= 0 && r.bottom <= (window.innerHeight || 0) + 8,
+    };
+  });
+  console.log('host lobby ui', hostLobbyUi);
+  must(hostLobbyUi.pads === 4 && hostLobbyUi.plus === 3 && hostLobbyUi.slots === 0, 'lobby shows 4 compact pads, not full-width rows');
+  must(/host/i.test(hostLobbyUi.you), 'host pad is first and labeled Host');
+  must(hostLobbyUi.startInView, 'Start match is visible without scrolling');
+  await host.screenshot({ path: join(artifacts, 'palace_lobby_host_pads.png') });
+
+  await host.evaluate(() => {
+    const plus = document.querySelector('[data-invite-open]');
+    if (plus) plus.click();
+  });
+  const sheetOpen = await host.evaluate(() => {
+    const el = document.getElementById('lobbyInviteSheet');
+    return !!(el && el.classList.contains('show') && document.querySelector('[data-invite-friend="GUESTTEST1"]'));
+  });
+  must(sheetOpen, 'empty pad opens invite sheet with the guest');
   await host.evaluate(() => inviteFriendToLobby('GUESTTEST1'));
   const inviteText = await guest.evaluate(async () => {
     const start = Date.now();
@@ -183,6 +207,22 @@ try {
   console.log('seated', { guestSeated, hostSeesGuest });
   must(guestSeated && hostSeesGuest, 'guest is seated in the lobby on both clients');
 
+  const guestLobbyUi = await guest.evaluate(() => {
+    const pads = [...document.querySelectorAll('.lobby-pad')];
+    const start = document.getElementById('lobbyStartBtn');
+    const r = start ? start.getBoundingClientRect() : { top: -1, bottom: -1 };
+    return {
+      pads: pads.length,
+      firstYou: pads[0] ? pads[0].classList.contains('you') : false,
+      you: ((document.querySelector('.lobby-pad.you .pad-name') || {}).textContent || '').trim(),
+      startInView: r.top >= 0 && r.bottom <= (window.innerHeight || 0) + 8,
+    };
+  });
+  console.log('guest lobby ui', guestLobbyUi);
+  must(guestLobbyUi.pads === 4 && guestLobbyUi.firstYou && /guest/i.test(guestLobbyUi.you), 'guest sees their avatar pad first');
+  must(guestLobbyUi.startInView, 'guest Start/waiting button is visible without scrolling');
+  await guest.screenshot({ path: join(artifacts, 'palace_lobby_guest_pads.png') });
+
   console.log('start match');
   await host.evaluate(() => startLobbyMatch());
   await sleep(500);
@@ -190,8 +230,8 @@ try {
   await guest.waitForFunction(() => !!(match && document.getElementById('tableWindow').classList.contains('show')), { timeout: 15000 });
   await sleep(800);
   const bothAtTable = await Promise.all([
-    host.evaluate(() => !!(match && match.players.length === 2 && document.getElementById('tableWindow').classList.contains('show'))),
-    guest.evaluate(() => !!(match && match.players.length === 2 && document.getElementById('tableWindow').classList.contains('show'))),
+    host.evaluate(() => !!(match && match.players.length === 4 && document.getElementById('tableWindow').classList.contains('show'))),
+    guest.evaluate(() => !!(match && match.players.length === 4 && document.getElementById('tableWindow').classList.contains('show'))),
   ]);
   console.log('table', bothAtTable);
   must(bothAtTable[0] && bothAtTable[1], 'both clients are in the match');
@@ -202,6 +242,35 @@ try {
   ]);
   must(humans[0].includes('HOSTTEST1') && humans[0].includes('GUESTTEST1'), 'host match has two humans');
   must(humans[1].includes('HOSTTEST1') && humans[1].includes('GUESTTEST1'), 'guest match has two humans');
+
+  const perspectives = await Promise.all([
+    host.evaluate(() => ({
+      humanSeat: match.humanSeat,
+      south: ((document.querySelector('.seat.south .seat-name') || {}).textContent || '').trim(),
+      places: [...document.querySelectorAll('.seat')].map((el) => ({
+        seat: Number(el.dataset.seat),
+        place: ['south', 'north', 'east', 'west'].find((c) => el.classList.contains(c)),
+        name: ((el.querySelector('.seat-name') || {}).textContent || '').trim(),
+      })),
+    })),
+    guest.evaluate(() => ({
+      humanSeat: match.humanSeat,
+      south: ((document.querySelector('.seat.south .seat-name') || {}).textContent || '').trim(),
+      places: [...document.querySelectorAll('.seat')].map((el) => ({
+        seat: Number(el.dataset.seat),
+        place: ['south', 'north', 'east', 'west'].find((c) => el.classList.contains(c)),
+        name: ((el.querySelector('.seat-name') || {}).textContent || '').trim(),
+      })),
+    })),
+  ]);
+  console.log('perspectives', JSON.stringify(perspectives));
+  must(perspectives[0].humanSeat === 0 && /host/i.test(perspectives[0].south), 'host south seat is Host');
+  must(perspectives[1].humanSeat === 1 && /guest/i.test(perspectives[1].south), 'guest south seat is Guest, not the host');
+  must(!/host/i.test(perspectives[1].south), 'guest does not label the self seat as Host');
+  const guestHostPlace = (perspectives[1].places.find((p) => /host/i.test(p.name)) || {}).place;
+  must(guestHostPlace && guestHostPlace !== 'south', 'host is an opponent seat on the guest screen');
+  await host.screenshot({ path: join(artifacts, 'palace_mp_host_table.png') });
+  await guest.screenshot({ path: join(artifacts, 'palace_mp_guest_table.png') });
 
   const played = await host.evaluate(async () => {
     const start = Date.now();
@@ -232,6 +301,40 @@ try {
   const guestSawPlay = guestSnap.pile.includes('4H') || guestSnap.pile.some((id) => String(id).startsWith('4'));
   must(guestSawPlay, 'guest table received the host play');
 
+  const fourSeatViews = await guest.evaluate(() => {
+    const names = ['Haris', 'Rim', 'Ada', 'Bo'];
+    const out = [];
+    for (let you = 0; you < 4; you++) {
+      match.players = names.map((name, i) => ({
+        seat: i,
+        name,
+        isBot: i !== you,
+        profileId: 'P' + i,
+        hand: [{ id: '4H' + i, rank: '4', suit: 'H' }],
+        up: [],
+        down: [],
+        out: false,
+        place: 0,
+      }));
+      match.humanSeat = you;
+      state.profile.id = 'P' + you;
+      renderTable();
+      out.push({
+        you,
+        south: ((document.querySelector('.seat.south .seat-name') || {}).textContent || '').trim(),
+        places: [...document.querySelectorAll('.seat')].map((el) => ({
+          seat: Number(el.dataset.seat),
+          place: ['south', 'north', 'east', 'west'].find((c) => el.classList.contains(c)),
+        })),
+      });
+    }
+    return out;
+  });
+  console.log('four seat views', JSON.stringify(fourSeatViews));
+  must(fourSeatViews.length === 4 && fourSeatViews.every((v) => v.south === ['Haris', 'Rim', 'Ada', 'Bo'][v.you]), 'every 4p client sees itself at south');
+  must(fourSeatViews[1].places.find((p) => p.seat === 0).place === 'west', 'guest seat 1 sees host at west');
+  must(fourSeatViews[2].places.find((p) => p.seat === 0).place === 'north', 'seat 2 sees host across at north');
+
   const joinTile = await guest.evaluate(() => {
     const btn = document.querySelector('[data-mode="join"]');
     return btn ? btn.innerText.replace(/\s+/g, ' ') : '';
@@ -240,9 +343,6 @@ try {
   await guest.evaluate(() => openJoin());
   const joinOpen = await guest.evaluate(() => document.getElementById('joinOverlay').style.display === 'flex');
   must(joinOpen, 'Join Session overlay opens from home');
-
-  await host.screenshot({ path: join(artifacts, 'palace_mp_host_table.png') });
-  await guest.screenshot({ path: join(artifacts, 'palace_mp_guest_table.png') });
 } catch (err) {
   fails.push(String(err && err.stack ? err.stack : err));
   try { await host.screenshot({ path: join(artifacts, 'palace_mp_host_fail.png') }); } catch (_) { /* ignore */ }

@@ -888,6 +888,10 @@ must(!html.includes("startMatch({ mode: 'practice'"), 'practice Start does not s
 must(!html.includes("startMatch({ mode: 'standard', seats: 4"), 'standard Start does not skip the lobby');
 must(html.includes('function openNameSetup') && html.includes('makeProfileId'), 'nameless players get a name + unique ID');
 must(html.includes('type: \'invite\'') && html.includes('inviteAcceptBtn') && html.includes('new Notification'), 'lobby invites are in-app plus push');
+must(html.includes('function seatScreenPlace') && html.includes('const place = seatScreenPlace(p.seat, n, match.humanSeat)'), 'table rotates around the local player');
+must(html.includes('function localHumanSeat') && html.includes('seatIndexForLocalPlayer'), 'each client resolves its own seat from profile id');
+must(html.includes('lobby-pads') && html.includes('lobby-pad') && html.includes('openLobbyInviteSheet'), 'lobby uses compact avatar pads with + invite');
+must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), 'full-width open-seat rows are gone');
 {
   const rf = html.slice(html.indexOf('function renderFriends'), html.indexOf('function renderSettings'));
   must(rf.includes('Online') && rf.includes('Offline'), 'friends list shows online status');
@@ -912,6 +916,22 @@ must(packed && JSON.stringify(packed).length < 3500, 'packed match fits a ntfy p
 const back = E.unpackMatch(packed, 1);
 must(back.humanSeat === 1 && back.players[1].hand.length === E.HAND_SIZE, 'guest hydrates from a host snapshot');
 must(back.players[0].hand[0].rank && back.players[0].hand[0].suit, 'unpacked cards keep rank and suit');
+
+function seatScreenPlace(seat, n, you) {
+  const map = {
+    2: ['south', 'north'],
+    3: ['south', 'east', 'west'],
+    4: ['south', 'east', 'north', 'west'],
+  };
+  const base = map[n];
+  const rel = ((seat - you) % n + n) % n;
+  return base[rel];
+}
+must(seatScreenPlace(0, 2, 0) === 'south' && seatScreenPlace(1, 2, 0) === 'north', '2p host: self south, friend north');
+must(seatScreenPlace(1, 2, 1) === 'south' && seatScreenPlace(0, 2, 1) === 'north', '2p guest: self south, host north');
+must(seatScreenPlace(0, 3, 1) === 'west' && seatScreenPlace(1, 3, 1) === 'south' && seatScreenPlace(2, 3, 1) === 'east', '3p seat 1 rotation');
+must(seatScreenPlace(2, 4, 2) === 'south' && seatScreenPlace(3, 4, 2) === 'east' && seatScreenPlace(0, 4, 2) === 'north' && seatScreenPlace(1, 4, 2) === 'west', '4p seat 2 rotation');
+must(seatScreenPlace(0, 4, 3) === 'east' && seatScreenPlace(3, 4, 3) === 'south', '4p last seat is south for that client');
 
 if (fails.length) {
   console.error('GAMEPLAY CHECKS FAILED:');
