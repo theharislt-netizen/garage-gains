@@ -169,6 +169,8 @@ await writeFile(join(docs, 'index.html'), landing);
 const playDir = join(docs, 'play');
 await mkdir(playDir, { recursive: true });
 await writeFile(join(playDir, 'index.html'), await readFile(join(root, 'scripts/web-play.html'), 'utf8'));
+const liveZip = join(root, 'live-update/www.zip');
+if (await exists(liveZip)) await copyFile(liveZip, join(playDir, 'www.zip'));
 if (await exists(iconSrc)) {
   await copyFile(iconSrc, join(playDir, 'icon.png'));
 }
