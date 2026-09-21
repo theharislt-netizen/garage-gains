@@ -911,8 +911,18 @@ must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), '
   const rf = html.slice(html.indexOf('function renderFriends'), html.indexOf('function renderSettings'));
   must(rf.includes('friendPresenceLine') && rf.includes('Online'), 'friends list shows online status');
   must(rf.includes('Last online') || html.includes("return formatLastOnline"), 'offline friends use last-seen copy');
-  must(!rf.includes('inv-btn') && !rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+  must(!rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+  must(rf.includes('data-friend-del') && rf.includes('data-friend-msg'), 'friends list can message and remove');
+  must(rf.includes('framedAvatarHtml'), 'friends list shows avatar and border');
 }
+must(html.includes('>Social<') && html.includes('id="mailBtn"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs');
+must(html.includes('id="matchChatOverlay"') && html.includes("scope: 'table'") && html.includes("matchChatTab === 'friend'"), 'in-match table chat and friends chat are separate');
+must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
+must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto'), 'profile photo can be chosen and displayed');
+must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
+must(html.includes('came online') && html.includes('socialPing'), 'friend-came-online notifies with a Social badge');
+must(engineSrc.includes('randomBotName') && engineSrc.includes("'Milo'") && engineSrc.includes("'Sofia'"), 'bots pick realistic names from a pool');
+must(html.includes('PalaceEngine.randomBotName'), 'each match randomizes bot names');
 must(html.includes('INVITE_COOL_MS = 5000'), 'invite cooldown is 5 seconds');
 must(html.includes('function armInviteCooldown') && html.includes('function inviteOnCooldown'), 'invite cooldown helpers exist');
 must(html.includes('armInviteCooldown(\'friend\'') && html.includes('armInviteCooldown(\'seat\''), 'invite cooldown keys friend and seat');

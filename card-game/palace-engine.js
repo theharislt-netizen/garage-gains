@@ -23,7 +23,19 @@
     Expert: [1200, 1500, 1800],
   };
   const XP_WIN = { Easy: 50, Medium: 100, Hard: 150, Expert: 200 };
-  const BOT_NAMES = ['Ace', 'Bluff', 'Queen', 'Dealer', 'Hex', 'Nova'];
+  const BOT_NAMES = [
+    'Milo', 'Kira', 'Andrei', 'Sofia', 'Nate', 'Lina',
+    'Omar', 'Vera', 'Jace', 'Nina', 'Theo', 'Mara',
+    'Leo', 'Asha', 'Rico', 'Quinn', 'Dario', 'Elsa',
+    'Kai', 'Noor', 'Felix', 'Priya', 'Cole', 'Yara',
+    'Samir', 'Ivy', 'Rafa', 'June', 'Tomas', 'Sky',
+  ];
+  function randomBotName(used) {
+    const taken = used || [];
+    const pool = BOT_NAMES.filter((n) => taken.indexOf(n) < 0);
+    const list = pool.length ? pool : BOT_NAMES;
+    return list[Math.floor(Math.random() * list.length)];
+  }
 
   function suitGlyph(s) {
     return { S: '♠', H: '♥', D: '♦', C: '♣' }[s] || s;
@@ -582,6 +594,7 @@
         name: (row && row.name) || names[i] || (isBot ? BOT_NAMES[i % BOT_NAMES.length] : 'You'),
         isBot,
         profileId: row && row.id ? row.id : null,
+        border: row && row.border ? row.border : null,
         difficulty,
         hand: [],
         up: [],
@@ -652,6 +665,7 @@
         n: x.name,
         bot: !!x.isBot,
         id: x.profileId || null,
+        bd: x.border || null,
         o: !!x.out,
         pl: x.place || 0,
         h: packCards(x.hand),
@@ -674,6 +688,7 @@
         name: x.n,
         isBot: !!x.bot,
         profileId: x.id || null,
+        border: x.bd || null,
         difficulty: src.difficulty || 'Easy',
         hand: unpackCards(x.h),
         up: unpackCards(x.u),
@@ -735,7 +750,7 @@
   }
 
   return {
-    SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, XP_WIN, BOT_NAMES,
+    SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, XP_WIN, BOT_NAMES, randomBotName,
     suitGlyph, isRed, isSpecial, isAutoGroupedRank, rankValue, faceOrder,
     rankCopyIds, defaultRankSelection, nextRankSelection, ensureRankSelection,
     makeDeck, shuffle, cloneCard, topCard, canPlayCardOnPile, canPlayCards,

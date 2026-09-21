@@ -64,6 +64,7 @@ function snap() {
     lobby: layerOpen('lobbyOverlay'),
     join: layerOpen('joinOverlay'),
     profile: layerOpen('profileOverlay'),
+    messages: layerOpen('messagesOverlay'),
     enchant: layerOpen('enchantWindow'),
     craft: layerOpen('craftWindow'),
     table: !!(document.getElementById('tableWindow') && document.getElementById('tableWindow').classList.contains('show')),
@@ -83,7 +84,7 @@ const shopOpen = await snap();
 const shopBack = await page.evaluate(() => handleAppBack());
 const afterShop = await snap();
 
-await page.evaluate(() => { showView('shop'); showView('inventory'); });
+await page.evaluate(() => { showView('shop'); openProfile(); });
 const invOpen = await snap();
 await page.evaluate(() => handleAppBack());
 const invToShop = await snap();
@@ -119,7 +120,7 @@ const profileOpen = await snap();
 await page.evaluate(() => handleAppBack());
 const profileClosed = await snap();
 
-await page.evaluate(() => { showView('inventory'); openEnchant(); });
+await page.evaluate(() => { openProfile(); openEnchant(); });
 const enchantOpen = await snap();
 await page.evaluate(() => handleAppBack());
 const enchantClosed = await snap();
@@ -145,12 +146,12 @@ await page.screenshot({ path: join(artifacts, 'back_match_left_home.png'), type:
 const report = {
   ok: firstHome === 'stay' && /exit/i.test(home1.toast) && secondHome === 'exit'
     && shopOpen.view === 'shop' && shopBack === 'stay' && afterShop.view === 'home'
-    && invOpen.view === 'inventory' && invToShop.view === 'shop' && invToHome.view === 'home'
+    && invOpen.profile && !invToShop.profile && invToShop.view === 'shop' && invToHome.view === 'home'
     && modeOpen.mode && !modeClosed.mode && modeClosed.view === 'home'
     && lobbyOpen.lobby && lobbyOpen.mode && !lobbyToMode.lobby && lobbyToMode.mode && !lobbyToHome.mode
     && joinOpen.join && !joinClosed.join
     && profileOpen.profile && !profileClosed.profile
-    && enchantOpen.enchant && !enchantClosed.enchant && enchantClosed.view === 'inventory'
+    && enchantOpen.enchant && !enchantClosed.enchant && enchantClosed.profile
     && craftOpen.craft && !craftClosed.craft
     && matchOpen.inMatch && matchStay === 'stay' && stillMatch.inMatch
     && matchLeave === 'stay' && !afterMatch.inMatch && !afterMatch.table,

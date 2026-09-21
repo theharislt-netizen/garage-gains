@@ -127,7 +127,7 @@
             'Content-Type': 'application/json',
             Title: String(msg.type || kind).slice(0, 80),
             Tags: 'card',
-            Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' ? 'high' : 'default',
+            Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' || msg.type === 'dm' || msg.type === 'chat' ? 'high' : 'default',
           },
           body: packed,
         });
@@ -151,7 +151,7 @@
 
   function beat() {
     if (!me.id) return;
-    publish('p', me.id, { type: 'presence', id: me.id, name: me.name, online: true });
+    publish('p', me.id, { type: 'presence', id: me.id, name: me.name, online: true, border: me.border || null });
   }
 
   function ensureChannel() {
@@ -179,6 +179,7 @@
     me = {
       id: String((profile && profile.id) || ''),
       name: String((profile && profile.name) || 'Player'),
+      border: String((profile && profile.border) || ''),
     };
     ensureChannel();
     if (me.id) {
