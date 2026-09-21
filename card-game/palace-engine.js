@@ -369,9 +369,26 @@
     if (move.type === 'flip') {
       if (!tableStagesOpen(match, player) || player.up.length) return events;
       if (activeZone(player, match) !== 'down') return events;
-      const card = takeDownToHand(player, move.index | 0, events);
+      if (!player.down.length) return events;
+      const idx = Math.max(0, Math.min(player.down.length - 1, move.index | 0));
+      const card = player.down.splice(idx, 1)[0];
       if (!card) return events;
-      match.phase = match.phase === 'bonus' ? 'bonus' : 'playing';
+      events.push({ type: 'flip', seat: player.seat, card: cloneCard(card), index: idx });
+      const bonus = match.phase === 'bonus';
+      if (canPlayCards(match, [card], bonus)) {
+        return applyPlay(match, player, [card], events, { from: 'down', bonus });
+      }
+      const taken = match.pile.splice(0);
+      player.hand.push(card, ...taken);
+      player.hand = sortHand(player.hand);
+      events.push({
+        type: 'pickup',
+        seat: player.seat,
+        cards: [cloneCard(card), ...taken.map(cloneCard)],
+        private: true,
+      });
+      match.phase = 'playing';
+      match.turn = nextSeat(match, player.seat);
       return events;
     }
 

@@ -42,12 +42,13 @@ must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
 must(html.includes('function enterCarry') && html.includes('FLICK_MS') && html.includes('drag-follow'), 'swipe up picks the card up so it follows the finger');
 must(html.includes('dt < FLICK_MS') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
-must(html.includes('if (gesture.browsing)') && html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup, and a carry never starts preview');
+must(html.includes('if (gesture.browsing)') && html.includes('PREVIEW_LIFT_RATIO') && html.includes('enterCarry(ev)'), 'a held preview can swipe up into a carry');
+must(html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup until the finger lifts, and a carry never starts preview');
 must(html.includes('body.on-home') && html.includes('html.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x') && html.includes('position: fixed'), 'the main menu does not scroll or rubber-band vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
 must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
-must(html.includes('margin-left: -16px') && html.includes('max-width: 96px'), 'east/west table piles use the old tucked Stage 2 overlap');
+must(html.includes('top: 20px') && html.includes('left: 8px') && html.includes('flex: 0 0 48px'), 'Stage 2 sits on Stage 3 with the face-down card peeking from under');
 must(html.includes('if (empty) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
 must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 'stage 2/3 stay closed without a match or while the stock remains');
 must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
@@ -70,7 +71,9 @@ must(html.includes('Tap to select') && html.includes('flick or drag onto the pil
 must(html.includes('legalGlow'), 'legal plays still glow');
 must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest to highest');
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
-must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
+must(html.includes("ev.type === 'flip'") && html.includes('hide ? cardBackHtml()'), 'a failed blind flip folds into hand as a back for opponents');
+must(engineSrc.includes('private: true'), 'a failed flip marks the pickup private so later renders do not keep the rank public');
+must(html.includes('Tap a face-down card'), 'stage-3 face-down cards must be tappable');
 must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
 must(html.includes('legalRanks.has(c.rank)'), 'every copy of a playable rank glows, not only the first grouped id');
 must(html.includes('Bonus — tap matching ranks'), 'a 5 bonus still lets you tap a full matching-rank group');
@@ -539,12 +542,32 @@ const downMoves = E.legalMoves(stage3, 0);
 must(downMoves.filter((m) => m.type === 'flip').length === 3, 'stage 3 offers a choice of each face-down card');
 must(downMoves.some((m) => m.type === 'pickup'), 'stage 3 still allows taking the pile');
 const evDown = E.applyMove(stage3, { type: 'flip', seat: 0, index: 1 });
-must(evDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === '8H'), 'chosen face-down card is picked into hand');
-must(stage3.players[0].hand.map((c) => c.id).join() === '8H', 'only the chosen face-down card enters the hand');
+must(evDown.some((e) => e.type === 'flip' && e.card && e.card.id === '8H'), 'the chosen face-down card is revealed');
+must(evDown.some((e) => e.type === 'pickup' && e.private), 'a failed blind flip picks up the pile privately');
+must(stage3.players[0].hand.map((c) => c.id).sort().join() === '8H,KH', 'the flipped card and the pile fold into hand');
 must(stage3.players[0].down.length === 2, 'the other face-down cards stay on the table');
-must(stage3.pile.map((c) => c.id).join() === 'KH', 'the face-down card is not played off the table');
-must(stage3.turn === 0, 'picking a face-down card into hand keeps the turn');
-must(E.activeZone(stage3.players[0]) === 'hand', 'after the pickup, play continues from hand');
+must(stage3.pile.length === 0, 'the failed flip takes the discard pile');
+must(stage3.turn === 1, 'a failed blind flip ends the turn');
+must(E.activeZone(stage3.players[0], stage3) === 'hand', 'after the failed flip, play continues from a private hand');
+
+const beatBlind = E.newMatch({ seats: 2, rng: seededRng(33) });
+beatBlind.draw = [];
+beatBlind.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+beatBlind.turn = 0;
+beatBlind.phase = 'playing';
+beatBlind.players[0].hand = [];
+beatBlind.players[0].up = [];
+beatBlind.players[0].down = [
+  { id: 'QS', rank: 'Q', suit: 'S' },
+  { id: '4D', rank: '4', suit: 'D' },
+  { id: '7C', rank: '7', suit: 'C' },
+];
+const evBeat = E.applyMove(beatBlind, { type: 'flip', seat: 0, index: 0 });
+must(evBeat.some((e) => e.type === 'flip' && e.card && e.card.id === 'QS'), 'a winning blind card is shown as it is flipped');
+must(evBeat.some((e) => e.type === 'play' && e.cards.some((c) => c.id === 'QS')), 'a blind card that beats the pile is played face-up');
+must(beatBlind.pile.some((c) => c.id === 'QS'), 'the winning blind card stays public on the pile');
+must(beatBlind.players[0].hand.length === 0, 'a winning flip is not folded into hand');
+must(beatBlind.players[0].down.length === 2, 'unflipped blinds stay on the table');
 
 const fiveDown = E.newMatch({ seats: 2, rng: seededRng(14) });
 fiveDown.draw = [];
@@ -567,11 +590,12 @@ const bonusFlips = E.legalMoves(fiveDown, 0);
 must(bonusFlips.filter((m) => m.type === 'flip').length === 3, 'the bonus is choosing which face-down slot to flip');
 must(!bonusFlips.some((m) => m.type === 'pickup'), 'bonus play cannot take the pile');
 const evPickDown = E.applyMove(fiveDown, { type: 'flip', seat: 0, index: 2 });
-must(evPickDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === 'JC'), 'the chosen face-down slot is the one revealed');
-must(fiveDown.players[0].hand.map((c) => c.id).join() === 'JC', 'only the chosen face-down card enters the hand');
+must(evPickDown.some((e) => e.type === 'flip' && e.card && e.card.id === 'JC'), 'the chosen face-down slot is the one revealed');
+must(evPickDown.some((e) => e.type === 'play' && e.cards.some((c) => c.id === 'JC')), 'a blind card that beats the pile is played face-up');
+must(fiveDown.players[0].hand.length === 0, 'a successful bonus flip does not stay in hand');
 must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
-must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, 'after the chosen flip, the bonus play is the revealed card');
-must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is then played from the revealed hand card');
+must(fiveDown.pile.some((c) => c.id === 'JC'), 'the revealed bonus card lands on the pile');
+must(fiveDown.turn === 1, 'turn passes after the bonus blind card is played');
 
 const botFiveDown = E.newMatch({ seats: 2, rng: seededRng(15) });
 botFiveDown.draw = [];
