@@ -24,19 +24,19 @@ These numbers were set to mirror the real-world ratio found in the official UNO 
 
 Modeled loosely on how UNO's mobile app structures its mode and match selection screens.
 
-**Mode selection (resolved - restructured):** the top-level menu offers four modes: **Standard**, **Ranked**, **Practice**, and **Custom**. For launch, only Standard and Practice are built; Ranked and Custom are deferred (see below), with Ranked deliberately left until the very end.
+**Mode selection (resolved - restructured):** the top-level menu offers four modes: **Standard**, **Join Session**, **Practice**, and **Custom**. Ranked was a deferred placeholder and is replaced by Join Session. Every mode that starts a match (Standard, Practice, Custom, and buy-in tables) opens a pre-match lobby first — Start never drops players onto the table.
 
-**Standard (resolved):** real matchmaking, modeled on UNO's quick play. The player picks a buy-in tier (30, 100, 500, or 1000 coins), which locks in the bot difficulty they'll face if bot seats are needed (see Buy-in tier locked to bot difficulty, above). Standard first tries to fill the match with real online players; if there aren't enough, it fills the remaining seats with bots at the difficulty matching that buy-in tier.
+**Standard (resolved):** real match with a buy-in. The player picks a stake, then enters a lobby. Empty seats fill with bots at that stake's difficulty when the host starts. Friends join from the lobby via a shareable code/link or an in-lobby invite.
+
+**Join Session (resolved - replaces Ranked):** a home-screen tile that opens a code entry. A player who is not already in a match pastes a friend's lobby code (or a `#j=CODE` link) and takes an open seat.
+
+**Friend system and social layer (resolved):** every match type starts in a pre-match lobby with up to four slots. Pressing Start (on the lobby, after setup) fills any empty slots with bots. The host invites from inside the lobby with a generated shareable link/short code, or by sending an in-game invite to someone already on the friends list. The Friends tab itself is not an invite launcher — it only adds/removes friends and shows online/offline status.
+
+A full friend system exists: players choose a nickname on first launch (name setup), get a unique profile ID, and other players can find and add them by nickname or profile ID. Friend requests and lobby invites show an in-app Accept/Decline banner. If the player has notifications enabled, a device/browser push is also fired. Google login remains a later social-pass item; friend add by nickname/ID works without it.
+
+**Custom (resolved):** live. The host picks 2–4 seats and a bot difficulty, then the same lobby as Standard/Practice. Friends can be invited into open seats; leftover seats become bots when the host starts.
 
 **Mid-match disconnect handling (resolved - bot takeover, penalty still open):** if a human player disconnects mid-match in Standard, a bot matching that match's tier difficulty takes over their seat and continues playing on their behalf. The disconnected player receives a penalty for leaving - the exact penalty (coins, XP, or otherwise) is still to be defined.
-
-**Friend system and social layer (resolved):** every mode (Standard, Ranked, Practice, Custom) starts in a pre-match lobby with up to four slots. Pressing Start immediately fills any empty slots with matchmaking or bots as appropriate to that mode. Tapping an empty slot instead opens the friends panel to invite someone directly into that slot.
-
-Separately, each mode's lobby also has a Join Session option, where a player pastes in a session code to join a specific match directly (distinct from the friends panel - this is the raw code-based join, similar to UNO Mobile's Room Key system).
-
-A full friend system exists: players log in with Google, choose a nickname, and get a unique profile ID. Other players can find and add them by nickname or profile ID. Sending a friend request notifies the recipient, who can accept via a button. Once friends, a plus button lets you invite them directly into an open lobby slot.
-
-Friends are not a top-level game mode - they're accessed via the Friends button in the bottom navigation bar (see UI and Screen Structure section), available everywhere, not just inside a match mode. That screen includes: Add Friend, a Friends list (shows online status, tapping a friend opens their profile), and a Messages icon for direct messages between friends. This is intentionally minimal for now; a fuller social hub (profiles, search, etc.) may be built out later.
 
 **Main screen header and profile (resolved):** the main screen (where mode selection lives) displays a persistent header at the top of the screen, showing the player's profile photo (with their equipped border), name, and level badge - following the common convention used in mobile games like Mobile Legends, rather than being tucked into a menu. Tapping this header opens the player's profile screen, where they can manage their equipped cosmetics (card skin, chat bubble skin, profile border, etc.) and view their stats.
 
@@ -52,17 +52,17 @@ Within a difficulty, each sub-tier must be unlocked by winning the previous one 
 
 **UI layout (resolved):** to avoid cluttering the mode-selection screen, each difficulty is represented by a single card (Easy, Medium, Hard, Expert). The Medium, Hard, and Expert cards each contain their three nested buy-in sub-tiers within that one card, rather than surfacing all sub-tiers as separate top-level options.
 
-**Practice (resolved):** deliberate bot-only play, no matchmaking wait, always just the player against bots. Practice has three sub-modes mirroring the top-level structure: Practice Standard (player plus three bots, four total), Practice One-on-one (player against a single bot), and Practice Custom (player chooses a player count from two to four and fills the rest with bots). In every Practice sub-mode, bot difficulty is set once, universally for all bots in that match, rather than per individual bot - the player picks one difficulty tier (Easy, Medium, Hard, or Expert) and every bot in the match uses it.
+**Practice (resolved):** bot-friendly play with no coin risk. Practice Standard (four seats), One-on-one (two seats), and Custom (two to four seats) all open the pre-match lobby first so a friend can join; leftover seats fill with bots at the chosen difficulty when the host starts.
 
-**Custom (resolved - deprioritized placeholder, same treatment as the shop):** a fully flexible match setup, where a player can freely mix real invited players, bots, or a blend, choosing a total player count between two and four. Whenever bots are added, a single universal difficulty applies to all bots in that match (one to three bots, depending on how many human seats are filled), rather than setting difficulty per bot. For launch, this is just a placeholder button leading nowhere - full custom-lobby functionality is left for later, after everything else in this document is built.
+**Custom (resolved):** live. Same lobby as the other modes, with a free mix of invited friends and bots at one universal difficulty.
 
-**Ranked (resolved - deferred placeholder, built last):** a future ranked mode sitting in the top-level mode selection alongside Standard, Practice, and Custom. For now it is a placeholder only, with no functionality defined - it is deliberately abandoned/deferred until the very end, after everything else in this document, including Custom, is built.
+**Browser play (resolved):** `https://theharislt-netizen.github.io/garage-gains/palace/play/` loads the current live-update zip (the same bundle the Android app fetches), so the web table stays in sync without a separate deploy.
 
 ## UI and Screen Structure
 
 This section maps out the app's screen layout and navigation shell - where things live on screen, not how the underlying systems work (those are defined elsewhere in this document, or, for future/unbuilt features, only sketched as rough ideas below).
 
-**Bottom navigation bar (resolved):** a persistent bottom dashboard bar with equal-width buttons provides the app's main navigation, always accessible. The buttons are: Home (opens mode selection - Standard, Ranked, Practice, Custom), Shop, Inventory, Subscription, Friends, and Settings. This replaces having Friends live only in a dropdown and Settings only behind a gear icon - both now also have a fixed spot in this bottom bar.
+**Bottom navigation bar (resolved):** a persistent bottom dashboard bar with equal-width buttons provides the app's main navigation, always accessible. The buttons are: Home (opens mode selection - Standard, Join Session, Practice, Custom), Shop, Inventory, Subscription, Friends, and Settings.
 
 **Main screen header (resolved):** a persistent header at the top of the main screen shows the player's profile photo (with equipped border), name, and level badge, following the convention used in mobile games like Mobile Legends. Tapping it opens the player's profile screen.
 

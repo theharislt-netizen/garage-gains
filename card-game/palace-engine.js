@@ -571,13 +571,17 @@
     const humanSeat = o.humanSeat == null ? 0 : o.humanSeat;
     const rng = o.rng || Math.random;
     const names = o.names || [];
+    const roster = Array.isArray(o.roster) ? o.roster : null;
     const players = [];
-    for (let i = 0; i < seats; i++) {
-      const isBot = i !== humanSeat;
+    const seatCount = roster && roster.length ? Math.max(2, Math.min(4, roster.length)) : seats;
+    for (let i = 0; i < seatCount; i++) {
+      const row = roster && roster[i] ? roster[i] : null;
+      const isBot = row ? !!row.bot : i !== humanSeat;
       players.push({
         seat: i,
-        name: names[i] || (isBot ? BOT_NAMES[i % BOT_NAMES.length] : 'You'),
+        name: (row && row.name) || names[i] || (isBot ? BOT_NAMES[i % BOT_NAMES.length] : 'You'),
         isBot,
+        profileId: row && row.id ? row.id : null,
         difficulty,
         hand: [],
         up: [],
@@ -607,6 +611,88 @@
     const deck = o.deck ? o.deck.slice() : shuffle(makeDeck(), rng);
     dealMatch(match, deck);
     return match;
+  }
+
+  function cardFromId(id) {
+    if (!id) return null;
+    if (typeof id === 'object') return cloneCard(id);
+    const s = String(id);
+    const suit = s.slice(-1);
+    const rank = s.slice(0, -1);
+    return { id: s, rank, suit };
+  }
+
+  function packCards(list) {
+    return (list || []).map((c) => (c && c.id) || c).filter(Boolean);
+  }
+
+  function unpackCards(list) {
+    return (list || []).map(cardFromId).filter(Boolean);
+  }
+
+  function packMatch(match) {
+    if (!match) return null;
+    return {
+      id: match.id,
+      mode: match.mode,
+      practiceSub: match.practiceSub || null,
+      difficulty: match.difficulty,
+      buyIn: match.buyIn || 0,
+      turn: match.turn,
+      phase: match.phase,
+      ended: !!match.ended,
+      settled: !!match.settled,
+      finishOrder: (match.finishOrder || []).slice(),
+      drawEmptyAt: match.drawEmptyAt || null,
+      d: packCards(match.draw),
+      p: packCards(match.pile),
+      b: packCards(match.burned),
+      pl: (match.players || []).map((x) => ({
+        s: x.seat,
+        n: x.name,
+        bot: !!x.isBot,
+        id: x.profileId || null,
+        o: !!x.out,
+        pl: x.place || 0,
+        h: packCards(x.hand),
+        u: packCards(x.up),
+        dn: packCards(x.down),
+      })),
+    };
+  }
+
+  function unpackMatch(raw, humanSeat) {
+    const src = raw || {};
+    return {
+      id: src.id || 'm',
+      mode: src.mode || 'standard',
+      practiceSub: src.practiceSub || null,
+      difficulty: src.difficulty || 'Easy',
+      buyIn: src.buyIn || 0,
+      players: (src.pl || []).map((x) => ({
+        seat: x.s,
+        name: x.n,
+        isBot: !!x.bot,
+        profileId: x.id || null,
+        difficulty: src.difficulty || 'Easy',
+        hand: unpackCards(x.h),
+        up: unpackCards(x.u),
+        down: unpackCards(x.dn),
+        out: !!x.o,
+        place: x.pl || 0,
+      })),
+      draw: unpackCards(src.d),
+      pile: unpackCards(src.p),
+      burned: unpackCards(src.b),
+      turn: src.turn || 0,
+      phase: src.phase || 'playing',
+      ended: !!src.ended,
+      finishOrder: src.finishOrder || [],
+      started: true,
+      drawEmptyAt: src.drawEmptyAt || null,
+      humanSeat: humanSeat == null ? 0 : humanSeat,
+      settled: !!src.settled,
+    };
   }
 
   function payoutShare(place, seats) {
@@ -655,5 +741,6 @@
     makeDeck, shuffle, cloneCard, topCard, canPlayCardOnPile, canPlayCards,
     completesFour, activeZone, zoneCards, tableStagesOpen, legalMoves, applyMove, chooseBotMove, syncSeat,
     newMatch, sortHand, payoutFor, nextUnlocks, isBuyInUnlocked, nextSeat, livingSeats,
+    cardFromId, packMatch, unpackMatch,
   };
 });
