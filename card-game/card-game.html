@@ -51,6 +51,12 @@
     padding-bottom: 96px;
     overscroll-behavior-y: contain;
   }
+  body.on-home {
+    overflow: hidden;
+    height: 100dvh;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
   h1, h2, h3, .display { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; font-weight: 700; margin: 0; }
   .mono { font-family: 'JetBrains Mono', monospace; }
@@ -130,12 +136,15 @@
     gap: 14px;
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scroll-padding: 16px;
     padding: 18px 16px 28px;
     margin: 0 -4px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    touch-action: pan-x;
+    overscroll-behavior-y: none;
   }
   .play-hand::-webkit-scrollbar { display: none; }
   .play-hand.overlay-row {
@@ -208,12 +217,19 @@
     text-transform: uppercase; border-radius: 5px; padding: 4px 7px;
     box-shadow: 0 2px 0 rgba(0,0,0,0.25);
   }
+  #view-home {
+    overflow: hidden;
+    touch-action: pan-x;
+    overscroll-behavior: none;
+  }
   .home-stage {
     position: relative;
     min-height: calc(100vh - 210px);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     overflow: hidden;
     margin: 0 -8px;
+    touch-action: pan-x;
+    overscroll-behavior: none;
   }
   .home-globe {
     position: absolute; left: 50%; bottom: 18px; width: 170%; height: 310px;
@@ -508,7 +524,14 @@
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
-  .fly-card.drag-follow { z-index: 380; transition: none; }
+  .fly-card.drag-follow {
+    z-index: 380; transition: none; pointer-events: none;
+    filter: drop-shadow(0 16px 22px rgba(0,0,0,0.48));
+  }
+  .pile-stack.drop-target {
+    box-shadow: 0 0 0 3px #ffe14a, 0 0 16px 5px rgba(255,210,74,0.42);
+    border-radius: 8px;
+  }
   @keyframes turnRing {
     0%,100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.08); opacity: 0.75; }
@@ -956,7 +979,7 @@
   .range { width: 100%; accent-color: var(--a2); }
 </style>
 </head>
-<body data-theme="rig">
+<body data-theme="rig" class="on-home">
 
 <div class="sticky-header" id="stickyHeader">
   <div class="name-badge-row" id="nameBadgeRow">
@@ -1438,10 +1461,32 @@ window.syncHeaderHeight = syncHeaderHeight;
 function showView(id) {
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + id));
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === id));
+  document.body.classList.toggle('on-home', id === 'home');
   if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
   if (id === 'friends') renderFriends();
   if (id === 'settings') renderSettings();
+}
+
+function bindHomeScrollLock() {
+  const home = document.getElementById('view-home');
+  if (!home) return;
+  home.addEventListener('wheel', (ev) => {
+    if (Math.abs(ev.deltaY) >= Math.abs(ev.deltaX)) ev.preventDefault();
+  }, { passive: false });
+  home.addEventListener('touchstart', (ev) => {
+    const t = ev.touches[0];
+    if (!t) return;
+    home._lockX = t.clientX;
+    home._lockY = t.clientY;
+  }, { passive: true });
+  home.addEventListener('touchmove', (ev) => {
+    const t = ev.touches[0];
+    if (!t || home._lockX == null) return;
+    const dy = Math.abs(t.clientY - home._lockY);
+    const dx = Math.abs(t.clientX - home._lockX);
+    if (dy > dx && ev.cancelable) ev.preventDefault();
+  }, { passive: false });
 }
 
 function renderHeader() {
@@ -1777,7 +1822,8 @@ const PLAY_LAND_MS = 100;
 const SPECIAL_PULSE_MS = 340;
 const PEEK_MS = 140;
 const DRAG_PX = 14;
-const SWIPE_UP_PX = 64;
+const SWIPE_UP_PX = 56;
+const FLICK_MS = 280;
 const HAND_CARD_W = 64;
 
 function sleep(ms) {
@@ -2164,6 +2210,11 @@ function playSourceEl(seat, id) {
 }
 
 function playOriginRect(seat, card) {
+  if (pendingFlyFrom && pendingFlyFrom.width >= 8) {
+    const r = pendingFlyFrom;
+    pendingFlyFrom = null;
+    return r;
+  }
   if (card) {
     const src = playSourceEl(seat, card.id);
     if (src) {
@@ -2350,9 +2401,9 @@ function renderTable(opts) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
       const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
       if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
-      else hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — swipe up to play' : 'Swipe up to play') + '</div>';
+      else hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — flick or drag onto the pile' : 'Flick or drag onto the pile') + '</div>';
     } else {
-      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · swipe up' : 'Tap to select · swipe up to play') + '</div>';
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · flick or drag' : 'Tap to select · flick or drag onto the pile') + '</div>';
     }
   }
   felt.innerHTML = `
@@ -2428,6 +2479,11 @@ function clearDragClone() {
   document.querySelectorAll('.fly-card.drag-follow').forEach((el) => el.remove());
 }
 
+function setPileDropCue(on) {
+  const pile = document.getElementById('discardPile');
+  if (pile) pile.classList.toggle('drop-target', !!on);
+}
+
 function clearPeekTimer() {
   if (!gesture || !gesture.peekTimer) return;
   clearTimeout(gesture.peekTimer);
@@ -2435,7 +2491,7 @@ function clearPeekTimer() {
 }
 
 function enterBrowse(ev) {
-  if (!gesture || gesture.browsing) return;
+  if (!gesture || gesture.browsing || gesture.carrying) return;
   clearPeekTimer();
   gesture.browsing = true;
   gesture.swipePlay = false;
@@ -2454,6 +2510,85 @@ function updateBrowseTarget(ev) {
   use.classList.add('peeking');
   gesture.el = use;
   gesture.id = use.dataset.id;
+}
+
+function positionCarry(ev) {
+  if (!gesture || !gesture.wrap || !gesture.origin) return;
+  const ox = gesture.grabOffX != null ? gesture.grabOffX : gesture.origin.width / 2;
+  const oy = gesture.grabOffY != null ? gesture.grabOffY : gesture.origin.height / 2;
+  gesture.wrap.style.transform = 'translate(' + (ev.clientX - ox) + 'px, ' + (ev.clientY - oy) + 'px) rotate(-4deg) scale(1.16)';
+}
+
+function enterCarry(ev) {
+  if (!gesture || gesture.carrying || gesture.browsing) return;
+  if (!canActOnCards()) return;
+  clearPeekTimer();
+  clearPeeking();
+  gesture.carrying = true;
+  gesture.carryStartT = Date.now();
+  gesture.grabOffX = gesture.startX - gesture.origin.left;
+  gesture.grabOffY = gesture.startY - gesture.origin.top;
+  if (gesture.el) gesture.el.classList.add('ghost');
+  const layer = document.getElementById('flyLayer');
+  if (!layer) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'fly-card drag-follow';
+  wrap.style.width = gesture.origin.width + 'px';
+  wrap.style.height = gesture.origin.height + 'px';
+  wrap.innerHTML = gesture.el ? gesture.el.outerHTML : '';
+  const inner = wrap.firstElementChild;
+  if (inner) {
+    inner.classList.remove('peeking', 'lifted', 'dragging', 'ghost');
+    inner.style.width = '100%';
+    inner.style.height = '100%';
+    inner.style.transform = 'none';
+  }
+  layer.appendChild(wrap);
+  gesture.wrap = wrap;
+  positionCarry(ev);
+  setPileDropCue(nearPile(ev.clientX, ev.clientY));
+  gesture.carryHoldTimer = setTimeout(() => {
+    if (gesture && gesture.carrying) gesture.carryHeld = true;
+  }, FLICK_MS);
+}
+
+function moveCarry(ev) {
+  if (!gesture || !gesture.carrying) return;
+  positionCarry(ev);
+  setPileDropCue(nearPile(ev.clientX, ev.clientY));
+}
+
+function restoreCarriedCard(g) {
+  setPileDropCue(false);
+  if (g && g.wrap) {
+    g.wrap.remove();
+    g.wrap = null;
+  }
+  clearDragClone();
+  if (g && g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+}
+
+function dropCarry(g, clientX, clientY) {
+  if (g.carryHoldTimer) clearTimeout(g.carryHoldTimer);
+  const flick = !g.carryHeld;
+  const onPile = nearPile(clientX, clientY);
+  const from = g.wrap ? g.wrap.getBoundingClientRect() : g.origin;
+  setPileDropCue(false);
+  if (g.wrap) {
+    g.wrap.remove();
+    g.wrap = null;
+  }
+  clearDragClone();
+  if (!canActOnCards()) {
+    if (g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+    return;
+  }
+  if (flick || onPile) {
+    pendingFlyFrom = from;
+    playLiftedCard(g.id);
+    return;
+  }
+  if (g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
 }
 
 let lastPointerTs = 0;
@@ -2481,18 +2616,22 @@ function ensureDragListeners() {
       updateBrowseTarget(ev);
       return;
     }
+    if (gesture.carrying) {
+      moveCarry(ev);
+      return;
+    }
     const horiz = Math.abs(dx) >= DRAG_PX && Math.abs(dx) > Math.abs(dy);
     const goingUp = -dy >= DRAG_PX && -dy > Math.abs(dx);
     const swipeUpMove = -dy >= SWIPE_UP_PX && -dy > Math.abs(dx);
     if (swipeUpMove && canActOnCards()) {
-      gesture.swipePlay = true;
+      enterCarry(ev);
       return;
     }
     if (horiz) {
       enterBrowse(ev);
       return;
     }
-    if (dt >= PEEK_MS && !gesture.swipePlay && !goingUp) {
+    if (dt >= PEEK_MS && !goingUp) {
       enterBrowse(ev);
     }
   };
@@ -2530,10 +2669,11 @@ function startCardPress(el, ev, from) {
     startT: Date.now(),
     browsing: false,
     browseMoved: false,
-    swipePlay: false,
+    carrying: false,
+    carryHeld: false,
     pointerId: ev.pointerId,
     peekTimer: setTimeout(() => {
-      if (!gesture || gesture.swipePlay || gesture.browsing) return;
+      if (!gesture || gesture.carrying || gesture.browsing) return;
       const dx = gesture.lastX - gesture.startX;
       const dy = gesture.lastY - gesture.startY;
       if (-dy >= DRAG_PX && -dy > Math.abs(dx)) return;
@@ -2547,6 +2687,7 @@ function finishCardGesture(ev) {
   const g = gesture;
   gesture = null;
   if (g.peekTimer) clearTimeout(g.peekTimer);
+  if (g.carryHoldTimer) clearTimeout(g.carryHoldTimer);
   const clientX = ev && ev.clientX != null ? ev.clientX : g.startX;
   const clientY = ev && ev.clientY != null ? ev.clientY : g.startY;
   const dy = g.startY - clientY;
@@ -2555,18 +2696,26 @@ function finishCardGesture(ev) {
   const moved = Math.hypot(dx, dy) >= DRAG_PX;
   const swipeUp = dy >= SWIPE_UP_PX && dy > Math.abs(dx);
   clearPeeking();
+  setPileDropCue(false);
   if (g.el) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
-  // Magnifying-glass browse (left/right across the fan) never selects or plays.
-  if (g.browseMoved) return;
-  if (swipeUp) {
-    if (!canActOnCards()) return;
+  // Magnifying-glass browse never picks up, selects, or plays.
+  if (g.browsing || g.browseMoved) {
+    restoreCarriedCard(g);
+    return;
+  }
+  if (g.carrying) {
+    dropCarry(g, clientX, clientY);
+    return;
+  }
+  if (swipeUp && canActOnCards()) {
     playLiftedCard(g.id);
     return;
   }
-  if (g.browsing || dt >= PEEK_MS || moved) return;
+  if (g.el) g.el.classList.remove('ghost');
+  if (dt >= PEEK_MS || moved) return;
   onHumanCardTap(g.id);
 }
 
@@ -3273,6 +3422,7 @@ function init() {
   maybeDailyLogin();
   saveState();
   renderAll();
+  bindHomeScrollLock();
 
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => showView(tab.dataset.view)));
   document.querySelectorAll('[data-mode]').forEach((card) => card.addEventListener('click', () => openMode(card.dataset.mode)));

@@ -40,6 +40,10 @@ must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must rend
 must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');
 must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html.includes('SWIPE_UP_PX'), 'hold-browse and swipe-up play are separate gestures');
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
+must(html.includes('function enterCarry') && html.includes('FLICK_MS') && html.includes('drag-follow'), 'swipe up picks the card up so it follows the finger');
+must(html.includes('gesture.carryHeld') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
+must(html.includes('if (gesture.browsing)') && html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup, and a carry never starts preview');
+must(html.includes('body.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x'), 'the main menu does not scroll vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
 must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
@@ -49,7 +53,7 @@ must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 's
 must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
 must(engineSrc.includes('const moves = legalMoves(match, seat);'), 'bot AI uses the same legalMoves list as the human player');
 must(!html.includes('function startCardDrag') && !html.includes('maybeBeginDrag'), 'holding a card does not start a drag clone');
-must(html.includes('if (g.browseMoved) return;'), 'releasing a hold inspects only — it does not select or play');
+must(html.includes('if (g.browsing || g.browseMoved)'), 'releasing a hold inspects only — it does not select or play');
 must(html.includes('addEventListener(\'mousedown\', down)'), 'mouse fallback starts a press when pointer events are missing');
 must(html.includes('if (!match || match.ended || match.settled) return;'), 'hand inspect works during bot turns, not only on your turn');
 must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
@@ -62,7 +66,7 @@ must(html.includes('drawEmpty ? \'\' : cardBackHtml()'), 'draw pile card-back is
 must(!html.includes('dt < 320'), 'taps are not dropped after a 320ms hold window');
 must(html.includes('pruneSelectedIds') && html.includes('onHumanCardTap(g.id)'), 'a tap selects without auto-playing');
 must(!html.includes('skipAuto'), 'a tap no longer auto-plays a singleton rank');
-must(html.includes('Tap to select') && html.includes('Swipe up to play'), 'the table hint separates select from play');
+must(html.includes('Tap to select') && html.includes('flick or drag onto the pile'), 'the table hint separates select from flick/carry play');
 must(html.includes('legalGlow'), 'legal plays still glow');
 must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest to highest');
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
