@@ -48,7 +48,19 @@ must(html.includes('body.on-home') && html.includes('html.on-home') && html.incl
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
 must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
-must(html.includes('top: 20px') && html.includes('left: 8px') && html.includes('flex: 0 0 48px'), 'Stage 2 sits on Stage 3 with the face-down card peeking from under');
+must(html.includes('LAYOUT LOCK: Stage 2/3') && html.includes('design/stage23-table-slots-reference.jpg'), 'table pile CSS is locked to the reference screenshot');
+{
+  const lockAt = html.indexOf('LAYOUT LOCK: Stage 2/3');
+  must(lockAt >= 0, 'layout lock comment is present');
+  const slotCss = html.slice(lockAt, lockAt + 2200);
+  must(/\.slot-down \{[^}]*top:\s*0;\s*left:\s*0/.test(slotCss), 'face-down sits at 0,0 under the face-up');
+  must(/\.slot-up \{[^}]*top:\s*0;\s*left:\s*0/.test(slotCss), 'face-up sits on the same origin as face-down');
+  must(!/slot-down \{[^}]*top:\s*(1[4-9]|[2-9]\d)px/.test(slotCss), 'Stage 3 must not peek out with a top offset');
+  must(!/slot-up \{[^}]*left:\s*[1-9]\d*px/.test(slotCss), 'Stage 2 must not shift sideways off its Stage 3 card');
+  must(slotCss.includes('margin-left: -16px') && slotCss.includes('max-width: 96px'), 'east/west tuck three overlapping face-ups like the reference');
+  must(slotCss.includes('width: 40px') && slotCss.includes('height: 58px'), 'every seat uses the same 40×58 table-slot size');
+  must(!slotCss.includes('width: 48px') && !slotCss.includes('width: 34px'), 'slots are not the peek box or a smaller side-seat size');
+}
 must(html.includes('if (empty) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
 must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 'stage 2/3 stay closed without a match or while the stock remains');
 must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
@@ -100,7 +112,7 @@ must(html.includes('function tableSlotsHtml') && html.includes('seat-row table-s
 must(html.includes("id=\"tableSlots-") || html.includes("id=\"tableSlots-'"), 'every opponent seat gets its own table-slot row');
 must(html.includes('.table-slot.has-up .slot-down'), 'a cleared face-up slot reveals the face-down card underneath');
 must(html.includes('tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks })'), 'every seat, not only the human, renders stacked table piles');
-must(!html.includes("p.up.map((c) => cardFaceHtml(c, 'tiny'))"), 'opponents are not a face-up-only spread row');
+must(!html.includes("p.up.map((c) => cardFaceHtml(c, 'tiny'))") && !html.includes("p.down.map((c) => cardBackHtml('tiny'))"), 'opponents are not a face-up-only or 6-card spread row');
 
 function seededRng(seed) {
   let s = seed;

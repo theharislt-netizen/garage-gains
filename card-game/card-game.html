@@ -737,38 +737,40 @@
   }
   .seat.active .seat-name { background: var(--gain); color: #120c18; }
   .seat-row { display: flex; gap: 6px; justify-content: center; }
+  /* LAYOUT LOCK: Stage 2/3 table piles.
+     Source of truth: design/stage23-table-slots-reference.jpg
+     Three compact slots per seat. Face-up covers its face-down in the SAME slot (top:0; left:0).
+     East/west tuck with negative margin (three overlapping face-ups). Do not peek Stage 3
+     with top/left offsets, and do not flatten ups+downs into a 6-card seat-row. */
   .table-slots {
-    display: flex; align-items: flex-end; justify-content: center; gap: 8px;
+    display: flex; align-items: flex-end; justify-content: center; gap: 6px;
     overflow: visible; pointer-events: none; flex-wrap: nowrap;
   }
   .table-slot {
-    position: relative; width: 48px; height: 78px; flex: 0 0 48px; min-width: 0;
+    position: relative; width: 40px; height: 58px; flex: 0 0 40px; min-width: 0;
     overflow: visible; pointer-events: none;
   }
   .table-slot .pcard {
-    position: absolute; left: 0; top: 0; margin: 0;
+    position: absolute; left: 0; top: 0; margin: 0; width: 40px; height: 58px;
     pointer-events: auto;
   }
   .table-slot .slot-down {
-    top: 18px; left: 0; z-index: 1;
-    filter: brightness(0.9);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    top: 0; left: 0; z-index: 1;
   }
   .table-slot.has-up .slot-down {
-    top: 20px; left: 0;
+    top: 0; left: 0;
     pointer-events: none;
   }
   .table-slot .slot-up {
-    top: 0; left: 8px; z-index: 2;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    top: 0; left: 0; z-index: 2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   }
-  .seat.north .table-slots { margin-top: -8px; }
-  .seat.east .table-slots, .seat.west .table-slots { gap: 5px; margin-top: -4px; }
-  .seat.east .table-slot, .seat.west .table-slot { width: 40px; height: 66px; flex-basis: 40px; }
-  .seat.east .table-slot .pcard.tiny, .seat.west .table-slot .pcard.tiny { width: 34px; height: 50px; }
-  .seat.east .table-slot .slot-down, .seat.west .table-slot .slot-down { top: 14px; }
-  .seat.east .table-slot.has-up .slot-down, .seat.west .table-slot.has-up .slot-down { top: 16px; }
-  .seat.east .table-slot .slot-up, .seat.west .table-slot .slot-up { left: 6px; }
+  .seat.north .table-slots { margin-top: -6px; }
+  .seat.east .table-slots, .seat.west .table-slots {
+    gap: 0; max-width: 96px; margin-top: -4px;
+  }
+  .seat.east .table-slot, .seat.west .table-slot { margin-left: -16px; }
+  .seat.east .table-slot:first-child, .seat.west .table-slot:first-child { margin-left: 0; }
   .seat:not(.south) .table-slot .pcard { pointer-events: none; }
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
