@@ -1079,7 +1079,7 @@
   .table-rail {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: calc(50% - 8px);
+    grid-auto-columns: calc(66% - 8px);
     gap: 14px;
     flex: 1 1 auto;
     min-height: 0;
@@ -1096,12 +1096,12 @@
   .table-rail::-webkit-scrollbar { display: none; }
   .table-card {
     width: 100%;
-    height: min(56vh, 268px);
-    min-height: 220px;
+    height: min(64vh, 420px);
+    min-height: 340px;
     max-height: 100%;
     align-self: center;
     margin: 0;
-    padding: 9px;
+    padding: 12px;
     border: 0;
     border-radius: 16px;
     scroll-snap-align: start;
@@ -1117,13 +1117,13 @@
     width: 100%; height: 100%;
     min-height: 0;
     z-index: 1;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 14px 10px 10px;
+    justify-content: flex-start;
+    gap: 20px;
+    padding: 22px 14px 18px;
     text-align: left;
     transform: none;
   }
@@ -1251,29 +1251,29 @@
     0%, 100% { transform: translateY(6px) scaleY(0.85); opacity: 0.45; }
     50% { transform: translateY(-10px) scaleY(1.15); opacity: 0.9; }
   }
-  .table-copy { position: relative; z-index: 1; padding: 2px 2px 10px; }
-  .table-kicker {
-    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
-    color: rgba(255,255,255,0.72); margin-bottom: 4px;
-  }
+  .table-copy { position: relative; z-index: 1; padding: 0 4px; flex: 0 0 auto; }
   .table-copy h3 {
-    font-size: 24px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase;
+    font-size: 28px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase;
     line-height: 1.05; margin: 0; text-shadow: 0 2px 0 rgba(0,0,0,0.35);
   }
   .table-copy p {
-    margin: 6px 0 0; font-family: Inter, sans-serif; font-size: 12px; font-weight: 500;
-    line-height: 1.35; color: rgba(255,255,255,0.78); letter-spacing: 0; text-transform: none;
+    margin: 10px 0 0; font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 500;
+    line-height: 1.4; color: rgba(255,255,255,0.78); letter-spacing: 0; text-transform: none;
   }
-  .table-tiers { display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; margin-top: auto; }
+  .table-tiers {
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative; z-index: 1;
+    margin-top: auto; flex: 0 0 auto; padding-bottom: 2px;
+  }
   .tier-play {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    width: 100%; min-height: 40px; padding: 0 12px; margin: 0;
+    width: 100%; min-height: 46px; padding: 0 14px; margin: 0; flex-shrink: 0;
     border-radius: 100px;
     background: rgba(18, 16, 25, 0.78);
     border: 1px solid var(--line);
     color: var(--text);
     font-family: 'Barlow Condensed'; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-    font-size: 13px; cursor: pointer;
+    font-size: 14px; cursor: pointer;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.28);
     -webkit-tap-highlight-color: transparent;
   }
@@ -5454,7 +5454,6 @@ function tableCardHtml(diff, opts) {
     ${fxHtml}
     <div class="table-face">
       <div class="table-copy">
-        <div class="table-kicker">${(opts && opts.kicker) || 'Table'}</div>
         <h3>${theme.name}</h3>
         <p>${theme.blurb}</p>
       </div>
@@ -5503,7 +5502,7 @@ function openMode(mode) {
           ${toggles}
           ${custom}
           <div class="table-rail">
-            ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: false, kicker: mode === 'custom' ? 'Custom table' : 'Practice table' })).join('')}
+            ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: false })).join('')}
           </div>
           <div class="stake-footer">
             <div class="stake-hint">${mode === 'custom' ? 'Tap a table · invite friends in the lobby' : 'No coin risk · tap a table to open the lobby'}</div>
@@ -5531,7 +5530,7 @@ function openMode(mode) {
       <div class="stake-screen">
         <div class="seat-toggle static"><button type="button" class="on">4 seats</button></div>
         <div class="table-rail">
-          ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: true, kicker: 'Standard table' })).join('')}
+          ${DIFF_ORDER.map((d) => tableCardHtml(d, { paid: true })).join('')}
         </div>
         <div class="stake-footer">
           <div class="stake-hint">Tap a stake · empty seats fill with bots</div>
