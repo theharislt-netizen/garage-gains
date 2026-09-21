@@ -928,13 +928,18 @@ must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), '
   must(rf.includes('Last online') || html.includes("return formatLastOnline"), 'offline friends use last-seen copy');
   must(!rf.includes('>Invite<'), 'friends tab is not an invite launcher');
   must(rf.includes('data-friend-del') && rf.includes('data-friend-msg'), 'friends list can message and remove');
+  must(rf.includes('friend-ico') && rf.includes('friend-status'), 'friend actions are icons and the status dot is centered on the name block');
+  must(!rf.includes('${f.id || \'\'}'), 'friends list omits the profile ID');
   must(rf.includes('framedAvatarHtml'), 'friends list shows avatar and border');
 }
-must(html.includes('>Social<') && html.includes('id="mailBtn"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs');
+must(html.includes('>Social<') && html.includes('id="threadList"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs below the friends list');
+must(!html.includes('id="mailBtn"'), 'Social mail icon is replaced by the thread list');
 must(html.includes('id="matchChatOverlay"') && html.includes("function showSeatChat") && html.includes('No chat log') && html.includes("scope: matchChatTab === 'friend' ? 'friend' : 'table'"), 'in-match chat is seat bubbles, not a log');
 must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
 must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto') && html.includes('photoThumb'), 'profile photo is stored locally and a tiny thumb is sent on the wire');
 must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"') && html.includes("label: 'Card backs'") && html.includes("label: 'Borders'"), 'Profile items are organized by category');
+must(html.includes('function ownedInvFilters'), 'empty inventory categories are hidden');
+must(!html.includes('id="view-inventory"') && !html.includes('id="profileEnchantBtn"') && !html.includes('id="profileCraftBtn"'), 'Inventory screen and Enchant/Craft entry points are gone');
 must(!html.includes("showView('inventory')"), 'owned items stay inside Profile instead of a separate Inventory view');
 must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
 must(html.includes('came online') && html.includes('socialPing'), 'friend-came-online notifies with a Social badge');
@@ -986,10 +991,11 @@ must(html.includes('function netMsgFresh') && html.includes('INVITE_LIVE_MS') &&
 must(html.includes('Number(msg.t) || Date.now()') === false || html.includes('function netMsgSentAt'), 'stale ntfy replays are not stamped with receive-time');
 must(!html.includes('const sent = Number(msg.t) || Date.now()'), 'missing presence timestamps are not treated as live now');
 must(html.includes("PalaceNet.away()") && html.includes("document.hidden"), 'leaving the app marks the player offline');
+must(html.includes("if (document.body.classList.contains('in-match')) return;") && html.includes('PalaceNet.away()'), 'backgrounding during a match does not drop ntfy listeners');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
-must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('inboxSnapSent'), 'missed snaps are requested, busy moves are queued, inbox is not flooded');
-must(html.includes('publishMatchSnap(true);\n    await animateEvents'), 'host publishes the new turn before the local animation');
+must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('function netSendMatch'), 'missed snaps are requested, busy moves are queued, and match actions inbox the opponent');
+must(html.includes('publishMatchSnap(true)') && /publishMatchSnap\(true\);[\s\S]{0,80}await animateEvents/.test(html), 'host publishes the new turn before the local animation');
 
 const twoHumans = E.newMatch({
   roster: [
@@ -1012,11 +1018,13 @@ must(turn0.turn === 0, 'turn 0 is not dropped as falsy');
 const turn1 = E.unpackMatch(Object.assign({}, packed, { turn: 1 }), 0);
 must(turn1.turn === 1 && turn1.humanSeat === 0, 'guest turn 1 stays 1 on the host client');
 must(html.includes('function isMyTurn') && html.includes('function autoTurnTimeout'), 'turn ownership and AFK timeout helpers exist');
-must(html.includes("type: 'timeout'") && html.includes("p.difficulty = 'Easy'"), 'timeout auto-plays like an Easy bot on the host');
+must(html.includes("type: 'timeout'") && html.includes('function chooseTimeoutMove'), 'timeout auto-plays a legal card first instead of taking the pile');
+must(html.includes("legal.find((m) => m.type === 'play')"), 'human AFK timeout prefers a play over pickup');
 must(html.includes("type: 'end'") && html.includes('leaveSession();'), 'leaving a match clears the session so invites work again');
 {
   const bridge = readFileSync(join(root, 'scripts/native-bridge.mjs'), 'utf8');
   must(bridge.includes("classList.contains('in-match')"), 'native updater skips reload while a match is open');
+  must(bridge.includes("classList.contains('in-match')") && bridge.includes('PalaceNet.away()'), 'native backgrounding does not drop match ntfy listeners');
 }
 
 function seatScreenPlace(seat, n, you) {

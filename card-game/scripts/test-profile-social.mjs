@@ -104,9 +104,15 @@ const profileOpen = await page.evaluate(() => ({
   places: [...document.querySelectorAll('.place-cell .n')].map((n) => n.textContent),
   borders: document.querySelectorAll('[data-equip-border]').length,
   title: (document.querySelector('#profileOverlay .instance-title') || {}).textContent,
+  enchant: !!document.getElementById('profileEnchantBtn'),
+  craft: !!document.getElementById('profileCraftBtn'),
+  inventoryView: !!document.getElementById('view-inventory'),
 }));
 must(profileOpen.overlay, 'own profile overlay is open');
 must(profileOpen.chips.includes('All') && profileOpen.chips.includes('Card backs') && profileOpen.chips.includes('Borders'), 'profile items have category chips');
+must(!profileOpen.chips.includes('Shards') && !profileOpen.chips.includes('Stones'), 'empty or unused material categories stay hidden');
+must(!profileOpen.enchant && !profileOpen.craft, 'Enchant and Craft are not on Profile');
+must(!profileOpen.inventoryView, 'Inventory screen is removed from the DOM');
 must(profileOpen.items >= 4, 'profile lists owned cosmetics');
 must(await page.evaluate(() => {
   const row = document.getElementById('profileInvFilter');
@@ -133,6 +139,17 @@ const borderFilter = await page.evaluate(() => {
 must(borderFilter.count >= 3 && borderFilter.ids.every((id) => /border/i.test(id || '')), 'Borders category shows only avatar borders');
 must(borderFilter.mats === 0, 'Borders category does not mix in shards/stones');
 await page.screenshot({ path: join(artifacts, 'profile_items_borders_filter.png'), type: 'png' });
+
+await page.evaluate(() => {
+  state.inventory.items = (state.inventory.items || []).filter((i) => i.slot !== 'emote');
+  paintProfile();
+});
+const noEmote = await page.evaluate(() => [...document.querySelectorAll('#profileInvFilter [data-inv-filter]')].map((c) => c.textContent.trim()));
+must(!noEmote.includes('Emotes'), 'a category with zero owned items is not shown');
+await page.evaluate(() => {
+  state = loadState();
+  paintProfile();
+});
 
 const photoInfo = await page.evaluate(async () => {
   const c = document.createElement('canvas');
@@ -192,21 +209,42 @@ await page.screenshot({ path: join(artifacts, 'profile_photo_and_border.png'), t
 
 await page.evaluate(() => closeProfile());
 await page.evaluate(() => showView('friends'));
-const social = await page.evaluate(() => ({
-  title: (document.querySelector('#view-friends .page-title') || {}).textContent,
-  mail: !!document.getElementById('mailBtn'),
-  remove: !!document.querySelector('[data-friend-del]'),
-  chat: !!document.querySelector('[data-friend-msg]'),
-  ava: !!document.querySelector('#friendsList .friend-ava .avatar'),
-  border: (document.querySelector('#friendsList .avatar-frame') || {}).className || '',
-  badge: (document.getElementById('socialTabBadge') || {}).className || '',
-  name: (document.querySelector('#friendsList .friend-copy') || {}).innerText || '',
-}));
+const social = await page.evaluate(() => {
+  const copy = document.querySelector('#friendsList .friend-copy');
+  const status = copy && copy.querySelector('.friend-status');
+  const name = copy && copy.querySelector('.friend-name');
+  const l2 = copy && copy.querySelector('.l2');
+  const statusBox = status && status.getBoundingClientRect();
+  const metaBox = copy && copy.querySelector('.friend-meta') && copy.querySelector('.friend-meta').getBoundingClientRect();
+  return {
+    title: (document.querySelector('#view-friends .page-title') || {}).textContent,
+    mail: !!document.getElementById('mailBtn'),
+    remove: !!document.querySelector('[data-friend-del]'),
+    chat: !!document.querySelector('[data-friend-msg]'),
+    chatText: ((document.querySelector('[data-friend-msg]') || {}).textContent || '').trim(),
+    removeText: ((document.querySelector('[data-friend-del]') || {}).textContent || '').trim(),
+    ava: !!document.querySelector('#friendsList .friend-ava .avatar'),
+    border: (document.querySelector('#friendsList .avatar-frame') || {}).className || '',
+    badge: (document.getElementById('socialTabBadge') || {}).className || '',
+    name: (name && name.innerText) || '',
+    sub: (l2 && l2.innerText) || '',
+    idOnRow: /RIM1/i.test((copy && copy.innerText) || ''),
+    thread: ((document.querySelector('#threadList .thread-row') || {}).innerText || ''),
+    threadCount: document.querySelectorAll('#threadList .thread-row').length,
+    statusMid: !!(statusBox && metaBox && Math.abs((statusBox.top + statusBox.height / 2) - (metaBox.top + metaBox.height / 2)) <= 6),
+  };
+});
 must(/Social/.test(social.title || ''), 'Social screen title');
-must(social.mail && social.remove && social.chat, 'mail entry, chat, and remove are on the friends list');
+must(!social.mail, 'mail icon is gone');
+must(social.remove && social.chat, 'chat and remove are on the friends list');
+must(!social.chatText && !social.removeText, 'chat and remove are icons, not text labels');
 must(social.ava && /bd-neon/.test(social.border), 'friend row shows avatar and equipped border');
 must(/Rim/.test(social.name), 'friend name is visible beside the avatar');
+must(!social.idOnRow, 'friends list does not show the profile ID');
+must(social.statusMid, 'online-status dot is vertically centered on the name + last-online block');
+must(/Rim/.test(social.thread) && social.threadCount >= 1, 'conversation threads sit below the friends list');
 await page.screenshot({ path: join(artifacts, 'social_tab_friends.png'), type: 'png' });
+await page.screenshot({ path: join(artifacts, 'social_message_threads.png'), type: 'png' });
 
 await page.click('#friendsList .friend-copy');
 await page.waitForFunction(() => layerOpen('profileOverlay'));
@@ -224,16 +262,7 @@ must(!friendProf.items && friendProf.msg, 'friend profile has Message, not the l
 await page.screenshot({ path: join(artifacts, 'friend_profile_stats.png'), type: 'png' });
 
 await page.evaluate(() => closeProfile());
-await page.click('#mailBtn');
-await page.waitForFunction(() => layerOpen('messagesOverlay'));
-const threads = await page.evaluate(() => ({
-  preview: (document.querySelector('#messagesBody .preview') || {}).textContent || '',
-  name: (document.querySelector('#messagesBody .thread-row') || {}).innerText || '',
-}));
-must(/Wanna play/.test(threads.preview) && /Rim/.test(threads.name), 'conversation list shows friend and last-message preview');
-await page.screenshot({ path: join(artifacts, 'social_message_threads.png'), type: 'png' });
-
-await page.click('#messagesBody .thread-row');
+await page.click('#threadList .thread-row');
 await page.waitForFunction(() => layerOpen('threadOverlay'));
 await page.type('#threadInput', 'On my way');
 await page.click('#threadSendBtn');
@@ -263,7 +292,7 @@ const chatUi = await page.evaluate(() => ({
 must(chatUi.overlay && chatUi.noLog, 'in-match chat is bubbles, not a log');
 await page.screenshot({ path: join(artifacts, 'match_bot_name.png'), type: 'png' });
 
-const report = { ok: fails.length === 0, fails, profileOpen, borderFilter, photoInfo, afterBorder, social, friendProf, threads, bots };
+const report = { ok: fails.length === 0, fails, profileOpen, borderFilter, photoInfo, afterBorder, social, friendProf, bots };
 await writeFile(join(artifacts, 'profile_social.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 await browser.close();

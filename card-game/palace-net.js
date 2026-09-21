@@ -51,7 +51,7 @@
     if (key.length > 3 && seen.indexOf(key) >= 0) return;
     if (key.length > 3) {
       seen.push(key);
-      if (seen.length > 200) seen.shift();
+      if (seen.length > 400) seen.shift();
     }
     if (msg.from && me.id && sameNetId(msg.from, me.id)) return;
     handlers.forEach((fn) => {

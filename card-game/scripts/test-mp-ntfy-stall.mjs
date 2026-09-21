@@ -166,6 +166,11 @@ function dumpView() {
     south: ((document.querySelector('.seat.south .seat-name') || {}).textContent || '').trim(),
     active: ((document.querySelector('.seat.active .seat-name') || {}).textContent || '').trim(),
     pile: (match && match.pile || []).map((c) => c.id),
+    pileLen: match && match.pile ? match.pile.length : 0,
+    handLen: (() => {
+      const seat = typeof mySeat === 'function' ? mySeat() : 0;
+      return match && match.players && match.players[seat] ? match.players[seat].hand.length : 0;
+    })(),
     inMatch: document.body.classList.contains('in-match'),
     esOpen: window.__esOpen || 0,
     ntfyFail: (window.__netLog || []).filter((x) => x.kind === 'ntfy' && x.status >= 400).slice(-6),
@@ -287,6 +292,7 @@ try {
   note('after-afk', { turnBefore, moved, afterAfk });
   must(moved, 'AFK timeout auto-played over ntfy');
   must(afterAfk[0].turn === afterAfk[1].turn, 'guest received the AFK play over ntfy');
+  must(!(afterAfk[0].handLen > views[0].handLen && afterAfk[0].pileLen === 0), 'AFK timeout must not pick up the pile and grow the hand');
   await host.screenshot({ path: join(artifacts, 'mp_stall_afk_host.png') });
   await guest.screenshot({ path: join(artifacts, 'mp_stall_afk_guest.png') });
 

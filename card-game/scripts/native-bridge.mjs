@@ -452,6 +452,8 @@ async function setup() {
     if (isActive) {
       if (typeof window.resumeNetSession === 'function') window.resumeNetSession();
       if (!document.body.classList.contains('in-match')) checkAndApplyUpdate();
+    } else if (document.body.classList.contains('in-match')) {
+      /* Keep ntfy EventSources alive so in-match turns are not dropped. */
     } else if (window.PalaceNet && typeof window.PalaceNet.away === 'function') {
       window.PalaceNet.away();
     }
