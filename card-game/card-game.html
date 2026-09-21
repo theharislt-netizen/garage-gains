@@ -438,6 +438,33 @@
     overflow: hidden; touch-action: none; overscroll-behavior: none;
   }
   #tableWindow.show { display: flex; }
+  /* SELECTION LOCK: table play surface.
+     Decorative text (watermark, seat names, hints, ranks) must never open the
+     native Copy/Share/Select-all toolbar. Long-press on the felt is for game
+     gestures only. */
+  #tableWindow,
+  #tableWindow *,
+  #flyLayer,
+  #flyLayer *,
+  .match-over,
+  .match-over *,
+  body.in-match,
+  body.in-match * {
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-drag: none;
+  }
+  #tableWindow, #flyLayer, .match-over, body.in-match {
+    -webkit-tap-highlight-color: transparent;
+  }
+  #tableWindow ::selection,
+  #flyLayer ::selection,
+  .match-over ::selection,
+  body.in-match ::selection {
+    background: transparent !important;
+    color: inherit;
+  }
   .table-topbar {
     z-index: 8;
     background: linear-gradient(180deg, rgba(10, 22, 16, 0.94), rgba(12, 28, 20, 0.82));
@@ -704,9 +731,9 @@
     position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
     z-index: 1; pointer-events: none; text-align: center; color: rgba(247, 239, 224, 0.11);
     font-family: 'Barlow Condensed'; letter-spacing: 0.34em; font-weight: 800;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   }
-  .table-watermark svg { width: 54px; height: 54px; display: block; margin: 0 auto 4px; opacity: 0.85; }
-  .table-watermark span { display: block; font-size: 28px; padding-left: 0.34em; }
+  .table-watermark svg { width: 168px; height: 86px; display: block; overflow: visible; }
   .table-center {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     display: flex; align-items: center; gap: 14px; z-index: 2;
@@ -1514,6 +1541,23 @@ function bindHomeScrollLock() {
   }, { passive: true });
 }
 
+function bindTableSelectionLock() {
+  const block = (ev) => ev.preventDefault();
+  ['tableWindow', 'flyLayer', 'matchOver'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('selectstart', block);
+    el.addEventListener('contextmenu', block);
+  });
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const node = sel.anchorNode;
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    if (el && el.closest('#tableWindow, #flyLayer, .match-over, body.in-match')) sel.removeAllRanges();
+  });
+}
+
 function renderHeader() {
   document.getElementById('nbNameText').textContent = state.profile.name || 'Player';
   document.getElementById('rankTag').textContent = 'Lv ' + getLevel(state.xp);
@@ -1918,11 +1962,11 @@ function avatarArtHtml(seat) {
 
 function tableWatermarkHtml() {
   return `<div class="table-watermark" aria-hidden="true">
-    <svg viewBox="0 0 64 64" fill="currentColor">
-      <path d="M12 28l10 8 10-18 10 18 10-8v18H12z"/>
-      <rect x="14" y="46" width="36" height="5" rx="1"/>
+    <svg viewBox="0 0 220 112" focusable="false">
+      <path d="M78 36l16 13 16-28 16 28 16-13v28H78z" fill="currentColor" opacity="0.85"/>
+      <rect x="81" y="64" width="58" height="8" rx="1" fill="currentColor" opacity="0.85"/>
+      <text x="110" y="104" text-anchor="middle" fill="currentColor" font-size="28" font-weight="800" letter-spacing="8" font-family="Barlow Condensed, sans-serif">PALACE</text>
     </svg>
-    <span>PALACE</span>
   </div>`;
 }
 
@@ -3510,6 +3554,7 @@ function init() {
   saveState();
   renderAll();
   bindHomeScrollLock();
+  bindTableSelectionLock();
 
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => showView(tab.dataset.view)));
   document.querySelectorAll('[data-mode]').forEach((card) => card.addEventListener('click', () => openMode(card.dataset.mode)));
