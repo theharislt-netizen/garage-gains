@@ -3818,7 +3818,7 @@ function presenceId(id) {
 }
 function friendOnline(id) {
   const row = presenceMap[presenceId(id)] || presenceMap[id];
-  return !!(row && row.online && Date.now() - (row.t || 0) < 28000);
+  return !!(row && row.online && Date.now() - (row.t || 0) < 45000);
 }
 function inviteCoolKey(kind, id) {
   return String(kind) + ':' + String(id);
@@ -3900,7 +3900,7 @@ function startFriendsPresenceTick() {
       return;
     }
     renderFriends();
-  }, 30000);
+  }, 4000);
 }
 function needsNameSetup() {
   return !state.profile.nameSet || !String(state.profile.name || '').trim() || !state.profile.id;
@@ -4122,14 +4122,21 @@ function openLobby(cfg) {
   paintLobby();
 }
 
+function localPlayerSeated() {
+  return seatIndexForLocalPlayer(session && session.seats) >= 0;
+}
+
 function applyLobbyState(msg) {
   if (!msg || !session) return;
   if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
-  if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
   session.hostId = msg.hostId || session.hostId;
   session.cfg = msg.cfg || session.cfg;
   session.seats = Array.isArray(msg.seats) ? msg.seats : session.seats;
   session.started = !!msg.started;
+  if (localPlayerSeated() && joinRetryTimer) {
+    clearInterval(joinRetryTimer);
+    joinRetryTimer = 0;
+  }
   paintLobby();
 }
 
@@ -4155,34 +4162,33 @@ function joinLobby(code, opts) {
   document.getElementById('lobbyOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   paintLobby();
+  if (window.PalaceNet) PalaceNet.resume();
   const sendJoin = () => {
     if (!window.PalaceNet || !session || !sameLobbyCode(session.code, clean)) return;
-    PalaceNet.resume();
+    if (localPlayerSeated()) return;
     PalaceNet.watchLobby(clean);
-    PalaceNet.lobbyPub(clean, {
+    const payload = {
       type: 'join',
       id: state.profile.id,
       name: state.profile.name || 'Player',
-    });
+      code: clean,
+    };
+    PalaceNet.lobbyPub(clean, payload);
+    if (session.hostId) PalaceNet.inbox(session.hostId, payload);
   };
   sendJoin();
   if (joinRetryTimer) clearInterval(joinRetryTimer);
   let tries = 0;
   joinRetryTimer = setInterval(() => {
-    if (!session || !sameLobbyCode(session.code, clean) || session.hostId) {
+    if (!session || !sameLobbyCode(session.code, clean) || localPlayerSeated()) {
       clearInterval(joinRetryTimer);
       joinRetryTimer = 0;
       return;
     }
     tries += 1;
-    if (tries > 12) {
-      clearInterval(joinRetryTimer);
-      joinRetryTimer = 0;
-      showToast('Could not find that lobby');
-      return;
-    }
+    if (tries === 12) showToast('Still looking for lobby ' + clean);
     sendJoin();
-  }, 700);
+  }, 800);
   showToast((opts && opts.fromInvite) ? 'Joining lobby…' : 'Looking for lobby ' + clean);
 }
 
@@ -4414,6 +4420,7 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'join' && isLobbyHost() && !session.started && msg.id) {
+    if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
     if ((session.seats || []).some((s) => s && samePlayerId(s.id, msg.id))) {
       publishLobby();
       sendLobbySnapshot(msg.id);
@@ -4466,6 +4473,20 @@ function handleNetMessage(msg) {
   }
 }
 
+function resumeNetSession() {
+  if (!window.PalaceNet) return;
+  PalaceNet.resume();
+  (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
+  if (session && session.code) {
+    PalaceNet.watchLobby(session.code);
+    if (isLobbyHost() && !session.started) {
+      publishLobby();
+      startLobbyPulse();
+    }
+    if (session.started) PalaceNet.watchMatch(session.code);
+  }
+}
+
 function bootNet() {
   if (!window.PalaceNet || !state.profile.id) return;
   PalaceNet.connect({ id: state.profile.id, name: state.profile.name || 'Player' });
@@ -4480,14 +4501,9 @@ function bootNet() {
     PalaceNet.on(handleNetMessage);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) return;
-      PalaceNet.resume();
-      (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
-      if (session && session.code) PalaceNet.watchLobby(session.code);
-      if (session && session.started) PalaceNet.watchMatch(session.code);
+      resumeNetSession();
     });
-    window.addEventListener('pageshow', () => {
-      if (window.PalaceNet) PalaceNet.resume();
-    });
+    window.addEventListener('pageshow', () => resumeNetSession());
   }
 }
 
@@ -4575,6 +4591,8 @@ window.openLobby = openLobby;
 window.openJoin = openJoin;
 window.joinLobby = joinLobby;
 window.startLobbyMatch = startLobbyMatch;
+window.publishLobby = publishLobby;
+window.resumeNetSession = resumeNetSession;
 window.__palaceSession = () => session;
 window.seatScreenPlace = seatScreenPlace;
 window.localHumanSeat = localHumanSeat;

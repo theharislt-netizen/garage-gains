@@ -146,7 +146,10 @@
 
   function resume() {
     ensureChannel();
-    wanted.forEach((top) => openSource(top));
+    wanted.forEach((top) => {
+      closeSource(top);
+      openSource(top);
+    });
     if (me.id) {
       if (!heartbeat) heartbeat = setInterval(beat, 12000);
       beat();

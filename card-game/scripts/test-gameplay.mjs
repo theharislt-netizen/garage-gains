@@ -933,8 +933,12 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
   must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
+  must(netSrc.includes('closeSource(top);\n      openSource(top)'), 'resume force-reopens ntfy SSE');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
+must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
+must(html.includes('if (session.hostId) PalaceNet.inbox(session.hostId, payload)'), 'guest DMs the host inbox after learning hostId');
+must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
 
 const twoHumans = E.newMatch({

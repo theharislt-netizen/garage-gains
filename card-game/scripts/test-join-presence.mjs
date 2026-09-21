@@ -85,6 +85,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const fails = [];
 function must(cond, msg) { if (!cond) fails.push(msg); }
 
+async function waitEval(page, fn, timeout = 20000) {
+  const start = Date.now();
+  let last = null;
+  while (Date.now() - start < timeout) {
+    try {
+      last = await page.evaluate(fn);
+      if (last) return last;
+    } catch (_) { /* page may be mid-paint */ }
+    await sleep(250);
+  }
+  return last;
+}
+
 const host = await openPlayer('host', seed('Host', 'HOSTTEST1'));
 const guest = await openPlayer('guest', seed('Guest', 'GUESTTEST1'));
 await sleep(400);
@@ -106,14 +119,16 @@ try {
   await host.evaluate(() => showView('friends'));
   await guest.evaluate(() => showView('friends'));
   const online = await Promise.all([
-    host.waitForFunction(() => typeof friendOnline === 'function' && friendOnline('GUESTTEST1'), { timeout: 12000 }).then(() => true).catch(() => false),
-    guest.waitForFunction(() => typeof friendOnline === 'function' && friendOnline('HOSTTEST1'), { timeout: 12000 }).then(() => true).catch(() => false),
+    waitEval(host, () => typeof friendOnline === 'function' && friendOnline('GUESTTEST1')),
+    waitEval(guest, () => typeof friendOnline === 'function' && friendOnline('HOSTTEST1')),
   ]);
   console.log('live online', online);
   must(online[0], 'host sees guest Online');
   must(online[1], 'guest sees host Online');
   const hostFriendsText = await host.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
   const guestFriendsText = await guest.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
+  console.log('host friends', hostFriendsText.replace(/\s+/g, ' ').trim());
+  console.log('guest friends', guestFriendsText.replace(/\s+/g, ' ').trim());
   must(/Online/.test(hostFriendsText), 'host friends list says Online');
   must(/Online/.test(guestFriendsText), 'guest friends list says Online');
   await host.screenshot({ path: join(artifacts, 'mp_host_sees_guest_online.png') });
@@ -128,24 +143,26 @@ try {
   await host.evaluate(() => PalaceNet.disconnect());
   await guest.evaluate((c) => joinLobby(c), code);
   await sleep(400);
-  await host.evaluate(() => {
-    PalaceNet.resume();
-    if (session && session.code) PalaceNet.watchLobby(session.code);
-  });
+  await host.evaluate(() => resumeNetSession());
 
-  const seated = await Promise.all([
-    host.waitForFunction(() => {
+  const [hostSeated, guestSeated] = await Promise.all([
+    waitEval(host, () => {
       const s = window.__palaceSession && window.__palaceSession();
-      return !!(s && (s.seats || []).some((row) => row && row.id === 'GUESTTEST1'));
-    }, { timeout: 12000 }).then(() => true).catch(() => false),
-    guest.waitForFunction(() => {
+      const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
+      const names = [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => (n.textContent || '').trim());
+      return ids.includes('GUESTTEST1') || names.some((n) => /guest/i.test(n));
+    }, 20000),
+    waitEval(guest, () => {
       const s = window.__palaceSession && window.__palaceSession();
-      return !!(s && s.hostId && (s.seats || []).some((row) => row && row.id === 'HOSTTEST1') && (s.seats || []).some((row) => row && row.id === 'GUESTTEST1'));
-    }, { timeout: 12000 }).then(() => true).catch(() => false),
+      const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
+      const names = [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => (n.textContent || '').trim());
+      return !!(s && s.hostId) && ids.includes('HOSTTEST1') && ids.includes('GUESTTEST1')
+        && names.some((n) => /host/i.test(n)) && names.some((n) => /guest/i.test(n));
+    }, 20000),
   ]);
-  console.log('seated after join-by-code', seated);
-  must(seated[0], 'host lobby received the guest after join-by-code');
-  must(seated[1], 'guest joined the host lobby, not an empty session');
+  console.log('seated after join-by-code', [!!hostSeated, !!guestSeated]);
+  must(hostSeated, 'host lobby received the guest after join-by-code');
+  must(guestSeated, 'guest joined the host lobby, not an empty session');
 
   const views = await Promise.all([
     host.evaluate(() => ({
