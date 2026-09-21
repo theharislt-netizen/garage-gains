@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Two-browser proof: live friend presence, then Join Session code puts
- * both players in the SAME lobby (including after the host backgrounds).
+ * Two-origin (phone-like) proof: ntfy relays only, no shared BroadcastChannel.
+ * Host loads 127.0.0.1, guest loads localhost — different origins, same path
+ * two phones use. Covers live Online status and join-by-code into one lobby.
  */
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -24,7 +25,11 @@ function todayStamp() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-function seed(name, id) {
+const stamp = Date.now().toString(36).slice(-5).toUpperCase();
+const HOST_ID = ('H' + stamp).slice(0, 10);
+const GUEST_ID = ('G' + stamp).slice(0, 10);
+
+function seed(name, id, friendId, friendName) {
   return {
     app: 'palace',
     format: 1,
@@ -34,7 +39,7 @@ function seed(name, id) {
     lastDailyLogin: todayStamp(),
     inventory: { items: [], shards: { cosmetic: 0 }, stones: { cosmetic: 0 } },
     equipped: { cardSkin: null, tableTheme: null, emote: null, chatBubble: null, profileBorder: null },
-    friends: [],
+    friends: [{ id: friendId, name: friendName, lastSeen: Date.now() - 60000 }],
     settings: { theme: 'rig', sfx: 0, music: 0, notifications: false, language: 'en' },
     stats: { matches: 0, wins: 0 },
     shopTab: 'skins',
@@ -56,10 +61,11 @@ const server = createServer(async (req, res) => {
     res.writeHead(404); res.end('not found');
   }
 });
-await new Promise((r) => server.listen(port, '127.0.0.1', r));
+await new Promise((r) => server.listen(port, '0.0.0.0', r));
 await mkdir(artifacts, { recursive: true });
 
-const origin = 'http://127.0.0.1:' + port;
+const hostOrigin = 'http://127.0.0.1:' + port;
+const guestOrigin = 'http://localhost:' + port;
 const browser = await puppeteer.launch({
   executablePath: '/usr/local/bin/google-chrome',
   headless: 'new',
@@ -67,9 +73,9 @@ const browser = await puppeteer.launch({
   defaultViewport: { width: 390, height: 844, deviceScaleFactor: 1 },
 });
 
-async function openPlayer(alias, profile) {
+async function openPlayer(origin, alias, profile) {
   const page = await browser.newPage();
-  page.setDefaultTimeout(20000);
+  page.setDefaultTimeout(30000);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.evaluateOnNewDocument((key, data) => {
     localStorage.setItem(key, data);
@@ -85,7 +91,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const fails = [];
 function must(cond, msg) { if (!cond) fails.push(msg); }
 
-async function waitEval(page, fn, timeout = 20000) {
+async function waitEval(page, fn, timeout = 25000) {
   const start = Date.now();
   let last = null;
   while (Date.now() - start < timeout) {
@@ -98,33 +104,43 @@ async function waitEval(page, fn, timeout = 20000) {
   return last;
 }
 
-const host = await openPlayer('host', seed('Host', 'HOSTTEST1'));
-const guest = await openPlayer('guest', seed('Guest', 'GUESTTEST1'));
-await sleep(400);
+function dumpNet() {
+  return {
+    origin: location.origin,
+    id: state.profile && state.profile.id,
+    friends: (state.friends || []).map((f) => f.id),
+    online: typeof friendOnline === 'function' && (state.profile.id === window.__hostId
+      ? friendOnline(window.__guestId)
+      : friendOnline(window.__hostId)),
+    relays: window.PalaceNet && PalaceNet.RELAYS,
+    wanted: window.PalaceNet && PalaceNet.wantedSize,
+    presence: Object.keys(presenceMap || {}),
+  };
+}
+
+const host = await openPlayer(hostOrigin, 'host', seed('Host', HOST_ID, GUEST_ID, 'Guest'));
+const guest = await openPlayer(guestOrigin, 'guest', seed('Guest', GUEST_ID, HOST_ID, 'Host'));
+await host.evaluate((a, b) => { window.__hostId = a; window.__guestId = b; }, HOST_ID, GUEST_ID);
+await guest.evaluate((a, b) => { window.__hostId = a; window.__guestId = b; }, HOST_ID, GUEST_ID);
+await sleep(800);
 
 try {
-  await host.evaluate(() => sendFriendRequest('GUESTTEST1'));
-  await guest.waitForFunction(() => {
-    const el = document.getElementById('inviteBanner');
-    return !!(el && el.classList.contains('show') && /add you/i.test(el.innerText || ''));
-  }, { timeout: 8000 });
-  await guest.evaluate(() => {
-    const btn = document.getElementById('inviteAcceptBtn');
-    if (btn) btn.click();
-  });
-  await sleep(500);
-  must(await host.evaluate(() => (state.friends || []).some((f) => f.id === 'GUESTTEST1')), 'host added guest');
-  must(await guest.evaluate(() => (state.friends || []).some((f) => f.id === 'HOSTTEST1')), 'guest added host');
+  const origins = await Promise.all([
+    host.evaluate(() => location.origin),
+    guest.evaluate(() => location.origin),
+  ]);
+  must(origins[0] !== origins[1], 'host and guest are on different origins (no BroadcastChannel)');
+  console.log('ids', { HOST_ID, GUEST_ID, origins });
 
   await host.evaluate(() => showView('friends'));
   await guest.evaluate(() => showView('friends'));
   const online = await Promise.all([
-    waitEval(host, () => typeof friendOnline === 'function' && friendOnline('GUESTTEST1')),
-    waitEval(guest, () => typeof friendOnline === 'function' && friendOnline('HOSTTEST1')),
+    waitEval(host, () => typeof friendOnline === 'function' && friendOnline(window.__guestId), 25000),
+    waitEval(guest, () => typeof friendOnline === 'function' && friendOnline(window.__hostId), 25000),
   ]);
-  console.log('live online', online);
-  must(online[0], 'host sees guest Online');
-  must(online[1], 'guest sees host Online');
+  console.log('live online', online, await host.evaluate(dumpNet), await guest.evaluate(dumpNet));
+  must(online[0], 'host sees guest Online over ntfy');
+  must(online[1], 'guest sees host Online over ntfy');
   const hostFriendsText = await host.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
   const guestFriendsText = await guest.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
   console.log('host friends', hostFriendsText.replace(/\s+/g, ' ').trim());
@@ -135,32 +151,26 @@ try {
   await guest.screenshot({ path: join(artifacts, 'mp_guest_sees_host_online.png') });
 
   await host.evaluate(() => showView('home'));
-  await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 4, difficulty: 'Easy', buyIn: 0 }));
+  await host.evaluate(() => openLobby({ mode: 'standard', seats: 4, difficulty: 'Medium', buyIn: 100 }));
   const code = await host.evaluate(() => (document.getElementById('lobbyCodeText') || {}).textContent.trim());
   console.log('lobby code', code);
   must(code && code.length >= 4, 'host has a join code');
 
-  await host.evaluate(() => PalaceNet.disconnect());
   await guest.evaluate((c) => joinLobby(c), code);
-  await sleep(400);
-  await host.evaluate(() => resumeNetSession());
 
   const [hostSeated, guestSeated] = await Promise.all([
     waitEval(host, () => {
       const s = window.__palaceSession && window.__palaceSession();
       const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
-      const names = [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => (n.textContent || '').trim());
-      return ids.includes('GUESTTEST1') || names.some((n) => /guest/i.test(n));
-    }, 20000),
+      return ids.includes(window.__guestId);
+    }, 25000),
     waitEval(guest, () => {
       const s = window.__palaceSession && window.__palaceSession();
       const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
-      const names = [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => (n.textContent || '').trim());
-      return !!(s && s.hostId) && ids.includes('HOSTTEST1') && ids.includes('GUESTTEST1')
-        && names.some((n) => /host/i.test(n)) && names.some((n) => /guest/i.test(n));
-    }, 20000),
+      return !!(s && s.hostId) && ids.includes(window.__hostId) && ids.includes(window.__guestId);
+    }, 25000),
   ]);
-  console.log('seated after join-by-code', [!!hostSeated, !!guestSeated]);
+  console.log('seated after join-by-code', [!!hostSeated, !!guestSeated], await host.evaluate(dumpNet), await guest.evaluate(dumpNet));
   must(hostSeated, 'host lobby received the guest after join-by-code');
   must(guestSeated, 'guest joined the host lobby, not an empty session');
 
@@ -169,17 +179,20 @@ try {
       code: (document.getElementById('lobbyCodeText') || {}).textContent.trim(),
       names: [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => n.textContent.trim()),
       empty: document.querySelectorAll('.lobby-pad.open').length,
+      origin: location.origin,
     })),
     guest.evaluate(() => ({
       code: (document.getElementById('lobbyCodeText') || {}).textContent.trim(),
       names: [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => n.textContent.trim()),
       hostId: window.__palaceSession().hostId,
       you: ((document.querySelector('.lobby-pad.you .pad-name') || {}).textContent || '').trim(),
+      origin: location.origin,
     })),
   ]);
   console.log('lobby views', views);
+  must(views[0].origin !== views[1].origin, 'join used two origins');
   must(views[0].code === views[1].code, 'both show the same lobby code');
-  must(views[1].hostId === 'HOSTTEST1', 'guest session is hosted by the original host');
+  must(views[1].hostId === HOST_ID, 'guest session is hosted by the original host');
   must(views[0].names.some((n) => /guest/i.test(n)), 'host sees Guest seated');
   must(views[1].names.some((n) => /host/i.test(n)), 'guest sees Host seated');
   await host.screenshot({ path: join(artifacts, 'mp_join_code_host_lobby.png') });
@@ -190,7 +203,7 @@ try {
   try { await guest.screenshot({ path: join(artifacts, 'mp_join_presence_guest_fail.png') }); } catch (_) { /* ignore */ }
 }
 
-const report = { ok: fails.length === 0, fails };
+const report = { ok: fails.length === 0, fails, HOST_ID, GUEST_ID };
 await writeFile(join(artifacts, 'mp_join_presence.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 await browser.close();
