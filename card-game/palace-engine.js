@@ -59,7 +59,9 @@
   }
 
   function cloneCard(c) {
-    return { id: c.id, rank: c.rank, suit: c.suit };
+    const out = { id: c.id, rank: c.rank, suit: c.suit };
+    if (c && c.slot != null) out.slot = c.slot;
+    return out;
   }
 
   function topCard(match) {
@@ -485,8 +487,16 @@
       p.down = [];
       p.up = [];
       p.hand = [];
-      for (let i = 0; i < TABLE_DOWN; i++) p.down.push(deck.pop());
-      for (let i = 0; i < TABLE_UP; i++) p.up.push(deck.pop());
+      for (let i = 0; i < TABLE_DOWN; i++) {
+        const c = deck.pop();
+        c.slot = i;
+        p.down.push(c);
+      }
+      for (let i = 0; i < TABLE_UP; i++) {
+        const c = deck.pop();
+        c.slot = i;
+        p.up.push(c);
+      }
       for (let i = 0; i < HAND_SIZE; i++) p.hand.push(deck.pop());
       p.hand = sortHand(p.hand);
     });
@@ -500,11 +510,12 @@
     const seats = Math.max(2, Math.min(4, o.seats || 4));
     const difficulty = o.difficulty || 'Easy';
     const humanSeat = o.humanSeat == null ? 0 : o.humanSeat;
+    const humanSeats = new Set(Array.isArray(o.humanSeats) && o.humanSeats.length ? o.humanSeats : [humanSeat]);
     const rng = o.rng || Math.random;
     const names = o.names || [];
     const players = [];
     for (let i = 0; i < seats; i++) {
-      const isBot = i !== humanSeat;
+      const isBot = !humanSeats.has(i);
       players.push({
         seat: i,
         name: names[i] || (isBot ? BOT_NAMES[i % BOT_NAMES.length] : 'You'),
