@@ -8,6 +8,8 @@
  * - comma-subscribe EventSource URLs that never deliver on WebView
  * - one `since` cursor shared across relays (message ids are per-server,
  *   so a ntfy.sh id used on envs.net silently drops new invites/joins)
+ * - a 10-minute inbox replay that resurrects old presence beats and invites
+ *   as if the friend were live and had just invited you
  */
 (function (root, factory) {
   const net = factory();
@@ -80,8 +82,20 @@
     }
   }
 
+  function topicKind(top) {
+    if (String(top || '').indexOf('pal1l') === 0 || String(top || '').indexOf('pal1m') === 0) return 'room';
+    return 'inbox';
+  }
+
+  function seedSince(top) {
+    // Inbox/presence: 20s is enough to catch a beat or invite during connect.
+    // Lobby/match: 30s to catch a host snapshot. Never 10m — that replays
+    // ghost Online status and invites the friend never just sent.
+    return topicKind(top) === 'room' ? '30s' : '20s';
+  }
+
   function sinceOf(rec, base) {
-    return (rec && rec.since && rec.since[base]) || '10m';
+    return (rec && rec.since && rec.since[base]) || seedSince(rec && rec.top);
   }
 
   function relayOk(base) {
@@ -105,8 +119,9 @@
     const usable = RELAYS.filter(relayOk);
     const base = usable.includes(rec.relay) ? rec.relay : (usable[0] || RELAYS[0]);
     rec.relay = base;
+    rec.top = top;
     const since = sinceOf(rec, base);
-    const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since); // since=10m replay when cursor is fresh
+    const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since);
     const es = new EventSource(url);
     es.onmessage = (ev) => ingest(ev.data, rec, base);
     es.onerror = () => {
@@ -177,9 +192,10 @@
     }
   }
 
-  function freshSince() {
+  function freshSince(top) {
     const s = {};
-    RELAYS.forEach((r) => { s[r] = '10m'; });
+    const seed = seedSince(top);
+    RELAYS.forEach((r) => { s[r] = seed; });
     return s;
   }
 
@@ -188,7 +204,8 @@
     const rec = {
       es: null,
       relay: RELAYS[0],
-      since: freshSince(),
+      top,
+      since: freshSince(top),
       lastAt: 0,
       backoff: 1200,
       esTimer: 0,
@@ -314,6 +331,21 @@
     });
   }
 
+  function stopBeat() {
+    if (heartbeat) clearInterval(heartbeat);
+    heartbeat = 0;
+  }
+
+  function away() {
+    stopBeat();
+    if (!me.id) return;
+    const body = presenceBody(false);
+    publish('p', me.id, body);
+    peers.forEach((id) => {
+      if (!sameNetId(id, me.id)) publish('i', id, body);
+    });
+  }
+
   function ensureChannel() {
     if (bc || typeof BroadcastChannel === 'undefined') return;
     try {
@@ -349,8 +381,7 @@
   }
 
   function disconnect() {
-    if (heartbeat) clearInterval(heartbeat);
-    heartbeat = 0;
+    stopBeat();
     clearTimeout(muxTimer);
     if (me.id) {
       const body = presenceBody(false);
@@ -395,7 +426,7 @@
   }
 
   return {
-    topic, connect, disconnect, resume, on, publish, subscribe, unsubscribe,
+    topic, connect, disconnect, resume, away, on, publish, subscribe, unsubscribe,
     inbox, presenceOf, dropPresence, lobbyPub, matchPub, watchLobby, watchMatch, leaveRoom, beat,
     openMux, closeMux, openSource, closeSource,
     RELAYS,

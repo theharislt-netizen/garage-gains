@@ -150,6 +150,57 @@ try {
   await host.screenshot({ path: join(artifacts, 'mp_host_sees_guest_online.png') });
   await guest.screenshot({ path: join(artifacts, 'mp_guest_sees_host_online.png') });
 
+  await host.evaluate(() => PalaceNet.away());
+  const guestSeesOffline = await waitEval(guest, () => {
+    if (typeof friendOnline !== 'function') return false;
+    if (friendOnline(window.__hostId)) return false;
+    const text = (document.getElementById('friendsList') || {}).innerText || '';
+    return /Last online|Offline/i.test(text) && !/\bOnline\b/.test(text);
+  }, 20000);
+  console.log('guest after host away', guestSeesOffline, await guest.evaluate(() => (document.getElementById('friendsList') || {}).innerText || ''));
+  must(guestSeesOffline, 'host going away marks them offline — not stuck Online');
+
+  await guest.evaluate(() => {
+    handleNetMessage({
+      type: 'presence',
+      id: window.__hostId,
+      from: window.__hostId,
+      name: 'Host',
+      online: true,
+      t: Date.now() - 5 * 60 * 1000,
+    });
+  });
+  const stalePresenceLive = await guest.evaluate(() => friendOnline(window.__hostId));
+  const stalePresenceLine = await guest.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
+  console.log('stale presence', stalePresenceLive, stalePresenceLine.replace(/\s+/g, ' ').trim());
+  must(!stalePresenceLive, 'a 5-minute-old presence replay does not count as Online');
+  must(!/\bOnline\b/.test(stalePresenceLine), 'friends list does not show Online from a stale presence replay');
+
+  await guest.evaluate(() => {
+    const el = document.getElementById('inviteBanner');
+    if (el) el.classList.remove('show');
+    handleNetMessage({
+      type: 'invite',
+      code: 'GHOST1',
+      fromName: 'Host',
+      fromId: window.__hostId,
+      from: window.__hostId,
+      t: Date.now() - 5 * 60 * 1000,
+    });
+  });
+  const ghostInvite = await guest.evaluate(() => {
+    const el = document.getElementById('inviteBanner');
+    return !!(el && el.classList.contains('show') && /invited you/i.test(el.innerText || ''));
+  });
+  console.log('ghost invite shown', ghostInvite);
+  must(!ghostInvite, 'a 5-minute-old invite replay is not shown as a new invite');
+  await guest.screenshot({ path: join(artifacts, 'mp_stale_presence_offline.png') });
+  await guest.screenshot({ path: join(artifacts, 'mp_stale_invite_hidden.png') });
+
+  await host.evaluate(() => PalaceNet.resume());
+  const backOnline = await waitEval(guest, () => typeof friendOnline === 'function' && friendOnline(window.__hostId), 25000);
+  must(backOnline, 'host resume publishes a fresh live presence beat');
+
   await host.evaluate(() => showView('home'));
   await host.evaluate(() => openLobby({ mode: 'standard', seats: 4, difficulty: 'Medium', buyIn: 100 }));
   const code = await host.evaluate(() => (document.getElementById('lobbyCodeText') || {}).textContent.trim());
@@ -277,6 +328,28 @@ try {
   must(reverseSeated[0] && reverseSeated[1], 'invite works in the other direction into the same lobby');
   await guest.screenshot({ path: join(artifacts, 'mp_reverse_invite_guest_host.png') });
   await host.screenshot({ path: join(artifacts, 'mp_reverse_invite_host_guest.png') });
+
+  await host.evaluate(() => leaveSession());
+  await guest.evaluate(() => leaveSession());
+  await sleep(400);
+  await guest.evaluate(() => joinLobby('EMPTY99', { fromInvite: true, hostId: window.__hostId }));
+  const joiningEmpty = await guest.evaluate(() => {
+    const body = (document.getElementById('lobbyBody') || {}).innerText || '';
+    const host = typeof isLobbyHost === 'function' && isLobbyHost();
+    return { body, host };
+  });
+  console.log('empty join first paint', joiningEmpty);
+  must(/joining host lobby/i.test(joiningEmpty.body), 'a dead invite code shows joining, not an empty host table');
+  must(!joiningEmpty.host, 'guest is not the host of a ghost lobby');
+  const leftEmpty = await waitEval(guest, () => {
+    const overlay = document.getElementById('lobbyOverlay');
+    const shown = overlay && overlay.style.display !== 'none' && overlay.style.display !== '';
+    const s = window.__palaceSession && window.__palaceSession();
+    return !s && !shown;
+  }, 26000);
+  console.log('left empty lobby', leftEmpty);
+  must(leftEmpty, 'joining a lobby with no host closes instead of sitting empty');
+  await guest.screenshot({ path: join(artifacts, 'mp_ghost_join_closed.png') });
 } catch (err) {
   fails.push(String(err && err.stack ? err.stack : err));
   try { await host.screenshot({ path: join(artifacts, 'mp_join_presence_host_fail.png') }); } catch (_) { /* ignore */ }

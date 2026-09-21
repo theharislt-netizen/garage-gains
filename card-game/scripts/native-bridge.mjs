@@ -449,7 +449,12 @@ async function setup() {
     if (result === 'exit') App.exitApp();
   });
   App.addListener('appStateChange', ({ isActive }) => {
-    if (isActive && !document.body.classList.contains('in-match')) checkAndApplyUpdate();
+    if (isActive) {
+      if (typeof window.resumeNetSession === 'function') window.resumeNetSession();
+      if (!document.body.classList.contains('in-match')) checkAndApplyUpdate();
+    } else if (window.PalaceNet && typeof window.PalaceNet.away === 'function') {
+      window.PalaceNet.away();
+    }
   });
 }
 
