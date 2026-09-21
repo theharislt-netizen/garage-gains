@@ -6,6 +6,10 @@ This document defines the design for a mobile card game app, built around a home
 
 This is a living document, built section by section as design decisions are locked in. The goal is for it to be detailed enough that a developer (human or AI) can build the app's economy and reward systems from it without needing further clarification.
 
+## Table pile layout (locked)
+
+Stage 2 (face-up) and Stage 3 (face-down) cards are **three stacked slots per seat**, not a spread of six cards. Each face-up sits directly on its matching face-down card in the same slot (`top: 0; left: 0`). East/west seats tuck those three piles with a negative margin so they overlap like a small fan. North/south keep a small gap. The screenshot `design/stage23-table-slots-reference.jpg` is the source of truth. Do not reintroduce Stage 3 peek offsets (`top: 20px` / `left: 8px`) or flatten `p.up` / `p.down` into one `seat-row`. CSS in `card-game.html` is marked `LAYOUT LOCK: Stage 2/3`; `scripts/test-gameplay.mjs` fails if that lock is broken.
+
 ## Coin Economy - Core Numbers
 
 - **Starting balance:** new players begin with 400 coins.
