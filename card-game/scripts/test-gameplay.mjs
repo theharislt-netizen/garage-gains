@@ -19,6 +19,7 @@ must(html.includes('table-rail') && html.includes('table-card') && html.includes
 must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
 must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
 must(html.includes('--table-peek') && html.includes('scroll-snap-align: center') && html.includes('100cqw'), 'table cards snap in the center of the rail');
+must(html.includes('min(52vh, 340px)') && html.includes('align-items: center') && html.includes('justify-content: center'), 'tier cards are large and vertically centered');
 must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
 must(!html.includes('Side Table') && !html.includes('Main Felt') && !html.includes('High Roller'), 'Velvet rows are not themed sub-names');
 must(!html.includes('Audience') && !html.includes("'Council'") && !html.includes('Throne'), 'High Court rows are not themed sub-names');
@@ -916,7 +917,7 @@ must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), '
   must(rf.includes('framedAvatarHtml'), 'friends list shows avatar and border');
 }
 must(html.includes('>Social<') && html.includes('id="mailBtn"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs');
-must(html.includes('id="matchChatOverlay"') && html.includes("scope: 'table'") && html.includes("matchChatTab === 'friend'"), 'in-match table chat and friends chat are separate');
+must(html.includes('id="matchChatOverlay"') && html.includes("function showSeatChat") && html.includes('No chat log') && html.includes("scope: matchChatTab === 'friend' ? 'friend' : 'table'"), 'in-match chat is seat bubbles, not a log');
 must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
 must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto'), 'profile photo can be chosen and displayed');
 must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');

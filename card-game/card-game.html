@@ -646,6 +646,7 @@
     letter-spacing: 0.04em; white-space: nowrap;
     transform: scale(0.4); opacity: 0; pointer-events: none;
   }
+  .speech-bubble.say { white-space: normal; max-width: 132px; line-height: 1.2; }
   .seat.east .speech-bubble { left: auto; right: 58px; border-radius: 12px 12px 4px 12px; }
   .speech-bubble.show { animation: bubbleIn 2.4s ease forwards; }
   @keyframes bubbleIn {
@@ -1068,14 +1069,15 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    justify-content: center;
     container-type: inline-size;
-    --table-card-w: min(320px, calc(100cqw - 72px));
-    --table-peek: max(16px, calc((100cqw - var(--table-card-w)) / 2));
+    --table-card-w: calc((100cqw - 46px) / 2);
+    --table-peek: 16px;
   }
   .table-rail {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: center;
     gap: 14px;
     flex: 1;
     min-height: 0;
@@ -1092,8 +1094,9 @@
   .table-card {
     flex: 0 0 var(--table-card-w);
     width: var(--table-card-w);
-    height: min(44vh, 286px);
-    min-height: 252px;
+    height: min(52vh, 340px);
+    min-height: min(48vh, 318px);
+    align-self: center;
     margin: 0;
     padding: 9px;
     border: 0;
@@ -1109,11 +1112,12 @@
   .table-face {
     position: relative;
     width: 100%; height: 100%;
+    min-height: min(48vh, 318px);
     border-radius: 10px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 10px;
     padding: 14px 10px 10px;
     text-align: left;
@@ -3136,6 +3140,7 @@ function paintEmote(seat, icon) {
   const spark = document.getElementById('sparkle-' + seat);
   if (bubble) {
     bubble.textContent = icon;
+    bubble.classList.remove('say');
     bubble.classList.remove('show');
     void bubble.offsetWidth;
     bubble.classList.add('show');
@@ -5551,25 +5556,30 @@ function closeMatchChat() {
   syncOverlayLock();
 }
 
+function showSeatChat(seat, text) {
+  const bubble = document.getElementById('bubble-' + seat);
+  if (!bubble) return;
+  bubble.textContent = String(text || '').slice(0, 80);
+  bubble.classList.add('say');
+  bubble.classList.remove('show');
+  void bubble.offsetWidth;
+  bubble.classList.add('show');
+  playTone(520, 0.05);
+}
+
 function paintMatchChat() {
   const body = document.getElementById('matchChatBody');
   if (!body) return;
   const pals = friendsInMatch();
   const friendId = pals[0] && pals[0].profileId;
-  const log = matchChatTab === 'friend'
-    ? (friendId ? getThread(friendId) : [])
-    : tableChatLog;
-  const rows = (log || []).map((m) =>
-    `<div class="chat-bubble ${m.me ? 'me' : 'them'}">${escText(m.text || '')}<div class="chat-meta">${m.me ? 'You' : (m.name || '')}</div></div>`
-  ).join('');
   body.innerHTML = `
     <div class="chat-tabs seat-toggle">
       <button type="button" data-chat-tab="table"${matchChatTab === 'table' ? ' class="on"' : ''}>Table</button>
       <button type="button" data-chat-tab="friend"${matchChatTab === 'friend' ? ' class="on"' : ''}>Friends</button>
     </div>
-    ${matchChatTab === 'friend' && !friendId ? '<div class="empty">No friends at this table</div>' : `<div class="chat-log">${rows || '<div class="empty">No messages yet</div>'}</div>`}
+    <p style="color:var(--text-dim); font-size:13px; line-height:1.4; margin:0 2px 10px;">${matchChatTab === 'friend' ? (friendId ? 'Sends a bubble only to friends at this table.' : 'No friends at this table.') : 'Sends a bubble everyone at the table can see. No chat log.'}</p>
     <div class="chat-compose log-form">
-      <input id="matchChatInput" maxlength="120" placeholder="${matchChatTab === 'friend' ? 'Message a friend' : 'Message the table'}">
+      <input id="matchChatInput" maxlength="80" placeholder="${matchChatTab === 'friend' ? 'Bubble a friend' : 'Bubble the table'}">
       <button class="btn primary" id="matchChatSendBtn" type="button">Send</button>
     </div>`;
   body.querySelectorAll('[data-chat-tab]').forEach((btn) => btn.addEventListener('click', () => {
@@ -5580,34 +5590,42 @@ function paintMatchChat() {
   const send = document.getElementById('matchChatSendBtn');
   const go = () => sendMatchChat(input && input.value, friendId);
   if (send) send.addEventListener('click', go);
-  if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  if (input) {
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    setTimeout(() => input.focus(), 30);
+  }
 }
 
 function sendMatchChat(text, friendId) {
-  const msg = String(text || '').trim().slice(0, 120);
-  if (!msg) return;
+  const msg = String(text || '').trim().slice(0, 80);
+  if (!msg || !match) return;
   if (matchChatTab === 'friend') {
     if (!friendId) return showToast('No friend at this table');
-    sendDm(friendId, msg);
-    paintMatchChat();
-    return;
   }
-  tableChatLog.push({ me: true, text: msg, name: state.profile.name, t: Date.now() });
-  if (tableChatLog.length > 60) tableChatLog.shift();
+  showSeatChat(match.humanSeat, msg);
   if (window.PalaceNet && session) {
-    PalaceNet.matchPub(session.code, { type: 'chat', scope: 'table', id: state.profile.id, name: state.profile.name || 'Player', text: msg });
+    PalaceNet.matchPub(session.code, {
+      type: 'chat',
+      scope: matchChatTab === 'friend' ? 'friend' : 'table',
+      to: matchChatTab === 'friend' ? friendId : null,
+      id: state.profile.id,
+      name: state.profile.name || 'Player',
+      text: msg,
+    });
   }
-  paintMatchChat();
+  closeMatchChat();
 }
 
 function receiveTableChat(msg) {
-  if (!msg || !msg.text) return;
+  if (!msg || !msg.text || !match) return;
   if (samePlayerId(msg.id, state.profile.id)) return;
-  tableChatLog.push({ me: false, text: String(msg.text).slice(0, 120), name: msg.name || 'Player', t: Date.now() });
-  if (tableChatLog.length > 60) tableChatLog.shift();
-  if (!layerOpen('matchChatOverlay')) tableChatUnread = true;
-  paintSocialBadge();
-  if (layerOpen('matchChatOverlay') && matchChatTab === 'table') paintMatchChat();
+  if (msg.scope === 'friend') {
+    const toMe = samePlayerId(msg.to, state.profile.id);
+    const fromFriend = (state.friends || []).some((f) => samePlayerId(f.id, msg.id));
+    if (!toMe || !fromFriend) return;
+  }
+  const seat = match.players.findIndex((p) => samePlayerId(p.profileId, msg.id));
+  if (seat >= 0) showSeatChat(seat, msg.text);
 }
 
 function renderFriends() {
