@@ -12,6 +12,14 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { App } from '@capacitor/app';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import {
+  UPDATE_REPO,
+  UPDATE_DIR,
+  UPDATE_REFS,
+  pickNewestCandidate,
+  refsFromManifest,
+  uniqueRefs,
+} from './live-update-select.mjs';
 
 const STORE_KEY = 'palaceCards_v1';
 const REGISTRY_KEY = STORE_KEY + '::registry';
@@ -175,9 +183,6 @@ function wireHaptics() {
   } catch (_) { /* WebView may freeze navigator.vibrate */ }
 }
 
-const UPDATE_REPO = 'theharislt-netizen/garage-gains';
-const UPDATE_REFS = ['cursor/winner-kick-rewards-e78b', 'cursor/card-game-setup-e78b', 'main'];
-const UPDATE_DIR = 'card-game/live-update';
 const TOKEN_KEY = 'palace_githubToken';
 let updateCheckInFlight = false;
 let updatesArePublic = true;
@@ -221,92 +226,143 @@ function parseGithubJson(data) {
   return data;
 }
 
-async function httpGetJson(url) {
-  const res = await CapacitorHttp.get({
+function headerValue(headers, name) {
+  if (!headers) return '';
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === name.toLowerCase());
+  return key ? String(headers[key] || '') : '';
+}
+
+function decodeManifest(raw) {
+  const data = parseGithubJson(raw);
+  if (data?.version) return data;
+  if (data?.content && data.encoding === 'base64') {
+    try { return JSON.parse(atob(String(data.content).replace(/\n/g, ''))); } catch { return null; }
+  }
+  return data?.version ? data : null;
+}
+
+function zipUrlFor(ref, version, sha) {
+  const v = encodeURIComponent(version);
+  const t = Date.now();
+  if (sha) {
+    return `https://raw.githubusercontent.com/${UPDATE_REPO}/${sha}/${UPDATE_DIR}/www.zip?v=${v}`;
+  }
+  return `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/${UPDATE_DIR}/www.zip?v=${v}&t=${t}`;
+}
+
+function candidateFromManifest(ref, manifest, extras = {}) {
+  if (!manifest?.version) return null;
+  const zipUrl = extras.zipUrl || zipUrlFor(ref, manifest.version, extras.sha);
+  if (!zipUrl) return null;
+  return {
+    version: manifest.version,
+    zipUrl,
+    checksum: manifest.checksum || '',
+    public: extras.public !== false,
+    ref,
+    committedAt: extras.committedAt || '',
+    extraRefs: refsFromManifest(manifest),
+  };
+}
+
+async function httpGet(url, headers) {
+  return CapacitorHttp.get({
     url,
-    headers: { 'User-Agent': 'PALACE' },
+    headers: headers || { 'User-Agent': 'PALACE' },
     connectTimeout: 8000,
     readTimeout: 15000,
   });
-  if (res.status !== 200 || !res.data) return null;
+}
+
+async function fetchManifestCommit(ref) {
+  const url = `https://api.github.com/repos/${UPDATE_REPO}/commits?path=${encodeURIComponent(UPDATE_DIR + '/manifest.json')}&sha=${encodeURIComponent(ref)}&per_page=1`;
+  const res = await httpGet(url, authHeaders());
+  if (res.status !== 200) return null;
   const data = parseGithubJson(res.data);
-  return data && data.version ? data : null;
+  const commit = Array.isArray(data) ? data[0] : data;
+  if (!commit?.sha) return null;
+  const committedAt = commit.commit?.committer?.date || commit.commit?.author?.date || '';
+  return { sha: commit.sha, committedAt };
 }
 
 async function fetchManifestFromRaw(ref) {
+  let commit = null;
+  try { commit = await fetchManifestCommit(ref); } catch (_) { /* fall back to branch name */ }
+  const pathRef = commit?.sha || ref;
   const stamp = Date.now();
-  const github = await httpGetJson(
-    `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/${UPDATE_DIR}/manifest.json?t=${stamp}`
-  );
-  if (github) {
-    return {
-      version: github.version,
-      zipUrl: `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/${UPDATE_DIR}/www.zip?v=${encodeURIComponent(github.version)}`,
-      public: true,
-    };
+  const urls = [
+    `https://raw.githubusercontent.com/${UPDATE_REPO}/${pathRef}/${UPDATE_DIR}/manifest.json?t=${stamp}`,
+  ];
+  if (!commit?.sha) {
+    urls.push(
+      `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/manifest.json?t=${stamp}`
+    );
   }
-  const cdn = await httpGetJson(
-    `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/manifest.json?t=${stamp}`
-  );
-  if (cdn) {
-    return {
-      version: cdn.version,
-      zipUrl: `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/www.zip`,
+  for (const url of urls) {
+    const res = await httpGet(url);
+    const manifest = decodeManifest(res.status === 200 ? res.data : null);
+    if (!manifest?.version) continue;
+    const cdnZip = url.includes('jsdelivr')
+      ? `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(commit?.sha || ref)}/${UPDATE_DIR}/www.zip?v=${encodeURIComponent(manifest.version)}`
+      : '';
+    return candidateFromManifest(ref, manifest, {
       public: true,
-    };
+      sha: commit?.sha,
+      committedAt: commit?.committedAt || headerValue(res.headers, 'Last-Modified'),
+      zipUrl: commit?.sha ? zipUrlFor(ref, manifest.version, commit.sha) : (cdnZip || zipUrlFor(ref, manifest.version)),
+    });
   }
   return null;
 }
 
-async function fetchLatestCommitSha(ref) {
-  const res = await CapacitorHttp.get({
-    url: `https://api.github.com/repos/${UPDATE_REPO}/commits/${encodeURIComponent(ref)}`,
-    headers: authHeaders(),
-    connectTimeout: 8000,
-    readTimeout: 12000,
+async function fetchManifestFromApi(ref) {
+  const manUrl = `https://api.github.com/repos/${UPDATE_REPO}/contents/${UPDATE_DIR}/manifest.json?ref=${encodeURIComponent(ref)}`;
+  const manRes = await httpGet(manUrl, authHeaders());
+  if (manRes.status !== 200 || !manRes.data) return null;
+  const manifest = decodeManifest(manRes.data);
+  if (!manifest?.version) return null;
+  let commit = null;
+  try { commit = await fetchManifestCommit(ref); } catch (_) { /* branch raw URL still works */ }
+  return candidateFromManifest(ref, manifest, {
+    public: !getGithubToken(),
+    sha: commit?.sha,
+    committedAt: commit?.committedAt,
   });
-  if (res.status !== 200) return null;
-  const data = parseGithubJson(res.data);
-  return data && data.sha ? data.sha : null;
 }
 
-async function fetchManifestFromApi(ref) {
-  const headers = authHeaders();
-  const manUrl = `https://api.github.com/repos/${UPDATE_REPO}/contents/${UPDATE_DIR}/manifest.json?ref=${encodeURIComponent(ref)}`;
-  const manRes = await CapacitorHttp.get({ url: manUrl, headers, connectTimeout: 8000, readTimeout: 15000 });
-  if (manRes.status !== 200 || !manRes.data) return null;
-  const manMeta = parseGithubJson(manRes.data);
-  let manifest = null;
-  if (manMeta?.content && manMeta.encoding === 'base64') {
-    try { manifest = JSON.parse(atob(manMeta.content.replace(/\n/g, ''))); } catch (_) { manifest = null; }
-  } else {
-    manifest = parseGithubJson(manMeta);
-  }
-  if (!manifest?.version) return null;
-
-  const zipUrlApi = `https://api.github.com/repos/${UPDATE_REPO}/contents/${UPDATE_DIR}/www.zip?ref=${encodeURIComponent(ref)}`;
-  const zipRes = await CapacitorHttp.get({ url: zipUrlApi, headers, connectTimeout: 8000, readTimeout: 15000 });
-  const zipMeta = parseGithubJson(zipRes.data);
-  let zipUrl = zipMeta && zipMeta.download_url;
+async function probeRef(ref) {
   try {
-    const sha = await fetchLatestCommitSha(ref);
-    if (sha) zipUrl = `https://raw.githubusercontent.com/${UPDATE_REPO}/${sha}/${UPDATE_DIR}/www.zip`;
-  } catch (_) { /* keep download_url */ }
-  if (!zipUrl) return null;
-  return { version: manifest.version, zipUrl, public: !getGithubToken() };
+    const api = await fetchManifestFromApi(ref);
+    if (api) return api;
+  } catch (_) { /* token missing or not yet public */ }
+  try {
+    return await fetchManifestFromRaw(ref);
+  } catch (_) {
+    return null;
+  }
 }
 
 async function fetchLatestManifest() {
-  for (const ref of UPDATE_REFS) {
-    try {
-      const api = await fetchManifestFromApi(ref);
-      if (api) return api;
-    } catch (_) { /* token missing or not yet public */ }
-    try {
-      const raw = await fetchManifestFromRaw(ref);
-      if (raw) return raw;
-    } catch (_) { /* private repos 404 here */ }
+  const seen = new Set();
+  let queue = uniqueRefs(UPDATE_REFS);
+  const candidates = [];
+
+  while (queue.length && seen.size < 12) {
+    const batch = queue.filter((ref) => !seen.has(ref));
+    queue = [];
+    for (const ref of batch) seen.add(ref);
+    const results = await Promise.all(batch.map(probeRef));
+    for (const candidate of results) {
+      if (!candidate?.version) continue;
+      candidates.push(candidate);
+      for (const extra of candidate.extraRefs || []) {
+        if (!seen.has(extra)) queue.push(extra);
+      }
+    }
   }
+
+  const newest = pickNewestCandidate(candidates);
+  if (newest) return newest;
   return getGithubToken() ? null : { privateRepo: true };
 }
 
@@ -398,6 +454,7 @@ async function checkAndApplyUpdate() {
       wireUpdateStatus(current, 'Auto-update is on — you are on the latest');
       return;
     }
+    console.info('palace live-update', current, '→', manifest.version, manifest.ref || '');
     toast('Updating PALACE…');
     wireUpdateStatus(current, 'Downloading latest…');
     const bundle = await CapacitorUpdater.download({

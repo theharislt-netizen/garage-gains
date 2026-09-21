@@ -21,6 +21,7 @@ function must(cond, msg) {
 
 const html = read('card-game.html');
 const bridge = read('scripts/native-bridge.mjs');
+const select = read('scripts/live-update-select.mjs');
 const makeLive = read('scripts/make-live-bundle.mjs');
 const pkg = JSON.parse(read('package.json'));
 const cap = JSON.parse(read('capacitor.config.json'));
@@ -43,12 +44,14 @@ must(html.includes('showToast'), 'toast helper required');
 
 must(bridge.includes("STORE_KEY = 'palaceCards_v1'"), 'native-bridge must use palaceCards_v1');
 must(!bridge.includes('garageGains_v1'), 'native-bridge must not use garageGains_v1');
-must(bridge.includes("UPDATE_DIR = 'card-game/live-update'"), 'live-update path must be card-game/live-update');
-must(bridge.includes("cursor/card-game-setup-e78b"), 'live-update must poll this branch first');
+must(bridge.includes("UPDATE_DIR") && (bridge.includes('live-update-select') || bridge.includes("card-game/live-update")), 'live-update path must be card-game/live-update');
+must(select.includes("cursor/winner-kick-rewards-e78b"), 'live-update must poll the installed APK channel');
+must(select.includes("cursor/card-game-setup-e78b"), 'live-update must still poll card-game-setup as fallback');
+must(bridge.includes('pickNewestCandidate'), 'live-update must pick the newest zip, not the first matching ref');
 must(bridge.includes('CapacitorUpdater.download'), 'Capgo updater download required');
 must(bridge.includes('checkAndApplyUpdate'), 'auto-update on open required');
 
-must(makeLive.includes("UPDATE_DIR = 'card-game/live-update'"), 'bundle script must publish under card-game/live-update');
+must(makeLive.includes("UPDATE_DIR") && makeLive.includes('live-update-select'), 'bundle script must publish under card-game/live-update');
 must(pkg.dependencies['@capgo/capacitor-updater'], 'Capgo updater dependency required');
 must(cap.appId === 'com.palace.app', 'applicationId / appId must be com.palace.app');
 must(cap.appName === 'PALACE', 'capacitor appName must be PALACE');
@@ -69,6 +72,6 @@ console.log(JSON.stringify({
   storeKey: 'palaceCards_v1',
   appId: cap.appId,
   liveUpdateDir: 'card-game/live-update',
-  updateBranch: 'cursor/card-game-setup-e78b',
+  updateBranch: 'cursor/winner-kick-rewards-e78b',
   apk: 'card-game/dist/PALACE.apk',
 }, null, 2));

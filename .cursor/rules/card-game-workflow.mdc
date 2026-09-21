@@ -12,6 +12,7 @@ PALACE is a **separate Android app** from RIGCORE. It reuses RIGCORE’s Capacit
 - Android id: `com.palace.app`
 - APK: `card-game/dist/PALACE.apk`
 - Live-update: `card-game/live-update/` on branch `cursor/card-game-setup-e78b` (then `main`)
+- Web test client: `card-game/docs/play/` (same HTML as the APK, no install)
 - Save key: `palaceCards_v1` as one JSON object. Never rename it. Never write `garageGains_v1`.
 
 After finished PALACE changes: from `card-game/` run `npm run prepare:www` so `live-update/www.zip` is current, rebuild the APK only when native/Android files change, commit, and push. The installed phone app pulls the zip the next time it opens. Do not tell the user to reinstall the APK for HTML/JS feature work.

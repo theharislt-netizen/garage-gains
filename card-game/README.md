@@ -1,10 +1,11 @@
 # PALACE (working title) — Android APK
 
-This is a **real Android app**, the same kind as RIGCORE: a signed `.apk` you install once on the phone. It is **not** a website, and **not** Safari/Chrome “Add to Home Screen”.
+This is a **real Android app**, the same kind as RIGCORE: a signed `.apk` you install once on the phone.
 
-Install this file on the phone:
+It is also the same single HTML client (`card-game.html`). The cheapest cross-platform test path is to host that file as a browser table — no second codebase, no React rewrite.
 
-- Phone install page (same delivery as RIGCORE): https://theharislt-netizen.github.io/garage-gains/palace/
+- Phone install page: https://theharislt-netizen.github.io/garage-gains/palace/
+- Browser table (no install): https://theharislt-netizen.github.io/garage-gains/palace/play/
 - Direct APK: [`dist/PALACE.apk`](dist/PALACE.apk)
 
 On the phone: allow **Install unknown apps**, open `PALACE.apk`, tap **Install**. After that, later code pushes update the installed app the next time you open it.
@@ -25,7 +26,9 @@ npm run prepare:www
         └── android/              native Android shell
 ```
 
-Opening the **installed native app** downloads `card-game/live-update/www.zip` from this public repo (branch `cursor/card-game-setup-e78b`, then `main`). You do **not** transfer a new APK for each code change.
+Opening the **installed native app** downloads `card-game/live-update/www.zip` from this public repo. It checks every live-update channel it knows (`cursor/winner-kick-rewards-e78b`, `cursor/card-game-setup-e78b`, `cursor/palace-lobby-afk-web-b503`, `main`) and **installs the newest zip**, not the first branch that happens to have a file.
+
+Older APKs still stop at the first channel (`cursor/winner-kick-rewards-e78b`). After `npm run prepare:www`, that zip **must** be on that branch or the phone keeps the previous copy and Settings says it is already latest. You do **not** transfer a new APK for each code change.
 
 ## Rebuild
 
