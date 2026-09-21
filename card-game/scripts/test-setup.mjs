@@ -32,7 +32,9 @@ must(html.includes("const STORE_KEY = 'palaceCards_v1'"), 'card-game.html must u
 must(!html.includes("STORE_KEY = 'garageGains_v1'") && !html.includes("getItem('garageGains_v1')"), 'card-game.html must not read/write garageGains_v1');
 must(html.includes('APP_NAME = \'PALACE\''), 'app title must be PALACE');
 must(html.includes('data-view="home"') && html.includes('data-view="shop"'), 'home/shop tabs required');
-must(html.includes('id="view-inventory"') && html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory lives as a screen opened from Profile');
+must(html.includes('id="view-inventory"') && html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory shell remains in the DOM for Profile item browsing');
+must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"'), 'owned items browse inside Profile by category');
+must(!html.includes("showView('inventory')"), 'Profile does not navigate away to a separate Inventory screen');
 must(html.includes('>Social<') && html.includes('data-view="friends"') && html.includes('data-view="settings"'), 'Social tab replaces Friends');
 must(!html.includes('data-view="inventory"'), 'Inventory is not a bottom-nav tab');
 must(html.includes('data-view="subscription"'), 'subscription tab required');

@@ -572,7 +572,7 @@
     position: relative; z-index: 1;
     box-shadow: 0 4px 10px rgba(0,0,0,0.35);
   }
-  .avatar svg { width: 100%; height: 100%; display: block; }
+  .avatar svg, .avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
   .avatar-ring {
     position: absolute; inset: -5px; border-radius: 50%;
     border: 3px solid transparent; pointer-events: none;
@@ -1242,6 +1242,8 @@
   .profile-hero { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 4px 12px; }
   .profile-hero .avatar-wrap { width: 88px; height: 88px; }
   .profile-hero .avatar { width: 88px; height: 88px; cursor: pointer; }
+  .profile-hero .avatar img { border-radius: 50%; }
+  #profileInvGems { margin: 2px 0 8px; }
   .profile-hero .l2 { text-align: center; }
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .stat-tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -1629,9 +1631,21 @@ const SHOP_TABS = [
 const INV_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'cosmetics', label: 'Cosmetics' },
+  { id: 'cardSkin', label: 'Card backs' },
+  { id: 'tableTheme', label: 'Tables' },
+  { id: 'emote', label: 'Emotes' },
+  { id: 'chatBubble', label: 'Bubbles' },
+  { id: 'profileBorder', label: 'Borders' },
   { id: 'shards', label: 'Shards' },
   { id: 'stones', label: 'Stones' },
 ];
+const INV_SLOT_FILTERS = {
+  cardSkin: 1,
+  tableTheme: 1,
+  emote: 1,
+  chatBubble: 1,
+  profileBorder: 1,
+};
 const THEMES = [
   { id: 'rig', name: 'Rig', a: '#b455f5', b: '#3ec6f0' },
   { id: 'magenta', name: 'Magenta', a: '#ff4fa3', b: '#4fd8ff' },
@@ -1768,7 +1782,7 @@ function defaultState() {
   return {
     app: 'palace',
     format: 1,
-    profile: { name: '', photo: '', border: null, id: '', nameSet: false },
+    profile: { name: '', photo: '', photoThumb: '', border: null, id: '', nameSet: false },
     coins: STARTING_COINS,
     xp: 0,
     lastDailyLogin: '',
@@ -2271,7 +2285,8 @@ function openItemDetail(kind, key, anchor) {
       }
       saveState();
       closeItemDetail();
-      renderInventory();
+      if (layerOpen('profileOverlay') && !viewingFriendId) paintProfile();
+      else renderInventory();
       renderHeader();
       showToast('Equipped ' + inst.name);
     });
@@ -2315,29 +2330,19 @@ function openItemDetail(kind, key, anchor) {
   pop.style.top = top + 'px';
 }
 
-function renderInventory() {
-  const gold = document.getElementById('invGoldGems');
-  if (!gold) return;
-  gold.textContent = state.coins + ' coins';
-  document.getElementById('invGemsCount').textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
-  document.getElementById('invShardCount').textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
-  const filterRow = document.getElementById('invFilterRow');
-  filterRow.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
-  filterRow.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
-    state.invFilter = chip.dataset.invFilter;
-    saveState();
-    renderInventory();
-  }));
-  const list = document.getElementById('invItemList');
+function inventorySlotsHtml() {
   const items = state.inventory.items || [];
   const shards = state.inventory.shards.cosmetic || 0;
   const stones = state.inventory.stones.cosmetic || 0;
-  const showItems = state.invFilter === 'all' || state.invFilter === 'cosmetics';
-  const showShards = state.invFilter === 'all' || state.invFilter === 'shards';
-  const showStones = state.invFilter === 'all' || state.invFilter === 'stones';
+  const f = state.invFilter || 'all';
+  const slotOnly = !!INV_SLOT_FILTERS[f];
+  const showItems = f === 'all' || f === 'cosmetics' || slotOnly;
+  const showShards = f === 'all' || f === 'shards';
+  const showStones = f === 'all' || f === 'stones';
   const slots = [];
   if (showItems) {
     items.forEach((it) => {
+      if (slotOnly && it.slot !== f) return;
       const eqKey = SLOT_TO_EQUIP[it.slot];
       const equipped = eqKey && state.equipped[eqKey] === it.id;
       const glow = it.new ? ' new-item-glow' : '';
@@ -2363,9 +2368,43 @@ function renderInventory() {
   const rows = Math.max(3, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) + 1);
   const total = rows * INV_GRID_COLUMNS;
   for (let i = filled; i < total; i++) slots.push('<div class="inv-slot empty"></div>');
-  list.innerHTML = `<div class="inv-slot-grid">${slots.join('')}</div>`;
+  return `<div class="inv-slot-grid">${slots.join('')}</div>`;
+}
+
+function bindInvFilterRow(row) {
+  if (!row) return;
+  row.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
+  row.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
+    state.invFilter = chip.dataset.invFilter;
+    saveState();
+    renderInventory();
+  }));
+}
+
+function bindInvList(list) {
+  if (!list) return;
+  list.innerHTML = inventorySlotsHtml();
   list.querySelectorAll('[data-slot-item]').forEach((el) => el.addEventListener('click', () => openItemDetail('item', el.dataset.slotItem, el)));
   list.querySelectorAll('[data-slot-mat]').forEach((el) => el.addEventListener('click', () => openItemDetail(el.dataset.slotMat, el.dataset.slotMat, el)));
+}
+
+function renderInventory() {
+  const gold = document.getElementById('invGoldGems');
+  if (gold) gold.textContent = state.coins + ' coins';
+  const gems = document.getElementById('invGemsCount');
+  if (gems) gems.textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
+  const shardEl = document.getElementById('invShardCount');
+  if (shardEl) shardEl.textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
+  const profileGems = document.getElementById('profileInvGems');
+  if (profileGems) {
+    profileGems.textContent = state.coins + ' coins · '
+      + (state.inventory.stones.cosmetic || 0) + ' stones · '
+      + (state.inventory.shards.cosmetic || 0) + ' shards';
+  }
+  bindInvFilterRow(document.getElementById('invFilterRow'));
+  bindInvFilterRow(document.getElementById('profileInvFilter'));
+  bindInvList(document.getElementById('invItemList'));
+  bindInvList(document.getElementById('profileInvList'));
 }
 
 function enchantChance(tier) {
@@ -2520,9 +2559,12 @@ function paintProfile() {
       return `<button type="button" class="border-chip${on ? ' on' : ''}" data-equip-border="${it.id}">${framedAvatarHtml({ seat: 0, photo, border: it.catalogId })}<div class="l2">${it.name.replace(' Border', '').replace(' Ring', '')}</div></button>`;
     }).join('')
     : '';
-  const itemsBtn = own
-    ? `<button class="btn" id="profileInvBtn" type="button">Browse items</button>
-       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+  const itemsBlock = own
+    ? `<div class="section-title">Items</div>
+       <div class="l2" id="profileInvGems"></div>
+       <div class="inv-filter-row" id="profileInvFilter"></div>
+       <div id="profileInvList"></div>
+       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
          <button class="btn" id="profileEnchantBtn" type="button">Enchant</button>
          <button class="btn" id="profileCraftBtn" type="button">Craft</button>
        </div>`
@@ -2548,8 +2590,7 @@ function paintProfile() {
       <div class="place-cell"><div class="n">${places[3] || 0}</div><div class="l">3rd</div></div>
       <div class="place-cell"><div class="n">${places[4] || 0}</div><div class="l">4th</div></div>
     </div>
-    <div class="section-title">${own ? 'Items' : ''}</div>
-    ${itemsBtn}`;
+    ${itemsBlock}`;
   if (own) {
     const heroAv = document.querySelector('#profileBody .profile-hero .avatar');
     if (heroAv) heroAv.addEventListener('click', pickProfilePhoto);
@@ -2562,11 +2603,7 @@ function paintProfile() {
       paintProfile();
       renderHeader();
     }));
-    const invBtn = document.getElementById('profileInvBtn');
-    if (invBtn) invBtn.addEventListener('click', () => {
-      closeProfile();
-      showView('inventory');
-    });
+    renderInventory();
     const en = document.getElementById('profileEnchantBtn');
     if (en) en.addEventListener('click', () => openEnchant());
     const cr = document.getElementById('profileCraftBtn');
@@ -2585,7 +2622,11 @@ function pickProfilePhoto() {
     input.value = '';
     if (!file) return;
     compressPhoto(file, (data) => {
-      state.profile.photo = data;
+      const photo = typeof data === 'string' ? data : (data && data.photo) || '';
+      const thumb = typeof data === 'string' ? '' : (data && data.thumb) || '';
+      if (!photo) return showToast('Could not read that image');
+      state.profile.photo = photo;
+      state.profile.photoThumb = thumb;
       saveState();
       paintProfile();
       renderHeader();
@@ -2596,25 +2637,30 @@ function pickProfilePhoto() {
   input.click();
 }
 
+function jpegSquare(img, size, maxLen, startQ, minQ) {
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d');
+  const s = Math.min(img.width, img.height) || 1;
+  ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+  let q = startQ;
+  let data = c.toDataURL('image/jpeg', q);
+  while (data.length > maxLen && q > minQ) {
+    q -= 0.08;
+    data = c.toDataURL('image/jpeg', q);
+  }
+  return data;
+}
+
 function compressPhoto(file, cb) {
   const img = new Image();
   const url = URL.createObjectURL(file);
   img.onload = () => {
-    const c = document.createElement('canvas');
-    const size = 160;
-    c.width = size;
-    c.height = size;
-    const ctx = c.getContext('2d');
-    const s = Math.min(img.width, img.height) || 1;
-    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
-    let q = 0.62;
-    let data = c.toDataURL('image/jpeg', q);
-    while (data.length > 2200 && q > 0.28) {
-      q -= 0.08;
-      data = c.toDataURL('image/jpeg', q);
-    }
+    const photo = jpegSquare(img, 192, 42000, 0.86, 0.48);
+    const thumb = jpegSquare(img, 48, 1400, 0.55, 0.18);
     URL.revokeObjectURL(url);
-    cb(data);
+    cb({ photo, thumb });
   };
   img.onerror = () => { URL.revokeObjectURL(url); showToast('Could not read that image'); };
   img.src = url;
@@ -5377,13 +5423,15 @@ function syncNetProfile() {
 }
 
 function profileCard() {
+  const thumb = state.profile.photoThumb || '';
   const photo = state.profile.photo || '';
+  const netPhoto = thumb || (photo.length && photo.length < 1800 ? photo : '');
   return {
     type: 'profile',
     id: state.profile.id,
     name: state.profile.name || 'Player',
     border: equippedBorderId(),
-    photo: photo.length && photo.length < 1800 ? photo : '',
+    photo: netPhoto,
     stats: {
       matches: state.stats.matches || 0,
       wins: state.stats.wins || 0,

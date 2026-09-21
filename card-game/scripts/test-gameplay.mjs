@@ -919,7 +919,9 @@ must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), '
 must(html.includes('>Social<') && html.includes('id="mailBtn"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs');
 must(html.includes('id="matchChatOverlay"') && html.includes("function showSeatChat") && html.includes('No chat log') && html.includes("scope: matchChatTab === 'friend' ? 'friend' : 'table'"), 'in-match chat is seat bubbles, not a log');
 must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
-must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto'), 'profile photo can be chosen and displayed');
+must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto') && html.includes('photoThumb'), 'profile photo is stored locally and a tiny thumb is sent on the wire');
+must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"') && html.includes("label: 'Card backs'") && html.includes("label: 'Borders'"), 'Profile items are organized by category');
+must(!html.includes("showView('inventory')"), 'owned items stay inside Profile instead of a separate Inventory view');
 must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
 must(html.includes('came online') && html.includes('socialPing'), 'friend-came-online notifies with a Social badge');
 must(engineSrc.includes('randomBotName') && engineSrc.includes("'Milo'") && engineSrc.includes("'Sofia'"), 'bots pick realistic names from a pool');
