@@ -2976,11 +2976,7 @@ function renderTable(opts) {
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
     <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
-  const holder = match.players[match.turn];
-  const turnLine = dealing ? 'Dealing' : (myTurn ? 'Your turn' : ((holder && holder.name) || 'Player') + "'s turn");
-  document.getElementById('tableSub').textContent = turnLine
-    + ' · ' + tableThemeLabel(match.difficulty)
-    + (match.buyIn ? ' · ' + match.buyIn + ' coins' : '');
+  document.getElementById('tableSub').textContent = tableThemeLabel(match.difficulty) + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
 
   bindTableGestures(zone);
   felt.querySelectorAll('.emote-btn').forEach((btn) => {

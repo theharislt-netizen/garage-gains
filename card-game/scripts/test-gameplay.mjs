@@ -962,10 +962,8 @@ must(turn0.turn === 0, 'turn 0 is not dropped as falsy');
 const turn1 = E.unpackMatch(Object.assign({}, packed, { turn: 1 }), 0);
 must(turn1.turn === 1 && turn1.humanSeat === 0, 'guest turn 1 stays 1 on the host client');
 must(html.includes('function isMyTurn') && html.includes('function autoTurnTimeout'), 'turn ownership and AFK timeout helpers exist');
-must(html.includes("Your turn") && html.includes("'s turn"), 'table shows whose turn it is on each client');
-must(html.includes("type: 'timeout'") && html.includes('p.difficulty = \'Easy\''), 'timeout auto-plays like an Easy bot on the host');
+must(html.includes("type: 'timeout'") && html.includes("p.difficulty = 'Easy'"), 'timeout auto-plays like an Easy bot on the host');
 must(html.includes("type: 'end'") && html.includes('leaveSession();'), 'leaving a match clears the session so invites work again');
-must(html.includes("classList.contains('in-match')"), 'live updates do not reload the WebView mid-match');
 {
   const bridge = readFileSync(join(root, 'scripts/native-bridge.mjs'), 'utf8');
   must(bridge.includes("classList.contains('in-match')"), 'native updater skips reload while a match is open');

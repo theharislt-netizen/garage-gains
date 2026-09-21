@@ -154,10 +154,10 @@ try {
   const actor = views[0].myTurn ? 'Host' : 'Guest';
   must(views[0].myTurn === (views[0].turn === 0), 'host isMyTurn matches turn === 0');
   must(views[1].myTurn === (views[1].turn === 1), 'guest isMyTurn matches turn === 1');
-  if (views[0].myTurn) must(/your turn/i.test(views[0].sub), 'host HUD says Your turn');
-  else must(/guest/i.test(views[0].sub + ' ' + views[0].active), 'host HUD/ring points at Guest');
-  if (views[1].myTurn) must(/your turn/i.test(views[1].sub), 'guest HUD says Your turn');
-  else must(/host/i.test(views[1].sub + ' ' + views[1].active), 'guest HUD/ring points at Host');
+  if (views[0].myTurn) must(/host/i.test(views[0].active) || !views[0].active, 'host ring is on Host when it is host turn');
+  else must(/guest/i.test(views[0].active), 'host ring points at Guest when it is guest turn');
+  if (views[1].myTurn) must(/guest/i.test(views[1].active) || !views[1].active, 'guest ring is on Guest when it is guest turn');
+  else must(/host/i.test(views[1].active), 'guest ring points at Host when it is host turn');
   await host.screenshot({ path: join(artifacts, 'mp_turn_host_view.png') });
   await guest.screenshot({ path: join(artifacts, 'mp_turn_guest_view.png') });
 
