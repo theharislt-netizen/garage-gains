@@ -39,8 +39,17 @@ must(html.includes('id="exportBtn"') && html.includes('id="importBtn"') && html.
 must(html.includes('palace-net.js'), 'card-game.html must load palace-net.js');
 must(existsSync(join(root, 'palace-net.js')), 'palace-net.js required');
 must(existsSync(join(root, 'scripts/web-play.html')), 'web play loader required');
+{
+  const play = read('scripts/web-play.html');
+  must(play.includes("pipeThrough(new DecompressionStream('deflate-raw'))"), 'web play unzip must pipe inflate or large files deadlock');
+  must(!play.includes('getWriter()'), 'web play must not write-then-read DecompressionStream');
+  must(play.includes('document.write(html)'), 'web play must boot in-place so iPhone join links are not stuck on Updating');
+  must(!play.includes('location.replace'), 'web play must not navigate to a blob URL');
+  must(play.includes('./www.zip'), 'web play prefers the same-origin zip on GitHub Pages');
+}
 must(read('scripts/prepare-www.mjs').includes('palace-net.js'), 'prepare:www copies palace-net.js');
 must(read('scripts/prepare-www.mjs').includes('web-play.html'), 'prepare:www writes the play loader');
+must(read('scripts/prepare-www.mjs').includes('www.zip'), 'prepare:www copies the live zip next to the play loader');
 must(read('scripts/install-page.html').includes('./play/'), 'install page links the browser table');
 must(html.includes('Starting balance') || html.includes('400'), 'starter coins (400) should be in the shell');
 must(html.includes('function buildBackupPayload') || html.includes('window.buildBackupPayload'), 'backup payload must be exposed');
