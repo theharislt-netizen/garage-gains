@@ -141,6 +141,29 @@ try {
   must(guestFriends.includes('HOSTTEST1'), 'guest added host');
   must(hostFriends.includes('GUESTTEST1'), 'host added guest after accept');
 
+  console.log('friends last-seen');
+  await host.evaluate(() => {
+    const now = Date.now();
+    const extra = [
+      { id: 'OFFA', name: 'Ada', lastSeen: now - 5 * 60 * 1000 },
+      { id: 'OFFB', name: 'Bo', lastSeen: now - 3 * 60 * 60 * 1000 },
+      { id: 'OFFC', name: 'Cy', lastSeen: now - 2 * 24 * 60 * 60 * 1000 },
+    ];
+    extra.forEach((row) => {
+      if (!(state.friends || []).some((f) => f.id === row.id)) state.friends.push(row);
+      presenceMap[row.id] = { name: row.name, online: false, t: row.lastSeen };
+    });
+    showView('friends');
+    renderFriends();
+  });
+  const lastSeenCopy = await host.evaluate(() => (document.getElementById('friendsList') || {}).innerText || '');
+  console.log('last seen copy', lastSeenCopy.replace(/\s+/g, ' ').slice(0, 220));
+  must(/Last online 5 minutes ago/.test(lastSeenCopy), 'friends list shows last online minutes');
+  must(/Last online 3 hours ago/.test(lastSeenCopy), 'friends list shows last online hours');
+  must(/Last online 2 days ago/.test(lastSeenCopy), 'friends list shows last online days');
+  await host.screenshot({ path: join(artifacts, 'palace_friends_last_seen.png') });
+  await host.evaluate(() => showView('home'));
+
   console.log('open practice lobby');
   await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 4, difficulty: 'Easy', buyIn: 0 }));
   const lobbyOpen = await host.evaluate(() => document.getElementById('lobbyOverlay').style.display === 'flex' && !!document.getElementById('lobbyCodeText'));
@@ -178,6 +201,27 @@ try {
   });
   must(sheetOpen, 'empty pad opens invite sheet with the guest');
   await host.evaluate(() => inviteFriendToLobby('GUESTTEST1'));
+  const inviteCool = await host.evaluate(() => {
+    const pads = [...document.querySelectorAll('[data-invite-open]')];
+    const coolingSeat = pads.find((p) => p.disabled);
+    const other = pads.find((p) => !p.disabled);
+    if (other) other.click();
+    const btn = document.querySelector('[data-invite-friend="GUESTTEST1"]');
+    const cs = btn ? getComputedStyle(btn) : null;
+    return {
+      inviteDisabled: !!(btn && btn.disabled),
+      seatDisabled: !!(coolingSeat && coolingSeat.disabled),
+      opacity: cs ? Number(cs.opacity) : 1,
+      pill: !!(cs && cs.borderRadius && (parseFloat(cs.borderRadius) >= 16)),
+    };
+  });
+  console.log('invite cooldown', inviteCool);
+  must(inviteCool.inviteDisabled, 'guest Invite is disabled after send');
+  must(inviteCool.seatDisabled, 'open-seat Invite pad is disabled after send');
+  must(inviteCool.opacity < 0.7, 'cooldown Invite looks grayed out');
+  must(inviteCool.pill, 'Invite button uses the HUD pill look');
+  await host.screenshot({ path: join(artifacts, 'palace_invite_cooldown.png') });
+  await host.evaluate(() => { if (typeof hideLobbyInviteSheet === 'function') hideLobbyInviteSheet(); });
   const inviteText = await guest.evaluate(async () => {
     const start = Date.now();
     while (Date.now() - start < 8000) {
