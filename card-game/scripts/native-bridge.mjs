@@ -360,6 +360,7 @@ async function fetchLatestManifestWithRetry() {
 }
 
 async function checkAndApplyUpdate() {
+  if (document.body.classList.contains('in-match')) return;
   if (updateCheckInFlight) return;
   updateCheckInFlight = true;
   try {
@@ -382,10 +383,12 @@ async function checkAndApplyUpdate() {
     }
     toast('Updating PALACE…');
     wireUpdateStatus(current, 'Downloading latest…');
+    if (document.body.classList.contains('in-match')) return;
     const bundle = await CapacitorUpdater.download({
       version: manifest.version,
       url: manifest.zipUrl,
     });
+    if (document.body.classList.contains('in-match')) return;
     await CapacitorUpdater.set(bundle);
   } catch (err) {
     console.error('live update failed', err);
@@ -446,7 +449,7 @@ async function setup() {
     if (result === 'exit') App.exitApp();
   });
   App.addListener('appStateChange', ({ isActive }) => {
-    if (isActive) checkAndApplyUpdate();
+    if (isActive && !document.body.classList.contains('in-match')) checkAndApplyUpdate();
   });
 }
 
