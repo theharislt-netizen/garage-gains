@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="on-home">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -40,6 +40,11 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
+  html.on-home, html.on-home body {
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
+  }
   body {
     background:
       radial-gradient(circle at 15% 0%, rgba(var(--a1-rgb),0.10), transparent 45%),
@@ -54,8 +59,11 @@
   body.on-home {
     overflow: hidden;
     height: 100dvh;
+    width: 100%;
+    position: fixed;
+    inset: 0;
     overscroll-behavior: none;
-    touch-action: manipulation;
+    touch-action: pan-x;
   }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
   h1, h2, h3, .display { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; font-weight: 700; margin: 0; }
@@ -144,7 +152,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     touch-action: pan-x;
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
   }
   .play-hand::-webkit-scrollbar { display: none; }
   .play-hand.overlay-row {
@@ -1462,6 +1470,8 @@ function showView(id) {
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + id));
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === id));
   document.body.classList.toggle('on-home', id === 'home');
+  document.documentElement.classList.toggle('on-home', id === 'home');
+  if (id === 'home') window.scrollTo(0, 0);
   if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
   if (id === 'friends') renderFriends();
@@ -1469,24 +1479,31 @@ function showView(id) {
 }
 
 function bindHomeScrollLock() {
-  const home = document.getElementById('view-home');
-  if (!home) return;
-  home.addEventListener('wheel', (ev) => {
-    if (Math.abs(ev.deltaY) >= Math.abs(ev.deltaX)) ev.preventDefault();
-  }, { passive: false });
-  home.addEventListener('touchstart', (ev) => {
+  const isHome = () => document.body.classList.contains('on-home');
+  const opts = { passive: false, capture: true };
+  let lockX = 0;
+  let lockY = 0;
+  window.addEventListener('wheel', (ev) => {
+    if (!isHome()) return;
+    if (Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) && ev.cancelable) ev.preventDefault();
+  }, opts);
+  window.addEventListener('touchstart', (ev) => {
     const t = ev.touches[0];
     if (!t) return;
-    home._lockX = t.clientX;
-    home._lockY = t.clientY;
-  }, { passive: true });
-  home.addEventListener('touchmove', (ev) => {
+    lockX = t.clientX;
+    lockY = t.clientY;
+  }, { passive: true, capture: true });
+  window.addEventListener('touchmove', (ev) => {
+    if (!isHome()) return;
     const t = ev.touches[0];
-    if (!t || home._lockX == null) return;
-    const dy = Math.abs(t.clientY - home._lockY);
-    const dx = Math.abs(t.clientX - home._lockX);
+    if (!t) return;
+    const dy = Math.abs(t.clientY - lockY);
+    const dx = Math.abs(t.clientX - lockX);
     if (dy > dx && ev.cancelable) ev.preventDefault();
-  }, { passive: false });
+  }, opts);
+  window.addEventListener('scroll', () => {
+    if (isHome() && window.scrollY) window.scrollTo(0, 0);
+  }, { passive: true });
 }
 
 function renderHeader() {

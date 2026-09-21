@@ -43,7 +43,7 @@ must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold
 must(html.includes('function enterCarry') && html.includes('FLICK_MS') && html.includes('drag-follow'), 'swipe up picks the card up so it follows the finger');
 must(html.includes('dt < FLICK_MS') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
 must(html.includes('if (gesture.browsing)') && html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup, and a carry never starts preview');
-must(html.includes('body.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x'), 'the main menu does not scroll vertically');
+must(html.includes('body.on-home') && html.includes('html.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x') && html.includes('position: fixed'), 'the main menu does not scroll or rubber-band vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
 must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
