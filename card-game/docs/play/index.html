@@ -23,11 +23,8 @@
   function note(msg) { if (boot) boot.querySelector('p').textContent = msg; }
 
   async function inflateRaw(bytes) {
-    const ds = new DecompressionStream('deflate-raw');
-    const w = ds.writable.getWriter();
-    await w.write(bytes);
-    await w.close();
-    return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
   async function unzip(buf) {
@@ -59,13 +56,35 @@
     return files;
   }
 
-  async function manifest(ref) {
-    const url = 'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/manifest.json?t=' + Date.now();
+  function mimeFor(name) {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.html')) return 'text/html';
+    if (lower.endsWith('.js')) return 'text/javascript';
+    if (lower.endsWith('.css')) return 'text/css';
+    if (lower.endsWith('.woff2')) return 'font/woff2';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.json')) return 'application/json';
+    return 'application/octet-stream';
+  }
+
+  async function getJson(url) {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return null;
     const j = await res.json();
-    if (!j || !j.version) return null;
-    return { version: j.version, zip: 'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/www.zip?v=' + encodeURIComponent(j.version) };
+    return j && j.version ? j : null;
+  }
+
+  async function manifest(ref) {
+    const j = await getJson('https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/manifest.json?t=' + Date.now());
+    if (!j) return null;
+    const v = encodeURIComponent(j.version);
+    return {
+      version: j.version,
+      zips: [
+        './www.zip?v=' + v,
+        'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/www.zip?v=' + v,
+      ],
+    };
   }
 
   let picked = null;
@@ -78,30 +97,44 @@
     return;
   }
   note('Updating to ' + picked.version + '…');
-  const zipRes = await fetch(picked.zip, { cache: 'no-store' });
-  if (!zipRes.ok) throw new Error('zip ' + zipRes.status);
-  const files = await unzip(await zipRes.arrayBuffer());
+  let zipBuf = null;
+  for (const zipUrl of picked.zips) {
+    try {
+      const zipRes = await fetch(zipUrl, { cache: 'no-store' });
+      if (zipRes.ok) { zipBuf = await zipRes.arrayBuffer(); break; }
+    } catch (_) { /* try next */ }
+  }
+  if (!zipBuf) throw new Error('could not download the table');
+  note('Unpacking the table…');
+  const files = await unzip(zipBuf);
+  if (!files['index.html']) throw new Error('table zip is missing index.html');
   const blobs = {};
-  Object.keys(files).forEach((name) => {
-    const lower = name.toLowerCase();
-    const mime = lower.endsWith('.html') ? 'text/html'
-      : lower.endsWith('.js') ? 'text/javascript'
-      : lower.endsWith('.css') ? 'text/css'
-      : lower.endsWith('.woff2') ? 'font/woff2'
-      : lower.endsWith('.png') ? 'image/png'
-      : 'application/octet-stream';
-    blobs[name] = URL.createObjectURL(new Blob([files[name]], { type: mime }));
+  const names = Object.keys(files).sort((a, b) => b.length - a.length);
+  names.forEach((name) => {
+    if (name === 'index.html' || name.toLowerCase().endsWith('.css')) return;
+    blobs[name] = URL.createObjectURL(new Blob([files[name]], { type: mimeFor(name) }));
   });
-  let html = new TextDecoder().decode(files['index.html'] || new Uint8Array());
-  Object.keys(blobs).forEach((name) => {
-    if (name === 'index.html') return;
+  names.forEach((name) => {
+    if (!name.toLowerCase().endsWith('.css')) return;
+    let css = new TextDecoder().decode(files[name]);
+    names.forEach((other) => {
+      if (!blobs[other]) return;
+      const base = other.split('/').pop();
+      css = css.split('./' + base).join(blobs[other]);
+    });
+    blobs[name] = URL.createObjectURL(new Blob([css], { type: 'text/css' }));
+  });
+  let html = new TextDecoder().decode(files['index.html']);
+  names.forEach((name) => {
+    if (name === 'index.html' || !blobs[name]) return;
     html = html.split('./' + name).join(blobs[name]);
-    html = html.split(name).join(blobs[name]);
+    html = html.split('"' + name + '"').join('"' + blobs[name] + '"');
+    html = html.split("'" + name + "'").join("'" + blobs[name] + "'");
   });
-  const hash = location.hash || '';
-  const search = location.search || '';
-  const next = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  location.replace(next + search + hash);
+  note('Starting…');
+  document.open();
+  document.write(html);
+  document.close();
 })().catch((err) => {
   const p = document.querySelector('#boot p');
   if (p) p.textContent = 'Load failed — ' + (err && err.message ? err.message : 'try again');

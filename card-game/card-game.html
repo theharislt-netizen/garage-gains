@@ -74,9 +74,37 @@
   .view.active { display: block; animation: fadeIn 0.25s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; margin-bottom: 12px; }
-  .btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: var(--radius-sm); font-family: 'Barlow Condensed'; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; cursor: pointer; background: var(--panel); border: 1px solid var(--line); color: var(--text); margin-top: 6px; }
-  .btn.primary { background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; border: none; }
-  .btn.danger { background: transparent; border: 1px solid #ff5c5c; color: #ff5c5c; }
+  .btn, .inv-btn, .instance-leave-btn, .enchant-cast-btn, .log-form button {
+    font-family: 'Barlow Condensed'; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700;
+    cursor: pointer; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
+  }
+  .btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; text-align: center;
+    min-height: 44px; padding: 0 16px; margin-top: 6px;
+    border-radius: 100px;
+    background: rgba(18, 16, 25, 0.78);
+    border: 1px solid var(--line);
+    color: var(--text);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.28);
+  }
+  .btn.primary {
+    background: linear-gradient(90deg, var(--a1), var(--a2));
+    color: #08070d;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 4px 12px rgba(var(--a1-rgb),0.28);
+  }
+  .btn.danger {
+    background: rgba(110, 22, 28, 0.72);
+    border: 1px solid rgba(255, 132, 132, 0.7);
+    color: #ffd6d6;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 4px 10px rgba(80, 0, 0, 0.28);
+  }
+  .btn:active { border-color: var(--a1); }
+  .btn.primary:active { filter: brightness(1.05); }
+  .btn:disabled, .inv-btn:disabled, .lobby-pad.open:disabled, .enchant-cast-btn:disabled {
+    opacity: 0.42; cursor: default; pointer-events: none; filter: grayscale(0.28);
+  }
   .section-title { font-size: 12.5px; letter-spacing: 0.1em; color: var(--text-dim); margin: 20px 2px 8px; font-family:'Barlow Condensed'; text-transform: uppercase;}
   .empty { text-align: center; padding: 26px 10px; color: var(--text-dim); }
   .empty .big { font-family: 'Barlow Condensed'; font-size: 19px; color: var(--text); margin-bottom: 4px; }
@@ -92,7 +120,7 @@
   .settings-row .l2 { color: var(--text-dim); font-size: 12px; }
   .log-form { display: flex; gap: 8px; margin-top: 12px; }
   .log-form input, .field { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text); font-family: 'JetBrains Mono'; font-size: 16px; padding: 12px; }
-  .log-form button { flex-shrink: 0; width: auto; padding: 0 20px; margin-top: 0; background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d; border:none; }
+  .log-form .btn { flex-shrink: 0; width: auto; min-height: 44px; padding: 0 18px; margin-top: 0; }
   .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
   .theme-swatch { border-radius: var(--radius-sm); padding: 10px 4px; border: 2px solid transparent; cursor: pointer; text-align: center; background: var(--panel); }
   .theme-swatch .dot { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto 6px; }
@@ -406,11 +434,13 @@
   .enchant-drop-ic { font-size: 28px; line-height: 1; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
   .enchant-drop-lab { font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   .enchant-cast-btn {
-    position: relative; display: block; width: 100%; padding: 14px; border: none; border-radius: 12px;
-    font-family: 'Barlow Condensed'; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800;
-    background: linear-gradient(90deg, #b455f5, #ffd27a); color: #120c18; cursor: pointer;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 44px; padding: 0 16px; margin-top: 8px;
+    border-radius: 100px; border: 1px solid rgba(255,255,255,0.14);
+    font-size: 18px; letter-spacing: 0.12em; font-weight: 800;
+    background: linear-gradient(90deg, var(--a1), var(--a2)); color: #08070d;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 4px 12px rgba(var(--a1-rgb),0.28);
   }
-  .enchant-cast-btn:disabled { opacity: 0.32; filter: grayscale(0.4); cursor: default; }
   .enchant-chance { text-align: center; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-dim); margin: 10px 0 4px; }
   .enchant-picker {
     position: absolute; inset: 0; background: rgba(7,6,12,0.88); padding: 18px 14px; overflow-y: auto;
@@ -599,9 +629,10 @@
   .fan-backs .pcard:first-child { margin-left: 0; }
   .emote-btn {
     position: absolute; top: 2px; right: -24px;
-    width: 22px; height: 22px; border-radius: 50%; border: 0;
-    background: rgba(0,0,0,0.45); color: #ffe14a; cursor: pointer;
-    font-size: 12px; line-height: 1; z-index: 3;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(18, 16, 25, 0.78); color: #ffe14a;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.28);
+    cursor: pointer; font-size: 12px; line-height: 1; z-index: 3;
   }
   .seat.east .emote-btn { right: auto; left: -24px; }
   .speech-bubble {
@@ -673,8 +704,9 @@
   }
   #emotePicker.show { display: grid; }
   #emotePicker button {
-    width: 44px; height: 44px; border: 0; border-radius: 10px;
-    background: rgba(255,255,255,0.08); color: #fff; font-size: 20px; cursor: pointer;
+    width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: rgba(18, 16, 25, 0.78); color: #fff; font-size: 20px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
   }
   .fly-card { position: fixed; left: 0; top: 0; transform-origin: center center; pointer-events: none; z-index: 361; }
   .fly-card.comet .pcard {
@@ -848,8 +880,10 @@
     border-radius: 100px; padding: 6px 8px;
   }
   .count-chip button {
-    width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text); font-weight: 700; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(18, 16, 25, 0.78); color: var(--text);
+    font-weight: 700; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
   }
   .tier-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .tier-chip { flex: 1; min-width: 72px; text-align: center; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
@@ -861,7 +895,11 @@
   .shop-tab { flex: 0 0 auto; padding: 8px 12px; border-radius: 100px; border: 1px solid var(--line); background: var(--panel); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
   .shop-tab.active { color: var(--text); border-color: var(--a1); background: rgba(var(--a1-rgb),0.12); }
   .inv-primary-actions { display: flex; gap: 10px; margin-bottom: 14px; }
-  .inv-primary-btn { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; }
+  .inv-primary-btn {
+    flex: 1; background: rgba(18, 16, 25, 0.78); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.28);
+  }
   .inv-primary-btn:active { border-color: var(--a1); }
   .inv-primary-ic { width: 26px; height: 26px; display: inline-flex; color: var(--a1); margin-bottom: 6px; }
   .inv-primary-ic svg { width: 100%; height: 100%; }
@@ -875,7 +913,17 @@
   .inv-filter-chip.active { border-color: var(--a1); color: var(--text); background: rgba(var(--a1-rgb),0.1); }
   .inv-item-row { padding: 10px 4px; border-bottom: 1px solid var(--line); }
   .inv-item-row:last-child { border-bottom: none; }
-  .inv-btn { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono'; font-size: 11px; cursor: pointer; }
+  .inv-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 32px; padding: 0 12px; margin: 0; width: auto; flex-shrink: 0;
+    border-radius: 100px;
+    background: rgba(18, 16, 25, 0.78);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 13px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 3px 8px rgba(0,0,0,0.22);
+  }
+  .inv-btn:active { border-color: var(--a1); color: var(--text); }
   .instance-header, .table-topbar {
     display: flex; align-items: center; gap: 12px;
     min-height: 44px;
@@ -885,9 +933,9 @@
   .instance-leave-btn {
     display: inline-flex; align-items: center; justify-content: center;
     height: 36px; padding: 0 14px; margin: 0; flex-shrink: 0;
-    background: none; border: 1px solid var(--line); color: var(--text-dim);
-    border-radius: 100px; line-height: 1;
-    font-family: 'Barlow Condensed'; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    background: rgba(18, 16, 25, 0.78); border: 1px solid var(--line); color: var(--text-dim);
+    border-radius: 100px; line-height: 1; font-size: 14px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 3px 8px rgba(0,0,0,0.22);
   }
   .instance-leave-btn:active { border-color: var(--a1); color: var(--text); }
   .instance-leave-btn.table-leave-btn, .table-leave-btn {
@@ -939,7 +987,8 @@
     aspect-ratio: 1;
     border-radius: 16px;
     border: 1.5px solid var(--line);
-    background: var(--panel);
+    background: rgba(18, 16, 25, 0.78);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.28);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1085,12 +1134,20 @@
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 250; display: none; align-items: flex-end; justify-content: center; }
   .modal-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%; max-width: 560px; padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); max-height: 86vh; overflow: auto; }
   .modal-head { display: flex; justify-content: space-between; align-items: center; font-family: 'Barlow Condensed'; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
-  .modal-close { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; }
+  .modal-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 32px; min-width: 32px; padding: 0 10px;
+    background: rgba(18, 16, 25, 0.78); border: 1px solid var(--line); color: var(--text-dim);
+    border-radius: 100px; font-size: 16px; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
+  }
   .cosmetic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .cosmetic-slot { background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px 12px; min-height: 92px; }
   .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
   .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
-  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; }
+  .friend-row > div:first-child { min-width: 0; flex: 1; }
+  .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; }
   .range { width: 100%; accent-color: var(--a2); }
 </style>
 </head>
@@ -1210,7 +1267,7 @@
     <div class="card">
       <div class="log-form">
         <input id="friendSearch" placeholder="Nickname or profile ID">
-        <button class="btn" id="addFriendBtn" type="button">Add</button>
+        <button class="btn primary" id="addFriendBtn" type="button">Add</button>
       </div>
     </div>
     <div class="section-title">Friends list</div>
@@ -1562,6 +1619,12 @@ let presenceMap = {};
 let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
+const INVITE_COOL_MS = 5000;
+const inviteCoolUntil = {};
+let pendingInviteSeat = null;
+let inviteCoolTimer = 0;
+let friendsTickId = 0;
+let lastSeenSaveAt = 0;
 
 function loadState() {
   try {
@@ -1665,7 +1728,10 @@ function showView(id, opts) {
   if (id === 'home') window.scrollTo(0, 0);
   if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
-  if (id === 'friends') renderFriends();
+  if (id === 'friends') {
+    renderFriends();
+    startFriendsPresenceTick();
+  }
   if (id === 'settings') renderSettings();
 }
 
@@ -3655,6 +3721,88 @@ function friendOnline(id) {
   const row = presenceMap[id];
   return !!(row && row.online && Date.now() - (row.t || 0) < 28000);
 }
+function inviteCoolKey(kind, id) {
+  return String(kind) + ':' + String(id);
+}
+function inviteOnCooldown(kind, id) {
+  return Date.now() < (inviteCoolUntil[inviteCoolKey(kind, id)] || 0);
+}
+function scheduleInviteCooldownRefresh() {
+  clearTimeout(inviteCoolTimer);
+  const now = Date.now();
+  let next = Infinity;
+  Object.keys(inviteCoolUntil).forEach((k) => {
+    const t = inviteCoolUntil[k];
+    if (t <= now) delete inviteCoolUntil[k];
+    else if (t < next) next = t;
+  });
+  if (!isFinite(next)) return;
+  inviteCoolTimer = setTimeout(refreshInviteCooldownUi, Math.max(16, next - Date.now()));
+}
+function refreshInviteCooldownUi() {
+  document.querySelectorAll('[data-invite-friend]').forEach((btn) => {
+    btn.disabled = inviteOnCooldown('friend', btn.getAttribute('data-invite-friend'));
+  });
+  document.querySelectorAll('[data-invite-open]').forEach((btn) => {
+    btn.disabled = inviteOnCooldown('seat', btn.getAttribute('data-invite-open'));
+  });
+  scheduleInviteCooldownRefresh();
+}
+function armInviteCooldown(kind, id) {
+  if (id == null || id === '') return;
+  inviteCoolUntil[inviteCoolKey(kind, id)] = Date.now() + INVITE_COOL_MS;
+  refreshInviteCooldownUi();
+}
+function formatLastOnline(ts, now) {
+  const t = Number(ts || 0);
+  if (!t) return 'Offline';
+  const n = Number(now || Date.now());
+  const ms = Math.max(0, n - t);
+  if (ms < 60000) return 'Last online just now';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return 'Last online ' + minutes + ' minute' + (minutes === 1 ? '' : 's') + ' ago';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return 'Last online ' + hours + ' hour' + (hours === 1 ? '' : 's') + ' ago';
+  const days = Math.floor(hours / 24);
+  return 'Last online ' + days + ' day' + (days === 1 ? '' : 's') + ' ago';
+}
+function friendLastSeen(id) {
+  const row = presenceMap[id];
+  const friend = (state.friends || []).find((f) => f.id === id);
+  const fromPresence = row && row.t ? Number(row.t) : 0;
+  const fromFriend = friend && friend.lastSeen ? Number(friend.lastSeen) : 0;
+  return Math.max(fromPresence, fromFriend) || 0;
+}
+function friendPresenceLine(f) {
+  if (!f) return 'Offline';
+  if (friendOnline(f.id)) return 'Online';
+  return formatLastOnline(friendLastSeen(f.id));
+}
+function rememberFriendSeen(id, t, online) {
+  const list = state.friends || [];
+  const idx = list.findIndex((f) => f.id === id);
+  if (idx < 0) return;
+  const at = Number(t || Date.now());
+  const prev = Number(list[idx].lastSeen || 0);
+  if (at < prev) return;
+  list[idx] = { ...list[idx], lastSeen: at };
+  const now = Date.now();
+  if (!online || now - lastSeenSaveAt > 15000) {
+    lastSeenSaveAt = now;
+    saveState();
+  }
+}
+function startFriendsPresenceTick() {
+  if (friendsTickId) return;
+  friendsTickId = setInterval(() => {
+    if (currentViewId() !== 'friends') {
+      clearInterval(friendsTickId);
+      friendsTickId = 0;
+      return;
+    }
+    renderFriends();
+  }, 30000);
+}
 function needsNameSetup() {
   return !state.profile.nameSet || !String(state.profile.name || '').trim() || !state.profile.id;
 }
@@ -3728,7 +3876,8 @@ function paintLobby() {
     const seat = seats[i];
     if (!seat) {
       const lock = host ? '' : ' locked';
-      return `<button type="button" class="lobby-pad open${lock}" data-seat="${i}" data-invite-open="${i}" aria-label="Open seat"><span class="plus">+</span></button>`;
+      const cooling = host && inviteOnCooldown('seat', i);
+      return `<button type="button" class="lobby-pad open${lock}" data-seat="${i}" data-invite-open="${i}" aria-label="Open seat"${cooling ? ' disabled' : ''}><span class="plus">+</span></button>`;
     }
     const you = samePlayerId(seat.id, state.profile.id);
     const tag = seat.bot ? 'Bot' : (you ? 'You' : (samePlayerId(seat.id, session.hostId) ? 'Host' : 'Player'));
@@ -3790,10 +3939,12 @@ function hideLobbyInviteSheet() {
 function openLobbyInviteSheet(seatIndex) {
   const el = document.getElementById('lobbyInviteSheet');
   if (!el || !session) return;
+  pendingInviteSeat = Number(seatIndex);
   const friendRows = (state.friends || []).length
     ? state.friends.map((f) => {
       const on = friendOnline(f.id);
-      return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${on ? 'Online' : 'Offline'} · ${f.id}</div></div><button class="inv-btn" data-invite-friend="${f.id}">Invite</button></div>`;
+      const cool = inviteOnCooldown('friend', f.id);
+      return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id}</div></div><button class="inv-btn" data-invite-friend="${f.id}"${cool ? ' disabled' : ''}>Invite</button></div>`;
     }).join('')
     : `<div class="empty"><div class="big">No friends yet</div>Add people in the Friends tab, or share the lobby code.</div>`;
   el.hidden = false;
@@ -3949,6 +4100,9 @@ function applyHostSnap(raw) {
 
 function inviteFriendToLobby(friendId) {
   if (!session || !window.PalaceNet) return;
+  if (inviteOnCooldown('friend', friendId)) return;
+  const seat = pendingInviteSeat;
+  if (seat != null && inviteOnCooldown('seat', seat)) return;
   const friend = (state.friends || []).find((f) => f.id === friendId);
   PalaceNet.inbox(friendId, {
     type: 'invite',
@@ -3957,7 +4111,10 @@ function inviteFriendToLobby(friendId) {
     fromId: state.profile.id,
     mode: session.cfg && session.cfg.mode,
   });
+  armInviteCooldown('friend', friendId);
+  if (seat != null) armInviteCooldown('seat', seat);
   hideLobbyInviteSheet();
+  paintLobby();
   showToast('Invite sent to ' + ((friend && friend.name) || friendId));
 }
 
@@ -4015,6 +4172,7 @@ function upsertFriend(row) {
   const list = state.friends || [];
   const idx = list.findIndex((f) => f.id === row.id);
   const next = { id: row.id, name: row.name || row.id };
+  if (presenceMap[row.id] && presenceMap[row.id].t) next.lastSeen = presenceMap[row.id].t;
   if (idx >= 0) list[idx] = { ...list[idx], ...next };
   else list.push(next);
   state.friends = list;
@@ -4053,7 +4211,9 @@ function sendFriendRequest(query) {
 function handleNetMessage(msg) {
   if (!msg || !msg.type) return;
   if (msg.type === 'presence' && msg.id) {
-    presenceMap[msg.id] = { name: msg.name, online: !!msg.online, t: Date.now() };
+    const at = Date.now();
+    presenceMap[msg.id] = { name: msg.name, online: !!msg.online, t: at };
+    rememberFriendSeen(msg.id, at, !!msg.online);
     renderFriends();
     if (session) paintLobby();
     return;
@@ -4498,8 +4658,9 @@ function renderFriends() {
   }
   list.innerHTML = state.friends.map((f) => {
     const on = friendOnline(f.id);
-    return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${on ? 'Online' : 'Offline'} · ${f.id || ''}</div></div></div>`;
+    return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div></div>`;
   }).join('');
+  startFriendsPresenceTick();
 }
 
 function renderSettings() {

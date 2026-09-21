@@ -898,8 +898,25 @@ must(html.includes('lobby-pads') && html.includes('lobby-pad') && html.includes(
 must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), 'full-width open-seat rows are gone');
 {
   const rf = html.slice(html.indexOf('function renderFriends'), html.indexOf('function renderSettings'));
-  must(rf.includes('Online') && rf.includes('Offline'), 'friends list shows online status');
+  must(rf.includes('friendPresenceLine') && rf.includes('Online'), 'friends list shows online status');
+  must(rf.includes('Last online') || html.includes("return formatLastOnline"), 'offline friends use last-seen copy');
   must(!rf.includes('inv-btn') && !rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+}
+must(html.includes('INVITE_COOL_MS = 5000'), 'invite cooldown is 5 seconds');
+must(html.includes('function armInviteCooldown') && html.includes('function inviteOnCooldown'), 'invite cooldown helpers exist');
+must(html.includes('armInviteCooldown(\'friend\'') && html.includes('armInviteCooldown(\'seat\''), 'invite cooldown keys friend and seat');
+must(html.includes('.inv-btn') && html.includes('border-radius: 100px') && html.includes('rgba(18, 16, 25, 0.78)'), 'action buttons share the HUD pill panel');
+{
+  const start = html.indexOf('function formatLastOnline');
+  const end = html.indexOf('\nfunction friendLastSeen', start);
+  must(start > 0 && end > start, 'formatLastOnline is defined');
+  const formatLastOnline = new Function(html.slice(start, end) + '; return formatLastOnline;')();
+  const now = 1700000000000;
+  must(formatLastOnline(now - 5 * 60 * 1000, now) === 'Last online 5 minutes ago', 'last seen 5 minutes');
+  must(formatLastOnline(now - 3 * 60 * 60 * 1000, now) === 'Last online 3 hours ago', 'last seen 3 hours');
+  must(formatLastOnline(now - 2 * 24 * 60 * 60 * 1000, now) === 'Last online 2 days ago', 'last seen 2 days');
+  must(formatLastOnline(0, now) === 'Offline', 'never seen stays Offline');
+  must(formatLastOnline(now - 1000, now) === 'Last online just now', 'sub-minute last seen');
 }
 
 const Net = require(join(root, 'palace-net.js'));
