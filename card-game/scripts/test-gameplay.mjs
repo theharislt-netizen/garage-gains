@@ -18,8 +18,8 @@ must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must
 must(html.includes('table-rail') && html.includes('table-card') && html.includes('tier-play') && html.includes('seat-toggle'), 'mode setup uses upright table cards with stacked tiers');
 must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
 must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
-must(html.includes('--table-peek') && html.includes('scroll-snap-align: center') && html.includes('100cqw'), 'table cards snap in the center of the rail');
-must(html.includes('min(52vh, 340px)') && html.includes('align-items: center') && html.includes('justify-content: center'), 'tier cards are large and vertically centered');
+must(html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('scroll-snap-align: start'), 'table cards are two-up and snap along the rail');
+must(html.includes('min(56vh, 380px)') && html.includes('min(52vh, 340px)') && html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('justify-content: center'), 'tier cards are two-up, tall, and vertically centered');
 must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
 must(!html.includes('Side Table') && !html.includes('Main Felt') && !html.includes('High Roller'), 'Velvet rows are not themed sub-names');
 must(!html.includes('Audience') && !html.includes("'Council'") && !html.includes('Throne'), 'High Court rows are not themed sub-names');

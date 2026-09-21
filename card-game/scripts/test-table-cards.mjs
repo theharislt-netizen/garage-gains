@@ -109,9 +109,11 @@ try {
     const railBox = document.querySelector('.table-rail').getBoundingClientRect();
     const boxes = cards.map((c) => {
       const r = c.getBoundingClientRect();
-      return { left: r.left, right: r.right, width: r.width, visible: r.left < vw - 8 && r.right > 8 };
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, visible: r.left < vw - 8 && r.right > 8 };
     });
-    const first = boxes[0] || { left: 0, right: 0 };
+    const first = boxes[0] || { left: 0, right: 0, top: 0, bottom: 0, height: 0 };
+    const overlay = document.getElementById('modeOverlay').getBoundingClientRect();
+    const body = document.getElementById('modeBody').getBoundingClientRect();
     const rot = cards.map((c) => getComputedStyle(c).transform);
     return {
       count: cards.length,
@@ -120,16 +122,20 @@ try {
       boxes,
       rot,
       vw,
+      vh: window.innerHeight,
       leftGap: first.left - railBox.left,
-      rightGap: railBox.right - first.right,
-      viewLeft: first.left,
-      viewRight: vw - first.right,
+      overlayMid: (overlay.top + overlay.bottom) / 2,
+      bodyMid: (body.top + body.bottom) / 2,
+      cardMid: (first.top + first.bottom) / 2,
+      cardH: first.height,
+      cardW: first.width,
+      fullyOn: boxes.filter((b) => b.left >= -4 && b.right <= vw + 4).length,
       hasEasy: document.body.innerText.includes('Easy'),
       tiltOval: !!document.querySelector('.stake-oval, .stake-card'),
       themedRows: /side table|main felt|high roller|audience|council|throne|night watch|inner vault|crown table/i.test(document.body.innerText),
     };
   });
-  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, rows: layout.rows, rot: layout.rot, leftGap: layout.leftGap, rightGap: layout.rightGap, viewLeft: layout.viewLeft, viewRight: layout.viewRight }));
+  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, cardW: layout.cardW, cardH: layout.cardH, fullyOn: layout.fullyOn, bodyMid: layout.bodyMid, cardMid: layout.cardMid }));
   must(layout.count === 4, 'four themed table cards');
   must(layout.names[0] === 'CANDLELIGHT' || layout.names[0] === 'Candlelight', 'Easy table is Candlelight');
   must(layout.names.includes('VELVET ROOM') || layout.names.includes('Velvet Room'), 'Medium table is Velvet Room');
@@ -137,11 +143,10 @@ try {
   must(layout.names.includes('MIDNIGHT CROWN') || layout.names.includes('Midnight Crown'), 'Expert table is Midnight Crown');
   must(!layout.tiltOval, 'no tilted stake cards');
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
-  const fullyOn = layout.boxes.filter((b) => b.left >= -4 && b.right <= 390 + 4).length;
-  must(fullyOn >= 1 && fullyOn <= 2, 'one centered table card (maybe a peek of the next)');
-  must(layout.boxes.filter((b) => b.visible).length >= 1, 'current table card is on screen');
-  must(Math.abs(layout.leftGap - layout.rightGap) <= 8, 'first table card is horizontally centered in the rail');
-  must(Math.abs(layout.viewLeft - layout.viewRight) <= 8, 'first table card is horizontally centered on screen');
+  must(layout.fullyOn === 2, 'exactly two table cards fit on screen');
+  must(layout.cardW >= layout.vw * 0.42 && layout.cardW <= layout.vw * 0.52, 'each card is about half the screen wide');
+  must(layout.cardH >= 320 && layout.cardH <= layout.vh * 0.62, 'cards are tall and card-like, not stretched full-screen');
+  must(Math.abs(layout.cardMid - layout.bodyMid) <= 48, 'cards are vertically centered in the mode body');
   must(!layout.themedRows, 'inner rows are not themed sub-names');
 
   const byBuy = Object.fromEntries(layout.rows.map((r) => [r.buy, r]));
@@ -158,24 +163,19 @@ try {
   await page.screenshot({ path: join(artifacts, 'standard_table_cards.png'), type: 'png' });
   await page.evaluate(() => {
     const velvet = document.querySelector('.table-card.art-medium');
-    if (velvet) velvet.scrollIntoView({ inline: 'center', block: 'nearest' });
+    if (velvet) velvet.scrollIntoView({ inline: 'nearest', block: 'nearest' });
   });
   const velvetCenter = await page.evaluate(() => {
     const card = document.querySelector('.table-card.art-medium');
-    const rail = document.querySelector('.table-rail').getBoundingClientRect();
     const r = card.getBoundingClientRect();
     const vw = window.innerWidth;
     return {
-      leftGap: r.left - rail.left,
-      rightGap: rail.right - r.right,
-      viewLeft: r.left,
-      viewRight: vw - r.right,
+      fullyOn: r.left >= -4 && r.right <= vw + 4,
       labels: [...card.querySelectorAll('.tier-play')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()),
     };
   });
   console.log('velvetCenter', velvetCenter);
-  must(Math.abs(velvetCenter.leftGap - velvetCenter.rightGap) <= 8, 'Velvet Room card is horizontally centered in the rail');
-  must(Math.abs(velvetCenter.viewLeft - velvetCenter.viewRight) <= 8, 'Velvet Room card is horizontally centered on screen');
+  must(velvetCenter.fullyOn, 'Velvet Room card can be scrolled fully on screen');
   must(velvetCenter.labels.length === 3 && velvetCenter.labels.every((t, i) => new RegExp('tier ' + ['i', 'ii', 'iii'][i] + '\\b', 'i').test(t)), 'Velvet Room inner rows are Tier I / II / III');
   await page.screenshot({ path: join(artifacts, 'standard_velvet_tiers.png'), type: 'png' });
   await page.evaluate(() => {
