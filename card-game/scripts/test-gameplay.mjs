@@ -44,6 +44,24 @@ must(html.includes('function enterCarry') && html.includes('FLICK_MS') && html.i
 must(html.includes('dt < FLICK_MS') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
 must(html.includes('if (gesture.browsing)') && html.includes('PREVIEW_LIFT_RATIO') && html.includes('enterCarry(ev)'), 'a held preview can swipe up into a carry');
 must(html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup until the finger lifts, and a carry never starts preview');
+must(html.includes('const DIRECT_CARRY_PX'), 'direct swipe-up has its own pickup threshold');
+{
+  const n = Number((html.match(/const DIRECT_CARRY_PX = (\d+)/) || [])[1]);
+  const preview = Number((html.match(/const PREVIEW_LIFT_RATIO = ([0-9.]+)/) || [])[1]);
+  must(n > 0 && n < 40, 'direct carry lifts after a short swipe, not a 70% card travel');
+  must(n < 94 * preview, 'direct carry is shorter than the preview handoff');
+  const moveAt = html.indexOf('const move = (ev) =>');
+  const moveFn = html.slice(moveAt, html.indexOf('const end = (ev) =>'));
+  const browseAt = moveFn.indexOf('if (gesture.browsing)');
+  const carryAt = moveFn.indexOf('if (gesture.carrying)');
+  const browseBlock = moveFn.slice(browseAt, carryAt);
+  const directBlock = moveFn.slice(carryAt);
+  must(browseBlock.includes('PREVIEW_LIFT_RATIO') && browseBlock.includes('liftThresh') && browseBlock.includes('enterCarry(ev)'), 'preview-hold → pickup still uses 70% of card height');
+  must(!browseBlock.includes('DIRECT_CARRY_PX'), 'preview handoff does not use the direct-swipe threshold');
+  must(directBlock.includes('DIRECT_CARRY_PX') && directBlock.includes('enterCarry(ev)'), 'a swipe that never entered preview uses DIRECT_CARRY_PX');
+  must(!directBlock.includes('PREVIEW_LIFT_RATIO'), 'direct swipe-up is not gated by the 70% preview ratio');
+  must(html.includes('PREVIEW_SKIP_PX') && html.includes('peekTimer'), 'an upward swipe skips preview instead of falling into the 70% handoff');
+}
 must(html.includes('body.on-home') && html.includes('html.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x') && html.includes('position: fixed'), 'the main menu does not scroll or rubber-band vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
