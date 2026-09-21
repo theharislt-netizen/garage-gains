@@ -323,7 +323,8 @@ try {
   must(newLadder.dragon.join(',') === '10000:1,15000:1,20000:1', 'Dragon Crown tiers 10000/15000/20000 unlock');
   must(newLadder.boss, 'Dragon Crown has the boss fire treatment');
   must(newLadder.spark, 'Ember Gallery has a light spark treatment');
-  must(!/ember-gallery\.jpg/.test(newLadder.emberArt || ''), 'Ember Gallery challenge card is not the painted table photo');
+  must(/ember-gallery-card\.jpg/.test(newLadder.emberArt || ''), 'Ember Gallery challenge card uses the painted card art');
+  must(!/ember-gallery\.jpg/.test(newLadder.emberArt || ''), 'Ember Gallery challenge card is not the match-table photo');
   must(!/obsidian-court\.jpg/.test(newLadder.mythicArt || ''), 'Obsidian Court challenge card is not the painted table photo');
   must(/Ember Gallery/i.test(newLadder.emberTitle || '') && newLadder.emberTitleH > 16, 'Ember Gallery challenge card still shows its title');
   must(newLadder.emberFx, 'Obsidian Court has ember flames');
