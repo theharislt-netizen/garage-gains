@@ -17,12 +17,15 @@
   // Engine play rules still use SPECIALS (Ace is not a 2/5/10).
   const GROUP_SPECIALS = { '2': true, '5': true, '10': true, A: true };
   const BUYINS = {
-    Easy: [30],
     Medium: [100, 200, 300],
     Hard: [500, 700, 900],
     Expert: [1200, 1500, 1800],
+    Legend: [2500, 3000, 4000],
+    Mythic: [5000, 6500, 8000],
+    Dragon: [10000, 15000, 20000],
   };
-  const XP_WIN = { Easy: 50, Medium: 100, Hard: 150, Expert: 200 };
+  const DIFF_CHAIN = ['Medium', 'Hard', 'Expert', 'Legend', 'Mythic', 'Dragon'];
+  const XP_WIN = { Easy: 50, Medium: 100, Hard: 150, Expert: 200, Legend: 250, Mythic: 325, Dragon: 400 };
   const BOT_NAMES = [
     'Milo', 'Kira', 'Andrei', 'Sofia', 'Nate', 'Lina',
     'Omar', 'Vera', 'Jace', 'Nina', 'Theo', 'Mara',
@@ -499,11 +502,11 @@
     if (!plays.length) return moves[0];
 
     const diff = player.difficulty || 'Easy';
-    const holdFive = { Easy: 0, Medium: 0.7, Hard: 0.9, Expert: 0.95 }[diff] || 0;
-    const shedLow = { Easy: 0.2, Medium: 0.7, Hard: 0.85, Expert: 0.9 }[diff] || 0.5;
-    const multiP = { Easy: 0.4, Medium: 0.8, Hard: 1, Expert: 1 }[diff] || 0.5;
-    const tradeoff = { Easy: 0, Medium: 0.5, Hard: 1, Expert: 1 }[diff] || 0;
-    const loading = { Easy: 0, Medium: 0.6, Hard: 1, Expert: 1 }[diff] || 0;
+    const holdFive = { Easy: 0, Medium: 0.7, Hard: 0.9, Expert: 0.95, Legend: 0.96, Mythic: 0.98, Dragon: 1 }[diff] || 0;
+    const shedLow = { Easy: 0.2, Medium: 0.7, Hard: 0.85, Expert: 0.9, Legend: 0.92, Mythic: 0.96, Dragon: 1 }[diff] || 0.5;
+    const multiP = { Easy: 0.4, Medium: 0.8, Hard: 1, Expert: 1, Legend: 1, Mythic: 1, Dragon: 1 }[diff] || 0.5;
+    const tradeoff = { Easy: 0, Medium: 0.5, Hard: 1, Expert: 1, Legend: 1, Mythic: 1, Dragon: 1 }[diff] || 0;
+    const loading = { Easy: 0, Medium: 0.6, Hard: 1, Expert: 1, Legend: 1, Mythic: 1, Dragon: 1 }[diff] || 0;
 
     function pickCount(rankPlays) {
       rankPlays.sort((a, b) => b.count - a.count);
@@ -720,37 +723,43 @@
     return Math.round(buyIn * seats * payoutShare(place, seats));
   }
 
+  function defaultUnlocks() {
+    return { medium: 0, hard: -1, expert: -1, legend: -1, mythic: -1, dragon: -1 };
+  }
+
+  function unlockKey(difficulty) {
+    return String(difficulty || '').toLowerCase();
+  }
+
   function nextUnlocks(unlocks, difficulty, buyIn, won) {
-    const u = Object.assign({ medium: 0, hard: -1, expert: -1 }, unlocks || {});
+    const u = Object.assign(defaultUnlocks(), unlocks || {});
     if (!won) return u;
-    const idx = (BUYINS[difficulty] || []).indexOf(buyIn);
+    const buys = BUYINS[difficulty] || [];
+    const idx = buys.indexOf(buyIn);
     if (idx < 0) return u;
-    if (difficulty === 'Easy') u.medium = Math.max(u.medium, 0);
-    if (difficulty === 'Medium') {
-      u.medium = Math.max(u.medium, idx + 1);
-      if (idx >= 2) u.hard = Math.max(u.hard, 0);
+    const key = unlockKey(difficulty);
+    u[key] = Math.max(Number(u[key]) || 0, idx + 1);
+    const chain = DIFF_CHAIN.indexOf(difficulty);
+    if (chain >= 0 && idx >= buys.length - 1 && DIFF_CHAIN[chain + 1]) {
+      const nextKey = unlockKey(DIFF_CHAIN[chain + 1]);
+      u[nextKey] = Math.max(u[nextKey] == null ? -1 : u[nextKey], 0);
     }
-    if (difficulty === 'Hard') {
-      u.hard = Math.max(u.hard, idx + 1);
-      if (idx >= 2) u.expert = Math.max(u.expert, 0);
-    }
-    if (difficulty === 'Expert') u.expert = Math.max(u.expert, idx + 1);
     return u;
   }
 
   function isBuyInUnlocked(unlocks, difficulty, buyIn) {
-    const u = Object.assign({ medium: 0, hard: -1, expert: -1 }, unlocks || {});
+    const u = Object.assign(defaultUnlocks(), unlocks || {});
     const idx = (BUYINS[difficulty] || []).indexOf(buyIn);
     if (idx < 0) return false;
     if (difficulty === 'Easy') return true;
-    if (difficulty === 'Medium') return idx <= u.medium;
-    if (difficulty === 'Hard') return u.hard >= 0 && idx <= u.hard;
-    if (difficulty === 'Expert') return u.expert >= 0 && idx <= u.expert;
-    return false;
+    const key = unlockKey(difficulty);
+    const v = u[key];
+    if (difficulty === 'Medium') return idx <= (v == null ? 0 : v);
+    return v >= 0 && idx <= v;
   }
 
   return {
-    SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, XP_WIN, BOT_NAMES, randomBotName,
+    SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, DIFF_CHAIN, XP_WIN, BOT_NAMES, randomBotName,
     suitGlyph, isRed, isSpecial, isAutoGroupedRank, rankValue, faceOrder,
     rankCopyIds, defaultRankSelection, nextRankSelection, ensureRankSelection,
     makeDeck, shuffle, cloneCard, topCard, canPlayCardOnPile, canPlayCards,

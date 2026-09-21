@@ -1116,6 +1116,7 @@
     position: relative;
     width: 100%; height: 100%;
     min-height: 0;
+    z-index: 1;
     border-radius: 10px;
     overflow: hidden;
     display: flex;
@@ -1145,6 +1146,110 @@
     background:
       radial-gradient(circle at 50% 18%, #7ee7ff 0 28%, transparent 29%),
       linear-gradient(180deg, #082028 0%, #081014 100%);
+  }
+  .table-card.art-legend {
+    background: linear-gradient(180deg, #f3e0c4, #c99258);
+    box-shadow: 0 16px 28px rgba(0,0,0,0.42), inset 0 0 0 2px #ffe7c2, 0 0 20px rgba(255, 154, 62, 0.5);
+  }
+  .table-card.art-legend .table-face {
+    background:
+      radial-gradient(circle at 50% 16%, #ff9a3e 0 26%, transparent 28%),
+      radial-gradient(circle at 80% 88%, rgba(255, 140, 50, 0.35), transparent 42%),
+      linear-gradient(180deg, #2a1208 0%, #140806 100%);
+  }
+  .table-card.art-legend .table-copy h3 {
+    color: #ffe7c4;
+    text-shadow: 0 0 8px rgba(255, 150, 40, 0.5), 0 2px 0 rgba(0,0,0,0.4);
+  }
+  .table-card.art-mythic {
+    background: linear-gradient(180deg, #3a2014, #140808);
+    box-shadow: 0 16px 28px rgba(0,0,0,0.55), inset 0 0 0 2px #f3d2a0, 0 0 24px rgba(255, 90, 30, 0.62);
+    animation: mythicGlow 2.4s ease-in-out infinite;
+  }
+  .table-card.art-mythic .table-face {
+    background:
+      radial-gradient(circle at 50% 14%, #ff6a2a 0 22%, transparent 24%),
+      radial-gradient(circle at 18% 86%, rgba(180, 40, 10, 0.55), transparent 40%),
+      linear-gradient(180deg, #160808 0%, #080404 100%);
+  }
+  .table-card.art-mythic .table-copy h3 {
+    color: #ffd7a0;
+    text-shadow: 0 0 10px rgba(255, 90, 20, 0.7), 0 2px 0 rgba(0,0,0,0.45);
+  }
+  .table-card.art-dragon {
+    background: linear-gradient(180deg, #4a1608, #0a0200 55%, #1a0602);
+    box-shadow:
+      0 0 0 2px #ff6a22,
+      0 0 34px rgba(255, 70, 10, 0.85),
+      0 18px 32px rgba(80, 0, 0, 0.55),
+      inset 0 0 0 2px rgba(255, 210, 120, 0.7);
+    animation: dragonPulse 1.7s ease-in-out infinite;
+  }
+  .table-card.art-dragon .table-face {
+    background:
+      radial-gradient(circle at 50% 8%, #ff4a14 0 16%, transparent 22%),
+      radial-gradient(circle at 22% 92%, #ff8a20 0 14%, transparent 36%),
+      radial-gradient(circle at 82% 78%, rgba(255, 90, 20, 0.45), transparent 38%),
+      repeating-linear-gradient(135deg, rgba(255, 90, 20, 0.08) 0 6px, transparent 6px 14px),
+      linear-gradient(180deg, #1a0604 0%, #080202 100%);
+  }
+  .table-card.art-dragon .table-face::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    box-shadow: inset 0 0 42px rgba(255, 70, 10, 0.5), inset 0 -36px 48px rgba(255, 110, 20, 0.28);
+    animation: dragonInner 1.8s ease-in-out infinite;
+  }
+  .table-fx {
+    position: absolute; inset: -8px; pointer-events: none; z-index: 2; overflow: hidden; border-radius: 20px;
+  }
+  .table-fx span {
+    position: absolute; bottom: -8px; width: 10px; height: 22px; border-radius: 50% 50% 40% 40%;
+    background: radial-gradient(circle at 50% 30%, #ffe08a, #ff5a14 55%, transparent 72%);
+    opacity: 0.75; filter: blur(0.4px);
+    animation: flameLick 1.15s ease-in-out infinite;
+  }
+  .table-fx.fx-spark span { width: 6px; height: 10px; opacity: 0.55; filter: blur(0.8px); }
+  .table-fx.fx-spark span:nth-child(1) { left: 18%; bottom: 6px; animation-delay: 0s; }
+  .table-fx.fx-spark span:nth-child(2) { left: 48%; bottom: 2px; animation-delay: 0.3s; }
+  .table-fx.fx-spark span:nth-child(3) { left: 74%; bottom: 8px; animation-delay: 0.55s; }
+  .table-fx.fx-spark span:nth-child(4) { left: 36%; bottom: 14px; height: 8px; animation-delay: 0.8s; }
+  .table-fx.fx-ember span { opacity: 0.7; width: 9px; height: 18px; filter: blur(0.5px); }
+  .table-fx.fx-ember span:nth-child(1) { left: 10%; animation-delay: 0s; height: 22px; }
+  .table-fx.fx-ember span:nth-child(2) { left: 32%; animation-delay: 0.2s; }
+  .table-fx.fx-ember span:nth-child(3) { left: 54%; animation-delay: 0.4s; height: 26px; width: 11px; }
+  .table-fx.fx-ember span:nth-child(4) { left: 76%; animation-delay: 0.15s; }
+  .table-fx.fx-ember span:nth-child(5) { left: 88%; top: 42%; bottom: auto; width: 8px; height: 16px; animation-delay: 0.5s; }
+  .table-fx.fx-ember span:nth-child(6) { left: 6%; top: 58%; bottom: auto; animation-delay: 0.7s; }
+  .table-fx.fx-fire span { opacity: 0.9; filter: blur(0.2px); }
+  .table-fx.fx-fire span:nth-child(1) { left: 6%; bottom: -6px; height: 28px; animation-delay: 0s; }
+  .table-fx.fx-fire span:nth-child(2) { left: 22%; bottom: -8px; width: 13px; height: 36px; animation-delay: 0.12s; }
+  .table-fx.fx-fire span:nth-child(3) { left: 42%; bottom: -6px; height: 30px; animation-delay: 0.28s; }
+  .table-fx.fx-fire span:nth-child(4) { left: 62%; bottom: -8px; width: 12px; height: 34px; animation-delay: 0.4s; }
+  .table-fx.fx-fire span:nth-child(5) { left: 80%; bottom: -6px; height: 26px; animation-delay: 0.18s; }
+  .table-fx.fx-fire span:nth-child(6) { right: -4px; top: 28%; left: auto; bottom: auto; width: 14px; height: 28px; animation-delay: 0.35s; }
+  .table-fx.fx-fire span:nth-child(7) { right: -2px; top: 58%; left: auto; bottom: auto; width: 12px; height: 24px; animation-delay: 0.55s; }
+  .table-fx.fx-fire span:nth-child(8) { left: -4px; top: 36%; bottom: auto; width: 14px; height: 26px; animation-delay: 0.22s; }
+  .table-fx.fx-fire span:nth-child(9) { left: -2px; top: 64%; bottom: auto; width: 11px; height: 20px; animation-delay: 0.7s; }
+  .table-fx.fx-fire span:nth-child(10) { left: 44%; top: -8px; bottom: auto; width: 14px; height: 22px; animation-delay: 0.45s; }
+  .table-card.boss .table-copy h3 {
+    color: #ffe7b0;
+    text-shadow: 0 0 12px rgba(255, 90, 20, 0.95), 0 2px 0 rgba(0,0,0,0.45);
+  }
+  @keyframes mythicGlow {
+    0%, 100% { box-shadow: 0 16px 28px rgba(0,0,0,0.55), inset 0 0 0 2px #f3d2a0, 0 0 16px rgba(255, 90, 30, 0.45); }
+    50% { box-shadow: 0 16px 28px rgba(0,0,0,0.55), inset 0 0 0 2px #ffe0b0, 0 0 30px rgba(255, 110, 40, 0.8); }
+  }
+  @keyframes dragonPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #ff6a22, 0 0 20px rgba(255, 70, 10, 0.6), 0 18px 32px rgba(80, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 210, 120, 0.5); }
+    50% { box-shadow: 0 0 0 2px #ffb040, 0 0 42px rgba(255, 90, 20, 0.95), 0 18px 32px rgba(80, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 230, 160, 0.85); }
+  }
+  @keyframes dragonInner {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  @keyframes flameLick {
+    0%, 100% { transform: translateY(6px) scaleY(0.85); opacity: 0.45; }
+    50% { transform: translateY(-10px) scaleY(1.15); opacity: 0.9; }
   }
   .table-copy { position: relative; z-index: 1; padding: 2px 2px 10px; }
   .table-kicker {
@@ -1679,13 +1784,8 @@ const SEAT_POS = {
   3: ['south', 'east', 'west'],
   4: ['south', 'east', 'north', 'west'],
 };
-const DIFF_ORDER = ['Easy', 'Medium', 'Hard', 'Expert'];
+const DIFF_ORDER = ['Medium', 'Hard', 'Expert', 'Legend', 'Mythic', 'Dragon'];
 const TABLE_THEMES = {
-  Easy: {
-    name: 'Candlelight',
-    blurb: 'Lantern tables and easygoing bots.',
-    art: 'easy',
-  },
   Medium: {
     name: 'Velvet Room',
     blurb: 'Red felt. The stakes start to climb.',
@@ -1701,10 +1801,29 @@ const TABLE_THEMES = {
     blurb: 'Late tables. The sharpest bots.',
     art: 'expert',
   },
+  Legend: {
+    name: 'Ember Gallery',
+    blurb: 'Gilded fire. The house wants blood.',
+    art: 'legend',
+    fx: 'spark',
+  },
+  Mythic: {
+    name: 'Obsidian Court',
+    blurb: 'Black stone and hotter bots.',
+    art: 'mythic',
+    fx: 'ember',
+  },
+  Dragon: {
+    name: 'Dragon Crown',
+    blurb: 'The last table. Fire and ruin.',
+    art: 'dragon',
+    boss: true,
+    fx: 'fire',
+  },
 };
 const TIER_LABELS = ['Tier I', 'Tier II', 'Tier III'];
 function tableThemeOf(diff) {
-  return TABLE_THEMES[diff] || TABLE_THEMES.Easy;
+  return TABLE_THEMES[diff] || TABLE_THEMES.Medium;
 }
 function tableThemeLabel(diff) {
   return tableThemeOf(diff).name;
@@ -1800,7 +1919,7 @@ function defaultState() {
     unreadMail: 0,
     shopTab: 'skins',
     invFilter: 'all',
-    unlocks: { medium: 0, hard: -1, expert: -1 },
+    unlocks: { medium: 0, hard: -1, expert: -1, legend: -1, mythic: -1, dragon: -1 },
     cosmeticsSeeded: false,
   };
 }
@@ -4575,7 +4694,7 @@ function openLobby(cfg) {
       mode: cfg.mode,
       practiceSub: cfg.practiceSub || null,
       seats: seats.length,
-      difficulty: cfg.difficulty || 'Easy',
+      difficulty: cfg.difficulty || 'Medium',
       buyIn: cfg.buyIn || 0,
     },
     seats,
@@ -4626,7 +4745,7 @@ function joinLobby(code, opts) {
   session = {
     code: clean,
     hostId: '',
-    cfg: { mode: 'custom', seats: 4, difficulty: 'Easy', buyIn: 0 },
+    cfg: { mode: 'custom', seats: 4, difficulty: 'Medium', buyIn: 0 },
     seats: emptySeats(4),
     started: false,
   };
@@ -5279,7 +5398,12 @@ function tableCardHtml(diff, opts) {
       <span>${row.open ? '' : '🔒 '}${row.label}</span>${price}
     </button>`;
   }).join('');
-  return `<article class="table-card art-${theme.art}" data-diff="${diff}">
+  const fxCount = theme.boss ? 10 : theme.fx === 'ember' ? 6 : theme.fx ? 4 : 0;
+  const fxHtml = theme.fx
+    ? `<div class="table-fx fx-${theme.fx}" aria-hidden="true">${'<span></span>'.repeat(fxCount)}</div>`
+    : '';
+  return `<article class="table-card art-${theme.art}${theme.boss ? ' boss' : ''}" data-diff="${diff}">
+    ${fxHtml}
     <div class="table-face">
       <div class="table-copy">
         <div class="table-kicker">${(opts && opts.kicker) || 'Table'}</div>
