@@ -20,6 +20,11 @@ must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilte
 must(!html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'Candlelight is gone; classic tables keep their names');
 must(html.includes("const DIFF_ORDER = ['Medium', 'Hard', 'Expert', 'Legend', 'Mythic', 'Dragon']"), 'Standard ladder is six tables after Candlelight');
 must(html.includes('Ember Gallery') && html.includes('Obsidian Court') && html.includes('Dragon Crown'), 'three new themed tables follow Midnight Crown');
+must(html.includes("url('./tables/ember-gallery.jpg')") && html.includes('felt-legend') && html.includes("art === 'legend'"), 'Ember Gallery match felt uses the painted table art');
+must(html.includes("url('./tables/obsidian-court.jpg')") && html.includes('felt-mythic') && html.includes("art === 'mythic'"), 'Obsidian Court match felt uses the painted table art');
+must(html.includes("url('./tables/ember-gallery-card.jpg')"), 'Ember Gallery challenge card uses the painted card art');
+must(!/art-legend \.table-face \{[^}]*ember-gallery\.jpg/.test(html.replace(/\n/g, ' ')), 'Ember Gallery challenge card is not the match-table photo');
+must(!/art-mythic \.table-face \{[^}]*obsidian-court/.test(html.replace(/\n/g, ' ')), 'Obsidian Court challenge card is not the painted table photo');
 must(html.includes('grid-auto-columns: calc(70% - 8px)') && html.includes('scroll-snap-align: start'), 'table cards are 1.5-up and snap along the rail');
 must(html.includes('min(64vh, 420px)') && html.includes('min-height: 340px'), 'challenge cards are taller so three tier rows fit');
 must(html.includes('min(56vh, 268px)') && html.includes('min-height: 220px') && html.includes('.play-card'), 'home mode-select cards keep the 268px cap');

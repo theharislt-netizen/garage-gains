@@ -786,6 +786,22 @@
       inset 0 0 0 13px rgba(201, 164, 91, 0.18),
       inset 0 0 52px rgba(0,0,0,0.3);
   }
+  .table-felt.felt-legend {
+    background:
+      #140806 url('./tables/ember-gallery.jpg') center 46% / cover no-repeat;
+  }
+  .table-felt.felt-legend::before {
+    inset: 0; border-radius: 0;
+    box-shadow: inset 0 0 90px rgba(0,0,0,0.38);
+  }
+  .table-felt.felt-mythic {
+    background:
+      #080404 url('./tables/obsidian-court.jpg') center 46% / cover no-repeat;
+  }
+  .table-felt.felt-mythic::before {
+    inset: 0; border-radius: 0;
+    box-shadow: inset 0 0 90px rgba(0,0,0,0.42);
+  }
   .table-watermark {
     position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
     z-index: 1; pointer-events: none; text-align: center; color: rgba(247, 239, 224, 0.11);
@@ -1181,9 +1197,8 @@
   }
   .table-card.art-legend .table-face {
     background:
-      radial-gradient(circle at 50% 16%, #ff9a3e 0 26%, transparent 28%),
-      radial-gradient(circle at 80% 88%, rgba(255, 140, 50, 0.35), transparent 42%),
-      linear-gradient(180deg, #2a1208 0%, #140806 100%);
+      linear-gradient(180deg, rgba(8,2,0,0.42) 0%, transparent 26%, transparent 52%, rgba(8,2,0,0.82) 100%),
+      url('./tables/ember-gallery-card.jpg') center 46% / cover no-repeat;
   }
   .table-card.art-legend .table-copy h3 {
     color: #ffe7c4;
@@ -2926,6 +2941,8 @@ function avatarArtHtml(seat) {
 }
 
 function tableWatermarkHtml() {
+  const art = match && tableThemeOf(match.difficulty).art;
+  if (art === 'legend' || art === 'mythic') return '';
   return `<div class="table-watermark" aria-hidden="true">
     <svg viewBox="0 0 220 112" focusable="false">
       <path d="M78 36l16 13 16-28 16 28 16-13v28H78z" fill="currentColor" opacity="0.85"/>
@@ -3382,9 +3399,18 @@ function tableSlotsHtml(p, opts) {
   return `<div class="seat-row table-slots"${rowId}>${slots.join('')}</div>`;
 }
 
+function paintFeltTheme() {
+  const felt = document.getElementById('tableFelt');
+  if (!felt) return;
+  const art = match ? tableThemeOf(match.difficulty).art : '';
+  felt.classList.toggle('felt-legend', art === 'legend');
+  felt.classList.toggle('felt-mythic', art === 'mythic');
+}
+
 function renderTable(opts) {
   if (!match) return;
   const felt = document.getElementById('tableFelt');
+  paintFeltTheme();
   const n = match.players.length;
   const youSeat = syncLocalSeat();
   const human = match.players[youSeat];
@@ -4202,6 +4228,7 @@ function openTable() {
   document.getElementById('tableWindow').classList.add('show');
   document.getElementById('matchOver').classList.remove('show');
   document.getElementById('matchOver').innerHTML = '';
+  paintFeltTheme();
 }
 
 function leaveMatchView() {
@@ -4219,6 +4246,10 @@ function leaveMatchView() {
   document.body.classList.remove('in-match');
   document.body.classList.remove('overlay-open');
   document.getElementById('tableWindow').classList.remove('show');
+  const felt = document.getElementById('tableFelt');
+  if (felt) {
+    felt.classList.remove('felt-legend', 'felt-mythic');
+  }
 }
 
 function hideRewards() {

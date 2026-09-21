@@ -19,6 +19,7 @@ www/bundle-version.json
 www/manifest.webmanifest
 www/.nojekyll
 www/fonts/*.woff2
+www/tables/
 !www/fonts/.gitkeep
 android/**/*.apk
 android/**/*.aab

@@ -43,6 +43,10 @@ must(html.includes('id="enchantWindow"'), 'enchant window overlay required');
 must(html.includes('id="exportBtn"') && html.includes('id="importBtn"') && html.includes('id="addHomeBtn"'), 'settings backup + add-home hooks required for native-bridge');
 must(html.includes('palace-net.js'), 'card-game.html must load palace-net.js');
 must(existsSync(join(root, 'palace-net.js')), 'palace-net.js required');
+must(existsSync(join(root, 'tables/ember-gallery.jpg')), 'Ember Gallery table art is in tables/ember-gallery.jpg');
+must(existsSync(join(root, 'tables/ember-gallery-card.jpg')), 'Ember Gallery challenge-card art is in tables/ember-gallery-card.jpg');
+must(existsSync(join(root, 'tables/obsidian-court.jpg')), 'Obsidian Court table art is in tables/obsidian-court.jpg');
+must(read('scripts/prepare-www.mjs').includes('ember-gallery.jpg') && read('scripts/prepare-www.mjs').includes('ember-gallery-card.jpg') && read('scripts/prepare-www.mjs').includes('obsidian-court.jpg'), 'prepare:www copies painted table art into www');
 must(existsSync(join(root, 'scripts/web-play.html')), 'web play loader required');
 {
   const play = read('scripts/web-play.html');

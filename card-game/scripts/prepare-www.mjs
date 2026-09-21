@@ -130,6 +130,10 @@ const html = patchHtml(await readFile(src, 'utf8'));
 await writeFile(join(www, 'index.html'), html);
 await copyFile(join(root, 'palace-engine.js'), join(www, 'palace-engine.js'));
 await copyFile(join(root, 'palace-net.js'), join(www, 'palace-net.js'));
+await mkdir(join(www, 'tables'), { recursive: true });
+await copyFile(join(root, 'tables/ember-gallery.jpg'), join(www, 'tables/ember-gallery.jpg'));
+await copyFile(join(root, 'tables/ember-gallery-card.jpg'), join(www, 'tables/ember-gallery-card.jpg'));
+await copyFile(join(root, 'tables/obsidian-court.jpg'), join(www, 'tables/obsidian-court.jpg'));
 await writeFile(join(www, '.nojekyll'), '');
 await writeFile(
   join(www, 'manifest.webmanifest'),
