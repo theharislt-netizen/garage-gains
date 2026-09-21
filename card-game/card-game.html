@@ -1057,33 +1057,42 @@
   }
   .seat-toggle button.on { background: var(--a2); color: #081018; font-weight: 700; }
   .seat-toggle.static button { cursor: default; }
-  .stake-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .stake-screen {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    container-type: inline-size;
+    --table-card-w: min(320px, calc(100cqw - 72px));
+    --table-peek: max(16px, calc((100cqw - var(--table-card-w)) / 2));
+  }
   .table-rail {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: calc(50% - 8px);
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
     gap: 14px;
     flex: 1;
-    align-items: stretch;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
-    scroll-padding: 16px;
-    padding: 10px 16px 16px;
+    scroll-padding-inline: var(--table-peek);
+    padding: 10px var(--table-peek) 16px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     touch-action: pan-x;
   }
   .table-rail::-webkit-scrollbar { display: none; }
   .table-card {
-    width: 100%;
+    flex: 0 0 var(--table-card-w);
+    width: var(--table-card-w);
     height: min(44vh, 286px);
     min-height: 252px;
     margin: 0;
     padding: 9px;
     border: 0;
     border-radius: 16px;
-    scroll-snap-align: start;
+    scroll-snap-align: center;
     background: linear-gradient(180deg, #f7f7f7, #e4e4e4);
     box-shadow: 0 16px 28px rgba(0,0,0,0.42), inset 0 0 0 2px #fff;
     position: relative;
@@ -1546,27 +1555,24 @@ const TABLE_THEMES = {
     name: 'Candlelight',
     blurb: 'Lantern tables and easygoing bots.',
     art: 'easy',
-    rows: [{ label: 'Entry' }],
   },
   Medium: {
     name: 'Velvet Room',
     blurb: 'Red felt. The stakes start to climb.',
     art: 'medium',
-    rows: [{ label: 'Side Table' }, { label: 'Main Felt' }, { label: 'High Roller' }],
   },
   Hard: {
     name: 'High Court',
     blurb: 'The court plays for keeps.',
     art: 'hard',
-    rows: [{ label: 'Audience' }, { label: 'Council' }, { label: 'Throne' }],
   },
   Expert: {
     name: 'Midnight Crown',
     blurb: 'Late tables. The sharpest bots.',
     art: 'expert',
-    rows: [{ label: 'Night Watch' }, { label: 'Inner Vault' }, { label: 'Crown Table' }],
   },
 };
+const TIER_LABELS = ['Tier I', 'Tier II', 'Tier III'];
 function tableThemeOf(diff) {
   return TABLE_THEMES[diff] || TABLE_THEMES.Easy;
 }
@@ -1574,11 +1580,10 @@ function tableThemeLabel(diff) {
   return tableThemeOf(diff).name;
 }
 function tableThemeRows(diff) {
-  const theme = tableThemeOf(diff);
   const buys = (window.PalaceEngine && PalaceEngine.BUYINS[diff]) || [];
   return buys.map((buyIn, i) => ({
     buyIn,
-    label: (theme.rows[i] && theme.rows[i].label) || ('Table ' + (i + 1)),
+    label: TIER_LABELS[i] || ('Tier ' + (i + 1)),
   }));
 }
 window.TABLE_THEMES = TABLE_THEMES;
