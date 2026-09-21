@@ -1958,6 +1958,8 @@ const SPECIAL_PULSE_MS = 340;
 const PEEK_MS = 140;
 const DRAG_PX = 14;
 const SWIPE_UP_PX = 56;
+const DIRECT_CARRY_PX = 24;
+const PREVIEW_SKIP_PX = 8;
 const FLICK_MS = 500;
 const PREVIEW_LIFT_RATIO = 0.7;
 const HAND_CARD_W = 64;
@@ -2824,8 +2826,8 @@ function ensureDragListeners() {
       return;
     }
     const horiz = Math.abs(dx) >= DRAG_PX && Math.abs(dx) > Math.abs(dy);
-    const goingUp = -dy >= DRAG_PX && -dy > Math.abs(dx);
-    const swipeUpMove = -dy >= SWIPE_UP_PX && -dy > Math.abs(dx);
+    const rising = -dy >= PREVIEW_SKIP_PX && -dy > Math.abs(dx);
+    const swipeUpMove = -dy >= DIRECT_CARRY_PX && rising;
     if (swipeUpMove && canActOnCards()) {
       enterCarry(ev);
       return;
@@ -2834,7 +2836,7 @@ function ensureDragListeners() {
       enterBrowse(ev);
       return;
     }
-    if (dt >= PEEK_MS && !goingUp) {
+    if (dt >= PEEK_MS && !rising) {
       enterBrowse(ev);
     }
   };
@@ -2879,7 +2881,7 @@ function startCardPress(el, ev, from) {
       if (!gesture || gesture.carrying || gesture.browsing) return;
       const dx = gesture.lastX - gesture.startX;
       const dy = gesture.lastY - gesture.startY;
-      if (-dy >= DRAG_PX && -dy > Math.abs(dx)) return;
+      if (-dy >= PREVIEW_SKIP_PX && -dy > Math.abs(dx)) return;
       enterBrowse({ clientX: gesture.lastX, clientY: gesture.lastY });
     }, PEEK_MS),
   };
