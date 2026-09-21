@@ -123,6 +123,10 @@ must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a sto
 must(html.includes('playBtnHtml') && html.includes('hintHtml') && html.includes('pile-count'), 'hand chrome is built from strings so a 0 cannot leak');
 must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in the table template');
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
+must(html.includes('SELECTION LOCK: table play surface'), 'table CSS locks native text selection on the play surface');
+must(!html.includes('<span>PALACE</span>'), 'the table watermark word is not an HTML text node');
+must(html.includes('function bindTableSelectionLock') && html.includes("addEventListener('selectstart'") && html.includes("addEventListener('selectionchange'"), 'long-press on the table cannot start a native text selection');
+must(html.includes('#tableWindow ::selection') && html.includes('-webkit-touch-callout: none !important'), 'WebView copy/callout menus are disabled on the table');
 must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
 must(html.includes('function tableSlotsHtml') && html.includes('seat-row table-slots') && html.includes('slot-up') && html.includes('slot-down'), 'stage 2 sits on stage 3 in 3 stacked slots');
 must(html.includes("id=\"tableSlots-") || html.includes("id=\"tableSlots-'"), 'every opponent seat gets its own table-slot row');
