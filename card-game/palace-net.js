@@ -2,8 +2,9 @@
  * PALACE lobby / friends net.
  * Same-origin tabs use BroadcastChannel. Phones and browsers publish over ntfy.sh.
  *
- * Subscriptions are remembered and reopened on resume. Closing the app to copy a
- * lobby code must not drop the host's lobby listener or friend presence.
+ * One EventSource covers every wanted topic (ntfy comma-subscribe). Separate
+ * SSE sockets per topic hit the browser's 6-connection cap and silently drop
+ * match snaps or friend presence — the phone-only stall / Offline bug.
  */
 (function (root, factory) {
   const net = factory();
@@ -13,12 +14,14 @@
   const NTFY = 'https://ntfy.sh/';
   const CHAN = 'palace-net-v1';
   const handlers = [];
-  const sources = new Map();
   const wanted = new Set();
   const seen = [];
   let bc = null;
   let me = { id: '', name: 'Player' };
   let heartbeat = 0;
+  let mux = null;
+  let muxTimer = 0;
+  let muxBackoff = 1200;
 
   function topic(kind, id) {
     return ('pal1' + kind + String(id || '').toLowerCase()).replace(/[^a-z0-9_-]/g, '').slice(0, 64);
@@ -38,7 +41,7 @@
     if (key.length > 3 && seen.indexOf(key) >= 0) return;
     if (key.length > 3) {
       seen.push(key);
-      if (seen.length > 120) seen.shift();
+      if (seen.length > 200) seen.shift();
     }
     if (msg.from && me.id && sameNetId(msg.from, me.id)) return;
     handlers.forEach((fn) => {
@@ -57,34 +60,53 @@
     }
   }
 
-  function openSource(top) {
-    if (!top || typeof EventSource === 'undefined') return;
-    const live = sources.get(top);
-    if (live && live.readyState !== 2) return;
-    if (live) {
-      try { live.close(); } catch (_) { /* ignore */ }
-      sources.delete(top);
+  function wantedKey() {
+    return [...wanted].filter(Boolean).sort().join(',');
+  }
+
+  function closeMux() {
+    if (!mux) return;
+    try { mux.es.close(); } catch (_) { /* ignore */ }
+    mux = null;
+  }
+
+  function openMux(force) {
+    if (typeof EventSource === 'undefined') return;
+    const key = wantedKey();
+    if (!key) {
+      closeMux();
+      return;
     }
-    const es = new EventSource(NTFY + encodeURIComponent(top) + '/sse?since=10m');
+    if (!force && mux && mux.key === key && mux.es && mux.es.readyState !== 2) return;
+    closeMux();
+    const es = new EventSource(NTFY + key + '/sse?since=10m');
     es.onmessage = (ev) => {
+      muxBackoff = 1200;
       const msg = parseNtfy(ev.data);
       if (msg) emit(msg);
     };
     es.onerror = () => {
-      if (es.readyState === 2 && wanted.has(top)) {
-        sources.delete(top);
-        setTimeout(() => { if (wanted.has(top)) openSource(top); }, 1200);
+      if (es.readyState === 2 && wanted.size) {
+        if (mux && mux.es === es) {
+          try { mux.es.close(); } catch (_) { /* ignore */ }
+          mux = null;
+        }
+        clearTimeout(muxTimer);
+        const wait = muxBackoff;
+        muxBackoff = Math.min(15000, Math.round(muxBackoff * 1.7));
+        muxTimer = setTimeout(() => { if (wanted.size) openMux(true); }, wait);
       }
     };
-    sources.set(top, es);
+    mux = { es, key };
   }
 
-  function closeSource(top) {
-    const es = sources.get(top);
-    if (!es) return;
-    try { es.close(); } catch (_) { /* ignore */ }
-    sources.delete(top);
+  function scheduleMux(force) {
+    clearTimeout(muxTimer);
+    muxTimer = setTimeout(() => openMux(!!force), force ? 0 : 60);
   }
+
+  function openSource() { openMux(); }
+  function closeSource() { /* multiplexed — openMux() rebuilds from `wanted` */ }
 
   async function publish(kind, id, payload) {
     const msg = Object.assign({
@@ -105,27 +127,26 @@
             'Content-Type': 'application/json',
             Title: String(msg.type || kind).slice(0, 80),
             Tags: 'card',
-            Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' ? 'high' : 'default',
+            Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' ? 'high' : 'default',
           },
           body: packed,
         });
-        if (res.status !== 429) break;
+        if (res.ok) break;
+        if (res.status !== 429 && res.status < 500) break;
       } catch (_) { /* offline */ break; }
-      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
     }
     return msg;
   }
 
   function subscribe(kind, id) {
-    const top = topic(kind, id);
-    wanted.add(top);
-    openSource(top);
+    wanted.add(topic(kind, id));
+    scheduleMux();
   }
 
   function unsubscribe(kind, id) {
-    const top = topic(kind, id);
-    wanted.delete(top);
-    closeSource(top);
+    wanted.delete(topic(kind, id));
+    scheduleMux();
   }
 
   function beat() {
@@ -144,12 +165,10 @@
     } catch (_) { bc = null; }
   }
 
-  function resume() {
+  function resume(force) {
     ensureChannel();
-    wanted.forEach((top) => {
-      closeSource(top);
-      openSource(top);
-    });
+    if (force || !mux || !mux.es || mux.es.readyState === 2) scheduleMux(true);
+    else scheduleMux(false);
     if (me.id) {
       if (!heartbeat) heartbeat = setInterval(beat, 12000);
       beat();
@@ -172,9 +191,9 @@
   function disconnect() {
     if (heartbeat) clearInterval(heartbeat);
     heartbeat = 0;
+    clearTimeout(muxTimer);
     if (me.id) publish('p', me.id, { type: 'presence', id: me.id, name: me.name, online: false });
-    sources.forEach((es) => { try { es.close(); } catch (_) { /* ignore */ } });
-    sources.clear();
+    closeMux();
     if (bc) {
       try { bc.close(); } catch (_) { /* ignore */ }
       bc = null;
@@ -204,6 +223,8 @@
   return {
     topic, connect, disconnect, resume, on, publish, subscribe, unsubscribe,
     inbox, presenceOf, dropPresence, lobbyPub, matchPub, watchLobby, watchMatch, leaveRoom, beat,
+    openMux, closeMux, openSource, closeSource,
     get me() { return me; },
+    get wantedSize() { return wanted.size; },
   };
 });

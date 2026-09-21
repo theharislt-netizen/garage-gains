@@ -937,13 +937,16 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
   must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
-  must(netSrc.includes('closeSource(top);\n      openSource(top)'), 'resume force-reopens ntfy SSE');
+  must(netSrc.includes('openMux(true)'), 'resume force-reopens the multiplexed ntfy SSE');
+  must(netSrc.includes("join(',')") && netSrc.includes('wantedKey'), 'one EventSource covers every ntfy topic');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
 must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
 must(html.includes('if (session.hostId) PalaceNet.inbox(session.hostId, payload)'), 'guest DMs the host inbox after learning hostId');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
+must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('inboxSnapSent'), 'missed snaps are requested, busy moves are queued, inbox is not flooded');
+must(html.includes('publishMatchSnap(true);\n    await animateEvents'), 'host publishes the new turn before the local animation');
 
 const twoHumans = E.newMatch({
   roster: [

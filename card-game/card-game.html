@@ -1723,6 +1723,10 @@ let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
 let lastMatchInboxTurn = null;
+let inboxSnapSent = false;
+let lastHostSnapAt = 0;
+let lastTimeoutAt = 0;
+let pendingNet = [];
 let joinRetryTimer = 0;
 let lobbyPulseTimer = 0;
 const INVITE_COOL_MS = 5000;
@@ -2517,7 +2521,16 @@ function tickTurnClock() {
     el.textContent = fmtClock(left);
     el.classList.toggle('low', left <= 5);
   }
-  if (left <= 0 && !uiBusy && !match.ended && !match.settled) {
+  if (isNetGuest() && Date.now() - lastHostSnapAt > 4000) {
+    lastHostSnapAt = Date.now();
+    if (window.PalaceNet && session) PalaceNet.matchPub(session.code, { type: 'want-snap', id: state.profile.id });
+  }
+  if (left <= 0 && !match.ended && !match.settled) {
+    if (uiBusy) return;
+    if (isNetGuest()) {
+      autoTurnTimeout();
+      return;
+    }
     stopTurnClock();
     autoTurnTimeout();
   }
@@ -2529,6 +2542,8 @@ function autoTurnTimeout() {
   const p = match.players[seat];
   if (!p || p.out) return;
   if (isNetGuest()) {
+    if (Date.now() - lastTimeoutAt < 2500) return;
+    lastTimeoutAt = Date.now();
     if (window.PalaceNet && session) {
       PalaceNet.matchPub(session.code, { type: 'timeout', seat });
     }
@@ -3559,6 +3574,12 @@ function playTone(freq, dur) {
   } catch (_) { /* ignore */ }
 }
 
+function flushPendingNet() {
+  if (uiBusy || !pendingNet.length) return;
+  const fn = pendingNet.shift();
+  try { fn(); } catch (_) { /* ignore */ }
+}
+
 async function runMove(move) {
   if (!match || uiBusy || match.settled) return;
   if (isNetGuest()) {
@@ -3569,15 +3590,19 @@ async function runMove(move) {
   }
   const token = matchToken;
   uiBusy = true;
-  const events = PalaceEngine.applyMove(match, move);
-  await animateEvents(events);
-  if (!stillThisMatch(token)) return;
-  selectedIds = [];
-  uiBusy = false;
-  publishMatchSnap(true);
-  if (settleIfDone()) return;
-  renderTable();
-  await runTurn();
+  try {
+    const events = PalaceEngine.applyMove(match, move);
+    publishMatchSnap(true);
+    await animateEvents(events);
+    if (!stillThisMatch(token)) return;
+    selectedIds = [];
+    if (settleIfDone()) return;
+    renderTable();
+  } finally {
+    if (stillThisMatch(token)) uiBusy = false;
+  }
+  flushPendingNet();
+  if (stillThisMatch(token) && match && !match.settled) await runTurn();
 }
 
 async function runTurn() {
@@ -3607,20 +3632,24 @@ async function runTurn() {
     publishMatchSnap();
     if (!p.isBot) return;
     uiBusy = true;
-    await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
-    if (!stillThisMatch(token) || match.settled) return;
-    let mv = PalaceEngine.chooseBotMove(match, p);
-    let events = PalaceEngine.applyMove(match, mv);
-    if (!events.length) {
-      const fallback = PalaceEngine.legalMoves(match, p.seat)[0];
-      if (fallback) events = PalaceEngine.applyMove(match, fallback);
+    try {
+      await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
+      if (!stillThisMatch(token) || match.settled) return;
+      let mv = PalaceEngine.chooseBotMove(match, p);
+      let events = PalaceEngine.applyMove(match, mv);
+      if (!events.length) {
+        const fallback = PalaceEngine.legalMoves(match, p.seat)[0];
+        if (fallback) events = PalaceEngine.applyMove(match, fallback);
+      }
+      publishMatchSnap(true);
+      await animateEvents(events);
+      if (!stillThisMatch(token)) return;
+      selectedIds = [];
+      if (settleIfDone()) return;
+    } finally {
+      if (stillThisMatch(token)) uiBusy = false;
     }
-    await animateEvents(events);
-    publishMatchSnap(true);
-    if (!stillThisMatch(token)) return;
-    selectedIds = [];
-    uiBusy = false;
-    if (settleIfDone()) return;
+    flushPendingNet();
   }
   if (stillThisMatch(token)) settleIfDone();
 }
@@ -3663,6 +3692,7 @@ async function animateDeal() {
     renderTable();
   } finally {
     if (stillThisMatch(token)) uiBusy = false;
+    flushPendingNet();
   }
 }
 
@@ -3982,7 +4012,8 @@ function publishMatchSnap(force) {
   lastMatchSnapAt = now;
   const packed = PalaceEngine.packMatch(match);
   PalaceNet.matchPub(session.code, { type: 'snap', match: packed, code: session.code });
-  if (force || lastMatchInboxTurn !== match.turn) {
+  if (!inboxSnapSent) {
+    inboxSnapSent = true;
     lastMatchInboxTurn = match.turn;
     (session.seats || []).forEach((row) => {
       if (row && row.id && !samePlayerId(row.id, state.profile.id)) {
@@ -4010,6 +4041,10 @@ function hideNameSetup() {
 function leaveSession() {
   stopLobbyPulse();
   if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
+  pendingNet = [];
+  inboxSnapSent = false;
+  lastHostSnapAt = 0;
+  lastTimeoutAt = 0;
   Object.keys(inviteCoolUntil).forEach((k) => { delete inviteCoolUntil[k]; });
   if (session && window.PalaceNet) {
     if (session.started && match && !isLobbyHost()) {
@@ -4205,7 +4240,10 @@ function joinLobby(code, opts) {
   document.getElementById('lobbyOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   paintLobby();
-  if (window.PalaceNet) PalaceNet.resume();
+  if (window.PalaceNet) {
+    PalaceNet.watchLobby(clean);
+    PalaceNet.resume();
+  }
   const sendJoin = () => {
     if (!window.PalaceNet || !session || !sameLobbyCode(session.code, clean)) return;
     if (localPlayerSeated()) return;
@@ -4280,6 +4318,7 @@ function applyHostSnap(raw) {
   const first = !match;
   match = next;
   match.humanSeat = seat;
+  lastHostSnapAt = Date.now();
   pendingCfg = session && session.cfg ? session.cfg : pendingCfg;
   if (first) {
     if (match.mode === 'standard' && match.buyIn && !session._paid) {
@@ -4504,8 +4543,17 @@ function handleNetMessage(msg) {
     applyHostSnap(msg.match);
     return;
   }
+  if (msg.type === 'want-snap' && isLobbyHost() && match && !match.settled) {
+    publishMatchSnap(true);
+    return;
+  }
   if (msg.type === 'timeout' && isLobbyHost() && match && !match.settled) {
-    if (Number(msg.seat) === match.turn && !uiBusy) autoTurnTimeout();
+    const run = () => {
+      if (!match || match.settled) return;
+      if (Number(msg.seat) === match.turn && !uiBusy) autoTurnTimeout();
+      else if (Number(msg.seat) === match.turn) pendingNet.push(() => autoTurnTimeout());
+    };
+    run();
     return;
   }
   if (msg.type === 'end' && session && sameLobbyCode(msg.code, session.code) && !isLobbyHost()) {
@@ -4514,11 +4562,19 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'move' && isLobbyHost() && match && !match.settled) {
-    const seat = msg.seat;
-    const p = match.players[seat];
-    if (!p || p.isBot || p.out) return;
-    if (match.turn !== seat || uiBusy) return;
-    runMove(msg.move);
+    const run = () => {
+      if (!match || match.settled) return;
+      const seat = msg.seat;
+      const p = match.players[seat];
+      if (!p || p.isBot || p.out) return;
+      if (match.turn !== seat) return;
+      if (uiBusy) {
+        pendingNet.push(run);
+        return;
+      }
+      runMove(msg.move);
+    };
+    run();
     return;
   }
   if (msg.type === 'drop' && isLobbyHost() && match) {
@@ -4532,7 +4588,7 @@ function handleNetMessage(msg) {
 
 function resumeNetSession() {
   if (!window.PalaceNet) return;
-  PalaceNet.resume();
+  PalaceNet.resume(true);
   (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
   if (session && session.code) {
     PalaceNet.watchLobby(session.code);
