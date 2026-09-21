@@ -184,8 +184,11 @@ function wireHaptics() {
 }
 
 const TOKEN_KEY = 'palace_githubToken';
+const APPLIED_KEY = 'palace_live_applied_version';
+const CHECK_COOLDOWN_MS = 60 * 1000;
 let updateCheckInFlight = false;
 let updatesArePublic = true;
+let lastCheckAt = 0;
 
 function toast(msg) {
   if (typeof window.showToast === 'function') window.showToast(msg);
@@ -224,12 +227,6 @@ function parseGithubJson(data) {
     try { return JSON.parse(data); } catch { return null; }
   }
   return data;
-}
-
-function headerValue(headers, name) {
-  if (!headers) return '';
-  const key = Object.keys(headers).find((k) => k.toLowerCase() === name.toLowerCase());
-  return key ? String(headers[key] || '') : '';
 }
 
 function decodeManifest(raw) {
@@ -308,7 +305,7 @@ async function fetchManifestFromRaw(ref) {
     return candidateFromManifest(ref, manifest, {
       public: true,
       sha: commit?.sha,
-      committedAt: commit?.committedAt || headerValue(res.headers, 'Last-Modified'),
+      committedAt: commit?.committedAt || '',
       zipUrl: commit?.sha ? zipUrlFor(ref, manifest.version, commit.sha) : (cdnZip || zipUrlFor(ref, manifest.version)),
     });
   }
@@ -355,9 +352,6 @@ async function fetchLatestManifest() {
     for (const candidate of results) {
       if (!candidate?.version) continue;
       candidates.push(candidate);
-      for (const extra of candidate.extraRefs || []) {
-        if (!seen.has(extra)) queue.push(extra);
-      }
     }
   }
 
@@ -433,9 +427,12 @@ async function fetchLatestManifestWithRetry() {
   return last;
 }
 
-async function checkAndApplyUpdate() {
+async function checkAndApplyUpdate(reason) {
   if (updateCheckInFlight) return;
+  const now = Date.now();
+  if (reason === 'resume' && lastCheckAt && now - lastCheckAt < CHECK_COOLDOWN_MS) return;
   updateCheckInFlight = true;
+  lastCheckAt = now;
   try {
     const current = await localBundleVersion();
     wireUpdateStatus(current, 'Checking GitHub for updates…');
@@ -451,6 +448,13 @@ async function checkAndApplyUpdate() {
     }
     if (manifest.public) updatesArePublic = true;
     if (manifest.version === current) {
+      try { sessionStorage.removeItem(APPLIED_KEY); } catch (_) { /* ignore */ }
+      wireUpdateStatus(current, 'Auto-update is on — you are on the latest');
+      return;
+    }
+    let alreadyApplied = '';
+    try { alreadyApplied = sessionStorage.getItem(APPLIED_KEY) || ''; } catch (_) { /* ignore */ }
+    if (alreadyApplied === manifest.version) {
       wireUpdateStatus(current, 'Auto-update is on — you are on the latest');
       return;
     }
@@ -461,6 +465,7 @@ async function checkAndApplyUpdate() {
       version: manifest.version,
       url: manifest.zipUrl,
     });
+    try { sessionStorage.setItem(APPLIED_KEY, manifest.version); } catch (_) { /* ignore */ }
     await CapacitorUpdater.set(bundle);
   } catch (err) {
     console.error('live update failed', err);
@@ -522,7 +527,7 @@ async function setup() {
     else App.exitApp();
   });
   App.addListener('appStateChange', ({ isActive }) => {
-    if (isActive) checkAndApplyUpdate();
+    if (isActive) checkAndApplyUpdate('resume');
   });
 }
 

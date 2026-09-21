@@ -65,8 +65,10 @@ export function pickNewestCandidate(candidates) {
   pool.sort((a, b) => {
     const dt = committedAtMs(b.committedAt) - committedAtMs(a.committedAt);
     if (dt !== 0) return dt;
-    if (a.ref === INSTALL_CHANNEL && b.ref !== INSTALL_CHANNEL) return 1;
-    if (b.ref === INSTALL_CHANNEL && a.ref !== INSTALL_CHANNEL) return -1;
+    // Same commit age (or no dates): stay on the installed APK channel so
+    // Last-Modified / extra-ref probes cannot bounce between two zips.
+    if (a.ref === INSTALL_CHANNEL && b.ref !== INSTALL_CHANNEL) return -1;
+    if (b.ref === INSTALL_CHANNEL && a.ref !== INSTALL_CHANNEL) return 1;
     return String(b.version).localeCompare(String(a.version));
   });
   return pool[0];
