@@ -738,34 +738,37 @@
   .seat.active .seat-name { background: var(--gain); color: #120c18; }
   .seat-row { display: flex; gap: 6px; justify-content: center; }
   .table-slots {
-    display: flex; align-items: flex-end; justify-content: center; gap: 6px;
-    overflow: visible; pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: center; gap: 8px;
+    overflow: visible; pointer-events: none; flex-wrap: nowrap;
   }
   .table-slot {
-    position: relative; width: 40px; height: 58px; flex: 0 0 40px;
-    pointer-events: none;
+    position: relative; width: 48px; height: 78px; flex: 0 0 48px; min-width: 0;
+    overflow: visible; pointer-events: none;
   }
   .table-slot .pcard {
     position: absolute; left: 0; top: 0; margin: 0;
     pointer-events: auto;
   }
   .table-slot .slot-down {
-    top: 0; left: 0; z-index: 1;
+    top: 18px; left: 0; z-index: 1;
+    filter: brightness(0.9);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   }
   .table-slot.has-up .slot-down {
+    top: 20px; left: 0;
     pointer-events: none;
   }
   .table-slot .slot-up {
-    top: 0; left: 0; z-index: 2;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    top: 0; left: 8px; z-index: 2;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   }
-  /* Same tucked Stage-2 row as before; Stage 3 sits fully underneath. */
-  .seat.north .table-slots { margin-top: -14px; }
-  .seat.east .table-slots, .seat.west .table-slots {
-    gap: 0; max-width: 96px; margin-top: -8px;
-  }
-  .seat.east .table-slot, .seat.west .table-slot { margin-left: -16px; }
-  .seat.east .table-slot:first-child, .seat.west .table-slot:first-child { margin-left: 0; }
+  .seat.north .table-slots { margin-top: -8px; }
+  .seat.east .table-slots, .seat.west .table-slots { gap: 5px; margin-top: -4px; }
+  .seat.east .table-slot, .seat.west .table-slot { width: 40px; height: 66px; flex-basis: 40px; }
+  .seat.east .table-slot .pcard.tiny, .seat.west .table-slot .pcard.tiny { width: 34px; height: 50px; }
+  .seat.east .table-slot .slot-down, .seat.west .table-slot .slot-down { top: 14px; }
+  .seat.east .table-slot.has-up .slot-down, .seat.west .table-slot.has-up .slot-down { top: 16px; }
+  .seat.east .table-slot .slot-up, .seat.west .table-slot .slot-up { left: 6px; }
   .seat:not(.south) .table-slot .pcard { pointer-events: none; }
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
@@ -1841,7 +1844,9 @@ const PEEK_MS = 140;
 const DRAG_PX = 14;
 const SWIPE_UP_PX = 56;
 const FLICK_MS = 500;
+const PREVIEW_LIFT_RATIO = 0.7;
 const HAND_CARD_W = 64;
+const HAND_CARD_H = 94;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -2537,21 +2542,25 @@ function positionCarry(ev) {
 }
 
 function enterCarry(ev) {
-  if (!gesture || gesture.carrying || gesture.browsing) return;
+  if (!gesture || gesture.carrying) return;
   if (!canActOnCards()) return;
   clearPeekTimer();
   clearPeeking();
+  gesture.browsing = false;
+  gesture.browseMoved = false;
   gesture.carrying = true;
   gesture.carryStartT = Date.now();
-  gesture.grabOffX = gesture.startX - gesture.origin.left;
-  gesture.grabOffY = gesture.startY - gesture.origin.top;
+  if (gesture.el) gesture.origin = gesture.el.getBoundingClientRect();
+  const origin = gesture.origin || { left: ev.clientX, top: ev.clientY, width: HAND_CARD_W, height: HAND_CARD_H };
+  gesture.grabOffX = ev.clientX - origin.left;
+  gesture.grabOffY = ev.clientY - origin.top;
   if (gesture.el) gesture.el.classList.add('ghost');
   const layer = document.getElementById('flyLayer');
   if (!layer) return;
   const wrap = document.createElement('div');
   wrap.className = 'fly-card drag-follow';
-  wrap.style.width = gesture.origin.width + 'px';
-  wrap.style.height = gesture.origin.height + 'px';
+  wrap.style.width = origin.width + 'px';
+  wrap.style.height = origin.height + 'px';
   wrap.innerHTML = gesture.el ? gesture.el.outerHTML : '';
   const inner = wrap.firstElementChild;
   if (inner) {
@@ -2583,7 +2592,7 @@ function restoreCarriedCard(g) {
 }
 
 function dropCarry(g, clientX, clientY) {
-  const dt = Date.now() - g.startT;
+  const dt = Date.now() - (g.carryStartT || g.startT);
   const dy = g.startY - clientY;
   const flick = dt < FLICK_MS && dy >= SWIPE_UP_PX;
   const onPile = nearPile(clientX, clientY);
@@ -2628,6 +2637,14 @@ function ensureDragListeners() {
     const dy = ev.clientY - gesture.startY;
     const dt = Date.now() - gesture.startT;
     if (gesture.browsing) {
+      const lift = gesture.startY - ev.clientY;
+      const sideways = Math.abs(ev.clientX - gesture.startX);
+      const cardH = (gesture.origin && gesture.origin.height) || HAND_CARD_H;
+      const liftThresh = cardH * PREVIEW_LIFT_RATIO;
+      if (lift >= liftThresh && lift > sideways && canActOnCards()) {
+        enterCarry(ev);
+        return;
+      }
       updateBrowseTarget(ev);
       return;
     }
@@ -2715,13 +2732,13 @@ function finishCardGesture(ev) {
     g.el.classList.remove('lifted', 'dragging', 'peeking');
     try { g.el.releasePointerCapture(g.pointerId); } catch (_) { /* ignore */ }
   }
+  if (g.carrying) {
+    dropCarry(g, clientX, clientY);
+    return;
+  }
   // Magnifying-glass browse never picks up, selects, or plays.
   if (g.browsing || g.browseMoved) {
     restoreCarriedCard(g);
-    return;
-  }
-  if (g.carrying) {
-    dropCarry(g, clientX, clientY);
     return;
   }
   if (swipeUp && canActOnCards()) {
@@ -2898,14 +2915,35 @@ async function animateEvents(events) {
       playTone(180, 0.18);
       await sleep(560);
       paintDiscardPile([]);
-    } else if (ev.type === 'stageDown' || ev.type === 'flip') {
+    } else if (ev.type === 'flip') {
       const dest = seatDestRect(ev.seat);
       const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
         || document.querySelector('#seat-' + ev.seat + ' .table-slot .slot-down');
       const from = src ? src.getBoundingClientRect() : dest;
       if (src) src.classList.add('ghost');
-      const face = ev.card ? cardFaceHtml(ev.card) : cardBackHtml();
-      await flyArc(from || dest, dest, face, { duration: 480, spin: 140, comet: false });
+      const face = ev.card ? cardFaceHtml(ev.card, 'tiny') : cardBackHtml('tiny');
+      const next = events[i + 1];
+      const played = !!(next && next.type === 'play' && next.seat === ev.seat);
+      await flyArc(from || dest, from || dest, face, { duration: played ? 280 : 360, spin: 110, comet: false });
+      if (played) {
+        pendingFlyFrom = from;
+      } else {
+        const hide = !match || ev.seat !== match.humanSeat;
+        const folded = hide ? cardBackHtml() : (ev.card ? cardFaceHtml(ev.card) : cardBackHtml());
+        await flyArc(from || dest, dest, folded, { duration: 420, spin: hide ? 180 : 130, comet: false });
+        updateSeatHud(ev.seat);
+      }
+      playTone(400, 0.1);
+      renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
+    } else if (ev.type === 'stageDown') {
+      const dest = seatDestRect(ev.seat);
+      const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
+        || document.querySelector('#seat-' + ev.seat + ' .table-slot .slot-down');
+      const from = src ? src.getBoundingClientRect() : dest;
+      if (src) src.classList.add('ghost');
+      const hide = !match || ev.seat !== match.humanSeat;
+      const html = hide ? cardBackHtml() : (ev.card ? cardFaceHtml(ev.card) : cardBackHtml());
+      await flyArc(from || dest, dest, html, { duration: 480, spin: hide ? 180 : 140, comet: false });
       updateSeatHud(ev.seat);
       playTone(400, 0.1);
       renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
