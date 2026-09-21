@@ -1970,6 +1970,7 @@ let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
 let lastMatchInboxTurn = null;
+let lastMatchInboxAt = 0;
 let inboxSnapSent = false;
 let matchSnapSeq = 0;
 let lastSnapSeq = 0;
@@ -4496,6 +4497,12 @@ function netSendMatch(payload) {
   if (!window.PalaceNet || !session) return;
   const msg = Object.assign({ code: session.code }, payload || {});
   PalaceNet.matchPub(session.code, msg);
+  const kind = payload && payload.type;
+  if (kind === 'move' || kind === 'timeout' || kind === 'want-snap') {
+    const hostId = session.hostId;
+    if (hostId && !samePlayerId(hostId, state.profile.id)) PalaceNet.inbox(hostId, msg);
+    return;
+  }
   matchHumanIds().forEach((id) => PalaceNet.inbox(id, msg));
 }
 
@@ -4528,7 +4535,6 @@ function armGuestMoveRetry(move) {
       return;
     }
     netSendMatch({ type: 'move', seat: mySeat(), move: pendingGuestMove });
-    netSendMatch({ type: 'want-snap', id: state.profile.id });
   }, 1800);
 }
 
@@ -4548,9 +4554,15 @@ function publishMatchSnap(force) {
   const packed = PalaceEngine.packMatch(match);
   packed.b = [];
   packed.seq = ++matchSnapSeq;
-  inboxSnapSent = true;
-  lastMatchInboxTurn = match.turn;
-  netSendMatch({ type: 'snap', match: packed, code: session.code });
+  const body = { type: 'snap', match: packed, code: session.code };
+  PalaceNet.matchPub(session.code, body);
+  const turnChanged = lastMatchInboxTurn !== match.turn;
+  if (force && (turnChanged || !inboxSnapSent || now - lastMatchInboxAt > 2000)) {
+    inboxSnapSent = true;
+    lastMatchInboxTurn = match.turn;
+    lastMatchInboxAt = now;
+    matchHumanIds().forEach((id) => PalaceNet.inbox(id, body));
+  }
 }
 
 function hideLobby(keepSession) {
@@ -4572,6 +4584,8 @@ function leaveSession() {
   stopLobbyPulse();
   if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
   pendingNet = [];
+  lastMatchInboxTurn = null;
+  lastMatchInboxAt = 0;
   inboxSnapSent = false;
   matchSnapSeq = 0;
   lastSnapSeq = 0;

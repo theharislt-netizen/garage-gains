@@ -288,17 +288,15 @@
     } catch (_) { /* ignore */ }
     const top = topic(kind, id);
     const order = RELAYS.filter(relayOk).concat(RELAYS.filter((r) => !relayOk(r)));
-    await Promise.all(order.map(async (base) => {
-      if (!relayOk(base) && base !== order[0]) return;
-      for (let i = 0; i < 3; i++) {
-        try {
-          const res = await postRelay(base, top, packed);
-          if (res && res.ok) return;
-          if (res && res.status !== 429 && res.status < 500) return;
-        } catch (_) { return; }
-        await new Promise((r) => setTimeout(r, 700 * (i + 1)));
-      }
-    }));
+    for (let r = 0; r < order.length; r++) {
+      const base = order[r];
+      if (!relayOk(base) && r > 0) continue;
+      try {
+        const res = await postRelay(base, top, packed);
+        if (res && res.ok) return msg;
+        if (res && res.status !== 429 && res.status < 500) return msg;
+      } catch (_) { /* try next relay */ }
+    }
     return msg;
   }
 
