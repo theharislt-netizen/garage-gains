@@ -1823,7 +1823,7 @@ const SPECIAL_PULSE_MS = 340;
 const PEEK_MS = 140;
 const DRAG_PX = 14;
 const SWIPE_UP_PX = 56;
-const FLICK_MS = 280;
+const FLICK_MS = 500;
 const HAND_CARD_W = 64;
 
 function sleep(ms) {
@@ -2547,9 +2547,6 @@ function enterCarry(ev) {
   gesture.wrap = wrap;
   positionCarry(ev);
   setPileDropCue(nearPile(ev.clientX, ev.clientY));
-  gesture.carryHoldTimer = setTimeout(() => {
-    if (gesture && gesture.carrying) gesture.carryHeld = true;
-  }, FLICK_MS);
 }
 
 function moveCarry(ev) {
@@ -2569,8 +2566,9 @@ function restoreCarriedCard(g) {
 }
 
 function dropCarry(g, clientX, clientY) {
-  if (g.carryHoldTimer) clearTimeout(g.carryHoldTimer);
-  const flick = !g.carryHeld;
+  const dt = Date.now() - g.startT;
+  const dy = g.startY - clientY;
+  const flick = dt < FLICK_MS && dy >= SWIPE_UP_PX;
   const onPile = nearPile(clientX, clientY);
   const from = g.wrap ? g.wrap.getBoundingClientRect() : g.origin;
   setPileDropCue(false);
@@ -2687,7 +2685,6 @@ function finishCardGesture(ev) {
   const g = gesture;
   gesture = null;
   if (g.peekTimer) clearTimeout(g.peekTimer);
-  if (g.carryHoldTimer) clearTimeout(g.carryHoldTimer);
   const clientX = ev && ev.clientX != null ? ev.clientX : g.startX;
   const clientY = ev && ev.clientY != null ? ev.clientY : g.startY;
   const dy = g.startY - clientY;

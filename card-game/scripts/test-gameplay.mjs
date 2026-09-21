@@ -41,7 +41,7 @@ must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait wit
 must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html.includes('SWIPE_UP_PX'), 'hold-browse and swipe-up play are separate gestures');
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
 must(html.includes('function enterCarry') && html.includes('FLICK_MS') && html.includes('drag-follow'), 'swipe up picks the card up so it follows the finger');
-must(html.includes('gesture.carryHeld') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
+must(html.includes('dt < FLICK_MS') && html.includes('flick || onPile'), 'a quick flick auto-plays; a held carry drops on the pile or returns');
 must(html.includes('if (gesture.browsing)') && html.includes('gesture.carrying || gesture.browsing'), 'preview-hold never starts a pickup, and a carry never starts preview');
 must(html.includes('body.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x'), 'the main menu does not scroll vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
