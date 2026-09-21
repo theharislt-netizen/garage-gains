@@ -108,18 +108,36 @@
   }
 
   function closeEs(rec) {
-    if (!rec || !rec.es) return;
-    try { rec.es.close(); } catch (_) { /* ignore */ }
-    rec.es = null;
+    if (!rec) return;
+    if (rec.esList && rec.esList.length) {
+      rec.esList.forEach((es) => { try { es.close(); } catch (_) { /* ignore */ } });
+      rec.esList = [];
+    }
+    if (rec.es) {
+      try { rec.es.close(); } catch (_) { /* ignore */ }
+      rec.es = null;
+    }
   }
 
   function openEs(top, rec) {
     if (typeof EventSource === 'undefined') return;
     closeEs(rec);
+    rec.top = top;
+    if (topicKind(top) === 'inbox') {
+      rec.esList = RELAYS.map((base) => {
+        const since = sinceOf(rec, base);
+        const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since);
+        const es = new EventSource(url);
+        es.onmessage = (ev) => ingest(ev.data, rec, base);
+        return es;
+      });
+      rec.relay = RELAYS[0];
+      rec.backoff = 1200;
+      return;
+    }
     const usable = RELAYS.filter(relayOk);
     const base = usable.includes(rec.relay) ? rec.relay : (usable[0] || RELAYS[0]);
     rec.relay = base;
-    rec.top = top;
     const since = sinceOf(rec, base);
     const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since);
     const es = new EventSource(url);
@@ -276,6 +294,27 @@
     }
   }
 
+  const FANOUT_TYPES = {
+    invite: true,
+    friend_req: true,
+    friend_ok: true,
+    friend_no: true,
+    dm: true,
+    join: true,
+    lobby: true,
+    start: true,
+    chat: true,
+  };
+
+  function shouldFanout(kind, payload) {
+    const t = payload && payload.type;
+    if (kind === 'i') {
+      if (FANOUT_TYPES[t]) return true;
+      if (t === 'presence' && payload && payload.online === false) return true;
+    }
+    return false;
+  }
+
   async function publish(kind, id, payload) {
     const msg = Object.assign({
       t: Date.now(),
@@ -287,6 +326,12 @@
       if (bc) bc.postMessage({ kind, id, msg });
     } catch (_) { /* ignore */ }
     const top = topic(kind, id);
+    if (shouldFanout(kind, payload)) {
+      await Promise.all(RELAYS.map(async (base) => {
+        try { await postRelay(base, top, packed); } catch (_) { /* try the rest */ }
+      }));
+      return msg;
+    }
     const order = RELAYS.filter(relayOk).concat(RELAYS.filter((r) => !relayOk(r)));
     for (let r = 0; r < order.length; r++) {
       const base = order[r];
@@ -294,7 +339,6 @@
       try {
         const res = await postRelay(base, top, packed);
         if (res && res.ok) return msg;
-        if (res && res.status !== 429 && res.status < 500) return msg;
       } catch (_) { /* try next relay */ }
     }
     return msg;
@@ -426,7 +470,7 @@
   return {
     topic, connect, disconnect, resume, away, on, publish, subscribe, unsubscribe,
     inbox, presenceOf, dropPresence, lobbyPub, matchPub, watchLobby, watchMatch, leaveRoom, beat,
-    openMux, closeMux, openSource, closeSource,
+    openMux, closeMux, openSource, closeSource, shouldFanout,
     RELAYS,
     get me() { return me; },
     get wantedSize() { return wanted.size; },
