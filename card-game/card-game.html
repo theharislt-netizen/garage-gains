@@ -2281,10 +2281,14 @@ function flyArc(fromRect, toRect, html, opts) {
     const start = `translate(${x0}px, ${y0}px) rotate(${o.startRot || 0}deg) scale(1)`;
     const mid = `translate(${mx}px, ${my}px) rotate(${spin}deg) scale(1.05)`;
     const end = `translate(${x1}px, ${y1}px) rotate(${endRot}deg) scale(${sx}, ${sy})`;
+    let done = false;
     function finish() {
+      if (done) return;
+      done = true;
       wrap.remove();
       resolve();
     }
+    setTimeout(finish, duration + (o.land ? (o.landMs || PLAY_LAND_MS) : 0) + 280);
     function bounceThenFinish() {
       wrap.classList.remove('comet');
       if (typeof o.onArrive === 'function') o.onArrive();
@@ -3151,7 +3155,7 @@ async function runMove(move) {
   if (!stillThisMatch(token)) return;
   selectedIds = [];
   uiBusy = false;
-  publishMatchSnap();
+  publishMatchSnap(true);
   if (settleIfDone()) return;
   renderTable();
   await runTurn();
@@ -3193,7 +3197,7 @@ async function runTurn() {
       if (fallback) events = PalaceEngine.applyMove(match, fallback);
     }
     await animateEvents(events);
-    publishMatchSnap();
+    publishMatchSnap(true);
     if (!stillThisMatch(token)) return;
     selectedIds = [];
     uiBusy = false;
@@ -3205,39 +3209,42 @@ async function runTurn() {
 async function animateDeal() {
   const token = matchToken;
   uiBusy = true;
-  renderTable({ dealing: true });
-  playTone(360, 0.2);
-  const centerEl = document.querySelector('.table-center') || document.getElementById('drawPile');
-  const center = centerEl ? centerEl.getBoundingClientRect() : { left: window.innerWidth / 2 - 14, top: window.innerHeight / 2 - 20, width: 28, height: 40 };
-  const origin = { left: center.left + center.width / 2 - 11, top: center.top + center.height / 2 - 16, width: 22, height: 32 };
-  const waves = [PalaceEngine.TABLE_DOWN, PalaceEngine.TABLE_UP, PalaceEngine.HAND_SIZE];
-  for (let w = 0; w < waves.length; w++) {
+  try {
+    renderTable({ dealing: true });
+    playTone(360, 0.2);
+    const centerEl = document.querySelector('.table-center') || document.getElementById('drawPile');
+    const center = centerEl ? centerEl.getBoundingClientRect() : { left: window.innerWidth / 2 - 14, top: window.innerHeight / 2 - 20, width: 28, height: 40 };
+    const origin = { left: center.left + center.width / 2 - 11, top: center.top + center.height / 2 - 16, width: 22, height: 32 };
+    const waves = [PalaceEngine.TABLE_DOWN, PalaceEngine.TABLE_UP, PalaceEngine.HAND_SIZE];
+    for (let w = 0; w < waves.length; w++) {
+      if (!stillThisMatch(token)) return;
+      const count = waves[w];
+      const flights = [];
+      match.players.forEach((p, pi) => {
+        for (let c = 0; c < count; c++) {
+          const dest = seatDestRect(p.seat) || origin;
+          flights.push(sleep(pi * 70 + c * 40).then(() => {
+            if (!stillThisMatch(token)) return;
+            return flyArc(origin, dest, cardBackHtml('mini'), {
+              duration: 420,
+              spin: 260,
+              comet: false,
+              curveX: (pi - 1.5) * 18,
+            });
+          }));
+        }
+      });
+      await Promise.all(flights);
+      if (!stillThisMatch(token)) return;
+      match.players.forEach((p) => {
+        if (p.seat !== match.humanSeat) setFanCount(p.seat, w === waves.length - 1 ? PalaceEngine.HAND_SIZE : 0);
+      });
+    }
     if (!stillThisMatch(token)) return;
-    const count = waves[w];
-    const flights = [];
-    match.players.forEach((p, pi) => {
-      for (let c = 0; c < count; c++) {
-        const dest = seatDestRect(p.seat) || origin;
-        flights.push(sleep(pi * 70 + c * 40).then(() => {
-          if (!stillThisMatch(token)) return;
-          return flyArc(origin, dest, cardBackHtml('mini'), {
-            duration: 420,
-            spin: 260,
-            comet: false,
-            curveX: (pi - 1.5) * 18,
-          });
-        }));
-      }
-    });
-    await Promise.all(flights);
-    if (!stillThisMatch(token)) return;
-    match.players.forEach((p) => {
-      if (p.seat !== match.humanSeat) setFanCount(p.seat, w === waves.length - 1 ? PalaceEngine.HAND_SIZE : 0);
-    });
+    renderTable();
+  } finally {
+    if (stillThisMatch(token)) uiBusy = false;
   }
-  if (!stillThisMatch(token)) return;
-  uiBusy = false;
-  renderTable();
 }
 
 function openTable() {
@@ -3423,10 +3430,10 @@ function publishLobby() {
     started: !!session.started,
   });
 }
-function publishMatchSnap() {
+function publishMatchSnap(force) {
   if (!match || !session || !window.PalaceNet || !isLobbyHost()) return;
   const now = Date.now();
-  if (now - lastMatchSnapAt < 80) return;
+  if (!force && now - lastMatchSnapAt < 40) return;
   lastMatchSnapAt = now;
   PalaceNet.matchPub(session.code, { type: 'snap', match: PalaceEngine.packMatch(match) });
 }
@@ -3658,7 +3665,10 @@ function applyHostSnap(raw) {
     hideJoin();
     closeMode();
     openTable();
-    animateDeal().then(() => renderTable());
+    uiBusy = false;
+    renderTable();
+    if (isLobbyHost()) animateDeal().then(() => runTurn());
+    else renderTable();
   } else {
     renderTable();
     settleIfDone();
