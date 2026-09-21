@@ -26,7 +26,9 @@ npm run prepare:www
         └── android/              native Android shell
 ```
 
-Opening the **installed native app** downloads `card-game/live-update/www.zip` from this public repo (branch `cursor/card-game-setup-e78b`, then `main`). You do **not** transfer a new APK for each code change.
+Opening the **installed native app** downloads `card-game/live-update/www.zip` from this public repo. It checks every live-update channel it knows (`cursor/winner-kick-rewards-e78b`, `cursor/card-game-setup-e78b`, `cursor/palace-lobby-afk-web-b503`, `main`) and **installs the newest zip**, not the first branch that happens to have a file.
+
+Older APKs still stop at the first channel (`cursor/winner-kick-rewards-e78b`). After `npm run prepare:www`, that zip **must** be on that branch or the phone keeps the previous copy and Settings says it is already latest. You do **not** transfer a new APK for each code change.
 
 ## Rebuild
 

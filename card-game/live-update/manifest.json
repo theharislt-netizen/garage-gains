@@ -1,10 +1,17 @@
 {
-  "version": "0.1.0-g9b819b0cf9",
-  "checksum": "4d817cf8fc72480208638c78fa8e557e85d687aeebf1e1b31dd12a6ef25056ef",
+  "version": "0.1.0-g738091e794",
+  "checksum": "cb14f7a57a7045b81ae81383fa4f7ad50fedee4560c2bd6d0518f48d1ab71228",
   "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
   "urls": [
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/card-game-setup-e78b/card-game/live-update/www.zip",
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/palace-lobby-afk-web-b503/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/card-game/live-update/www.zip"
+  ],
+  "refs": [
+    "cursor/winner-kick-rewards-e78b",
+    "cursor/card-game-setup-e78b",
+    "cursor/palace-lobby-afk-web-b503",
+    "main"
   ]
 }
