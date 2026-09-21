@@ -910,11 +910,31 @@
   .header-currency { margin-left: auto; flex-shrink: 0; }
   .overlay-scroll { flex: 1; overflow-y: auto; padding: 4px 16px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
   #modeOverlay .overlay-scroll { padding: 4px 0 0; }
-  #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay {
+  #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay, #lobbyOverlay, #nameSetupOverlay, #joinOverlay {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
     overflow: hidden; padding: 0;
     display: none; flex-direction: column;
   }
+  #lobbyOverlay, #nameSetupOverlay, #joinOverlay { z-index: 270; }
+  .lobby-code {
+    font-family: 'JetBrains Mono'; font-size: 22px; letter-spacing: 0.18em; text-align: center;
+    padding: 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--panel);
+  }
+  .lobby-slot {
+    display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line);
+    border-radius: 14px; background: var(--panel); margin-bottom: 8px;
+  }
+  .lobby-slot.open { border-style: dashed; color: var(--text-dim); }
+  .lobby-slot .who { flex: 1; }
+  .lobby-slot .tag { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+  .invite-banner {
+    position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 400;
+    background: var(--panel); border: 1px solid var(--gain); border-radius: 16px; padding: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45); display: none;
+  }
+  .invite-banner.show { display: block; }
+  .dot-on { width: 8px; height: 8px; border-radius: 50%; background: #38e29a; display: inline-block; margin-right: 6px; }
+  .dot-off { width: 8px; height: 8px; border-radius: 50%; background: #5a5268; display: inline-block; margin-right: 6px; }
   #modeOverlay {
     background:
       radial-gradient(circle at 50% 12%, rgba(var(--a2-rgb),0.20), transparent 48%),
@@ -1067,8 +1087,7 @@
             <div class="mode-copy"><div class="mode-kicker">Vs bots</div><h3>Practice</h3><p>No coin risk</p></div>
           </div>
         </button>
-        <button type="button" class="play-card art-ranked locked" data-mode="ranked">
-          <div class="lock-ribbon">Locked</div>
+        <button type="button" class="play-card art-ranked" data-mode="join">
           <div class="mode-face">
             <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
               <ellipse cx="60" cy="58" rx="40" ry="32" fill="#5ad8ff"/>
@@ -1076,11 +1095,10 @@
               <rect x="52" y="78" width="16" height="12" fill="#fff"/>
               <rect x="42" y="90" width="36" height="10" rx="2" fill="#e7fbff"/>
             </svg></div>
-            <div class="mode-copy"><div class="mode-kicker">Later</div><h3>Ranked</h3><p>Coming last</p></div>
+            <div class="mode-copy"><div class="mode-kicker">Code</div><h3>Join Session</h3><p>Enter a lobby code</p></div>
           </div>
         </button>
-        <button type="button" class="play-card art-custom locked" data-mode="custom">
-          <div class="lock-ribbon">Locked</div>
+        <button type="button" class="play-card art-custom" data-mode="custom">
           <div class="mode-face">
             <div class="mode-illo"><svg viewBox="0 0 120 120" fill="none">
               <ellipse cx="60" cy="70" rx="44" ry="22" fill="#a888ff"/>
@@ -1089,7 +1107,7 @@
               <circle cx="92" cy="58" r="8" fill="#fff"/>
               <circle cx="60" cy="50" r="8" fill="#fff"/>
             </svg></div>
-            <div class="mode-copy"><div class="mode-kicker">Later</div><h3>Custom</h3><p>Your table</p></div>
+            <div class="mode-copy"><div class="mode-kicker">Your table</div><h3>Custom</h3><p>Mix friends and bots</p></div>
           </div>
         </button>
       </div>
@@ -1233,6 +1251,31 @@
   <div class="overlay-scroll" id="modeBody"></div>
 </div>
 
+<div id="lobbyOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="lobbyLeaveBtn">‹ Leave</button>
+    <div class="instance-title" id="lobbyTitle">Lobby</div>
+  </div>
+  <div class="overlay-scroll" id="lobbyBody"></div>
+</div>
+
+<div id="joinOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="joinLeaveBtn">‹ Leave</button>
+    <div class="instance-title">Join Session</div>
+  </div>
+  <div class="overlay-scroll" id="joinBody"></div>
+</div>
+
+<div id="nameSetupOverlay">
+  <div class="instance-header">
+    <div class="instance-title">Your name</div>
+  </div>
+  <div class="overlay-scroll" id="nameSetupBody"></div>
+</div>
+
+<div class="invite-banner" id="inviteBanner"></div>
+
 <div id="tableWindow">
   <div class="table-topbar">
     <button class="instance-leave-btn table-leave-btn" id="tableLeaveBtn">‹ Leave</button>
@@ -1282,6 +1325,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="palace-engine.js"></script>
+<script src="palace-net.js"></script>
 <script>
 /* =========================================================
    PALACE (card-game.html) — playable table + Rigcore inventory.
@@ -1290,7 +1334,19 @@
    ========================================================= */
 const APP_NAME = 'PALACE';
 const STORE_KEY = 'palaceCards_v1';
+const PLAY_URL = 'https://theharislt-netizen.github.io/garage-gains/palace/play/';
 const STARTING_COINS = 400;
+function sessionAlias() {
+  try {
+    return String(new URLSearchParams(location.search).get('as') || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 24);
+  } catch (_) {
+    return '';
+  }
+}
+function activeStoreKey() {
+  const as = sessionAlias();
+  return as ? STORE_KEY + '::' + as : STORE_KEY;
+}
 const DAILY_LOGIN_COINS = 50;
 const SHARDS_PER_STONE = 10;
 const INV_GRID_COLUMNS = 4;
@@ -1355,7 +1411,7 @@ function defaultState() {
   return {
     app: 'palace',
     format: 1,
-    profile: { name: 'Player', photo: '', border: null },
+    profile: { name: '', photo: '', border: null, id: '', nameSet: false },
     coins: STARTING_COINS,
     xp: 0,
     lastDailyLogin: '',
@@ -1414,10 +1470,15 @@ let lastEmote = null;
 let gesture = null;
 let pendingFlyFrom = null;
 let dragListenersBound = false;
+let session = null;
+let presenceMap = {};
+let pendingFriendQuery = '';
+let netBound = false;
+let lastMatchSnapAt = 0;
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(activeStoreKey());
     if (!raw) return seedCosmetics(defaultState());
     const parsed = JSON.parse(raw);
     const src = parsed && parsed.app === 'palace' && parsed.state ? parsed.state : parsed;
@@ -1434,6 +1495,10 @@ function loadState() {
     merged.inventory.shards = { cosmetic: 0, ...(merged.inventory.shards || {}) };
     merged.inventory.stones = { cosmetic: 0, ...(merged.inventory.stones || {}) };
     merged.inventory.items = Array.isArray(merged.inventory.items) ? merged.inventory.items : [];
+    merged.friends = Array.isArray(merged.friends) ? merged.friends.map((f) => ({
+      id: String((f && (f.id || f.name)) || ''),
+      name: String((f && (f.name || f.id)) || 'Friend'),
+    })).filter((f) => f.id) : [];
     return seedCosmetics(merged);
   } catch (_) {
     return seedCosmetics(defaultState());
@@ -1441,7 +1506,7 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  localStorage.setItem(activeStoreKey(), JSON.stringify(state));
 }
 
 function buildBackupPayload() {
@@ -1867,7 +1932,8 @@ function openProfile() {
   };
   document.getElementById('profileBody').innerHTML = `
     <div class="card">
-      <div class="settings-row"><div>Name</div><div class="l2">${state.profile.name}</div></div>
+      <div class="settings-row"><div>Name</div><div class="l2">${state.profile.name || '—'}</div></div>
+      <div class="settings-row"><div>Profile ID</div><div class="l2 mono">${state.profile.id || '—'}</div></div>
       <div class="settings-row"><div>Level</div><div class="l2 mono">${getLevel(state.xp)}</div></div>
       <div class="settings-row"><div>XP</div><div class="l2 mono">${state.xp}</div></div>
       <div class="settings-row"><div>Matches / wins</div><div class="l2 mono">${state.stats.matches} / ${state.stats.wins}</div></div>
@@ -3072,6 +3138,12 @@ function playTone(freq, dur) {
 
 async function runMove(move) {
   if (!match || uiBusy || match.settled) return;
+  if (isNetGuest()) {
+    if (window.PalaceNet && session) {
+      PalaceNet.matchPub(session.code, { type: 'move', seat: match.humanSeat, move });
+    }
+    return;
+  }
   const token = matchToken;
   uiBusy = true;
   const events = PalaceEngine.applyMove(match, move);
@@ -3079,6 +3151,7 @@ async function runMove(move) {
   if (!stillThisMatch(token)) return;
   selectedIds = [];
   uiBusy = false;
+  publishMatchSnap();
   if (settleIfDone()) return;
   renderTable();
   await runTurn();
@@ -3086,6 +3159,10 @@ async function runMove(move) {
 
 async function runTurn() {
   const token = matchToken;
+  if (isNetGuest()) {
+    renderTable();
+    return;
+  }
   while (stillThisMatch(token) && !match.ended && !match.settled) {
     if (settleIfDone()) return;
     let p = match.players[match.turn];
@@ -3104,6 +3181,7 @@ async function runTurn() {
       thinking: p.isBot ? p.seat : -1,
     });
     restartTurnClock();
+    publishMatchSnap();
     if (!p.isBot) return;
     uiBusy = true;
     await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
@@ -3115,6 +3193,7 @@ async function runTurn() {
       if (fallback) events = PalaceEngine.applyMove(match, fallback);
     }
     await animateEvents(events);
+    publishMatchSnap();
     if (!stillThisMatch(token)) return;
     selectedIds = [];
     uiBusy = false;
@@ -3197,6 +3276,7 @@ function hideRewards() {
 
 function closeTable() {
   match = null;
+  leaveSession();
   leaveMatchView();
   hideRewards();
   renderHeader();
@@ -3287,7 +3367,7 @@ function finishMatch() {
   over.classList.add('show');
   document.getElementById('againBtn').addEventListener('click', () => {
     hideRewards();
-    if (pendingCfg) startMatch(pendingCfg);
+    if (pendingCfg) openLobby(pendingCfg);
   });
   document.getElementById('leaveMatchBtn').addEventListener('click', () => {
     hideRewards();
@@ -3295,6 +3375,598 @@ function finishMatch() {
     renderHeader();
   });
 }
+
+function isLobbyHost() {
+  return !!(session && state.profile && session.hostId === state.profile.id);
+}
+function isNetGuest() {
+  return !!(session && session.started && !isLobbyHost());
+}
+function mySeatIndex() {
+  if (!session || !state.profile.id) return 0;
+  const idx = (session.seats || []).findIndex((s) => s && s.id === state.profile.id);
+  return idx >= 0 ? idx : 0;
+}
+function makeLobbyCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 5; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return s;
+}
+function makeProfileId(name) {
+  const slug = String(name || 'P').replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 4) || 'P';
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return (slug + rand).replace(/[^A-Z0-9]/g, '').slice(0, 10);
+}
+function slugName(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+}
+function lobbyShareUrl(code) {
+  return PLAY_URL + '#j=' + encodeURIComponent(code);
+}
+function friendOnline(id) {
+  const row = presenceMap[id];
+  return !!(row && row.online && Date.now() - (row.t || 0) < 28000);
+}
+function needsNameSetup() {
+  return !state.profile.nameSet || !String(state.profile.name || '').trim() || !state.profile.id;
+}
+
+function publishLobby() {
+  if (!session || !window.PalaceNet || !isLobbyHost()) return;
+  PalaceNet.lobbyPub(session.code, {
+    type: 'lobby',
+    code: session.code,
+    hostId: session.hostId,
+    cfg: session.cfg,
+    seats: session.seats,
+    started: !!session.started,
+  });
+}
+function publishMatchSnap() {
+  if (!match || !session || !window.PalaceNet || !isLobbyHost()) return;
+  const now = Date.now();
+  if (now - lastMatchSnapAt < 80) return;
+  lastMatchSnapAt = now;
+  PalaceNet.matchPub(session.code, { type: 'snap', match: PalaceEngine.packMatch(match) });
+}
+
+function hideLobby(keepSession) {
+  const el = document.getElementById('lobbyOverlay');
+  if (el) el.style.display = 'none';
+  if (!keepSession && !match) document.body.classList.remove('overlay-open');
+}
+function hideJoin() {
+  const el = document.getElementById('joinOverlay');
+  if (el) el.style.display = 'none';
+}
+function hideNameSetup() {
+  const el = document.getElementById('nameSetupOverlay');
+  if (el) el.style.display = 'none';
+}
+
+function leaveSession() {
+  if (session && window.PalaceNet) {
+    if (session.started && match && !isLobbyHost()) {
+      PalaceNet.matchPub(session.code, { type: 'drop', seat: match.humanSeat });
+    } else if (!session.started) {
+      PalaceNet.lobbyPub(session.code, { type: 'leave', id: state.profile.id });
+    }
+    PalaceNet.leaveRoom(session.code);
+  }
+  session = null;
+  hideLobby(false);
+  hideJoin();
+}
+
+function emptySeats(count) {
+  const n = Math.max(2, Math.min(4, count || 4));
+  const seats = [];
+  for (let i = 0; i < n; i++) seats.push(null);
+  return seats;
+}
+
+function paintLobby() {
+  if (!session) return;
+  const body = document.getElementById('lobbyBody');
+  const title = document.getElementById('lobbyTitle');
+  if (title) title.textContent = (session.cfg && session.cfg.mode ? session.cfg.mode : 'Match') + ' lobby';
+  const host = isLobbyHost();
+  const code = session.code;
+  const share = lobbyShareUrl(code);
+  const slots = (session.seats || []).map((seat, i) => {
+    if (!seat) {
+      return `<div class="lobby-slot open" data-seat="${i}"><div class="who">Open seat<div class="tag">Tap to invite a friend</div></div><button class="inv-btn" data-invite-open="${i}">Invite</button></div>`;
+    }
+    const you = seat.id && seat.id === state.profile.id;
+    const tag = seat.bot ? 'Bot' : (you ? 'You' : (seat.id === session.hostId ? 'Host' : 'Player'));
+    return `<div class="lobby-slot"><div class="who">${seat.name || 'Player'}<div class="tag">${tag}</div></div></div>`;
+  }).join('');
+  const friendRows = (state.friends || []).length
+    ? state.friends.map((f) => {
+      const on = friendOnline(f.id);
+      return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${on ? 'Online' : 'Offline'} · ${f.id}</div></div>${host ? `<button class="inv-btn" data-invite-friend="${f.id}">Invite</button>` : ''}</div>`;
+    }).join('')
+    : `<div class="empty"><div class="big">No friends yet</div>Add people in the Friends tab, then invite them here.</div>`;
+  const startLabel = host ? 'Start match' : 'Waiting for host';
+  if (body) {
+    body.innerHTML = `
+      <div class="card">
+        <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">Shareable code</div>
+        <div class="lobby-code" id="lobbyCodeText">${code}</div>
+        <p style="color:var(--text-dim); font-size:13px; margin:10px 0 0;">Friends join from Home → Join Session, or open this link.</p>
+        <div class="mono" style="font-size:11px; color:var(--text-dim); margin-top:8px; word-break:break-all;">${share}</div>
+        <button class="btn" id="copyLobbyCodeBtn" type="button">Copy code</button>
+        <button class="btn" id="copyLobbyLinkBtn" type="button">Copy link</button>
+      </div>
+      <div class="section-title">Seats</div>
+      ${slots}
+      <div class="section-title">Invite friends</div>
+      <div class="card">${friendRows}</div>
+      <button class="btn primary" id="lobbyStartBtn" type="button" ${host ? '' : 'disabled'}>${startLabel}</button>
+      <p style="color:var(--text-dim); font-size:12px; margin:8px 2px 0;">Open seats fill with bots when the host starts.</p>`;
+  }
+  const copyCode = document.getElementById('copyLobbyCodeBtn');
+  if (copyCode) copyCode.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(code); showToast('Code copied'); }
+    catch (_) { showToast(code); }
+  });
+  const copyLink = document.getElementById('copyLobbyLinkBtn');
+  if (copyLink) copyLink.addEventListener('click', async () => {
+    try {
+      if (navigator.share) { await navigator.share({ title: 'PALACE lobby', url: share, text: 'Join my PALACE lobby: ' + code }); }
+      else { await navigator.clipboard.writeText(share); showToast('Link copied'); }
+    } catch (_) {
+      try { await navigator.clipboard.writeText(share); showToast('Link copied'); } catch (e) { showToast(share); }
+    }
+  });
+  body && body.querySelectorAll('[data-invite-open], [data-invite-friend]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const fid = btn.getAttribute('data-invite-friend');
+      if (fid) inviteFriendToLobby(fid);
+      else showToast('Invite a friend from the list below, or share the code');
+    });
+  });
+  const startBtn = document.getElementById('lobbyStartBtn');
+  if (startBtn && host) startBtn.addEventListener('click', startLobbyMatch);
+}
+
+function openLobby(cfg) {
+  ensureProfileReady();
+  closeMode();
+  hideJoin();
+  hideRewards();
+  const seats = emptySeats(cfg.seats || 4);
+  seats[0] = { id: state.profile.id, name: state.profile.name || 'You', bot: false };
+  session = {
+    code: makeLobbyCode(),
+    hostId: state.profile.id,
+    cfg: {
+      mode: cfg.mode,
+      practiceSub: cfg.practiceSub || null,
+      seats: seats.length,
+      difficulty: cfg.difficulty || 'Easy',
+      buyIn: cfg.buyIn || 0,
+    },
+    seats,
+    started: false,
+  };
+  pendingCfg = session.cfg;
+  document.getElementById('lobbyOverlay').style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  if (window.PalaceNet) {
+    PalaceNet.watchLobby(session.code);
+    publishLobby();
+  }
+  paintLobby();
+}
+
+function applyLobbyState(msg) {
+  if (!msg || !session) return;
+  if (msg.code && msg.code !== session.code) return;
+  session.hostId = msg.hostId || session.hostId;
+  session.cfg = msg.cfg || session.cfg;
+  session.seats = Array.isArray(msg.seats) ? msg.seats : session.seats;
+  session.started = !!msg.started;
+  paintLobby();
+}
+
+function joinLobby(code, opts) {
+  const clean = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  if (clean.length < 4) {
+    showToast('Enter a valid lobby code');
+    return;
+  }
+  ensureProfileReady();
+  hideJoin();
+  closeMode();
+  session = {
+    code: clean,
+    hostId: '',
+    cfg: { mode: 'custom', seats: 4, difficulty: 'Easy', buyIn: 0 },
+    seats: emptySeats(4),
+    started: false,
+  };
+  document.getElementById('lobbyOverlay').style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  paintLobby();
+  if (window.PalaceNet) {
+    PalaceNet.watchLobby(clean);
+    PalaceNet.lobbyPub(clean, {
+      type: 'join',
+      id: state.profile.id,
+      name: state.profile.name || 'Player',
+    });
+  }
+  showToast((opts && opts.fromInvite) ? 'Joining lobby…' : 'Looking for lobby ' + clean);
+}
+
+function startLobbyMatch() {
+  if (!session || !isLobbyHost()) return;
+  const cfg = session.cfg || {};
+  const roster = (session.seats || []).map((seat, i) => {
+    if (seat && seat.id && !seat.bot) return { name: seat.name, bot: false, id: seat.id };
+    const botName = (PalaceEngine.BOT_NAMES || ['Bot'])[i % (PalaceEngine.BOT_NAMES || ['Bot']).length];
+    return { name: botName, bot: true, id: null };
+  });
+  if (roster.length < 2) {
+    showToast('Need at least 2 seats');
+    return;
+  }
+  session.started = true;
+  if (window.PalaceNet) {
+    PalaceNet.watchMatch(session.code);
+    PalaceNet.lobbyPub(session.code, {
+      type: 'start',
+      code: session.code,
+      hostId: session.hostId,
+      cfg,
+      seats: session.seats,
+      started: true,
+    });
+  }
+  startMatch({
+    mode: cfg.mode,
+    practiceSub: cfg.practiceSub,
+    seats: roster.length,
+    difficulty: cfg.difficulty,
+    buyIn: cfg.buyIn || 0,
+    roster,
+  });
+}
+
+function applyHostSnap(raw) {
+  if (!raw || !window.PalaceEngine) return;
+  const packedSeat = (raw.pl || []).findIndex((x) => x && x.id && x.id === state.profile.id);
+  const seat = packedSeat >= 0 ? packedSeat : mySeatIndex();
+  const next = PalaceEngine.unpackMatch(raw, seat);
+  const first = !match;
+  match = next;
+  pendingCfg = session && session.cfg ? session.cfg : pendingCfg;
+  if (first) {
+    if (match.mode === 'standard' && match.buyIn && !session._paid) {
+      if (state.coins < match.buyIn) {
+        showToast('Not enough coins');
+        return;
+      }
+      state.coins -= match.buyIn;
+      session._paid = true;
+      saveState();
+      renderHeader();
+    }
+    hideLobby(true);
+    hideJoin();
+    closeMode();
+    openTable();
+    animateDeal().then(() => renderTable());
+  } else {
+    renderTable();
+    settleIfDone();
+  }
+}
+
+function inviteFriendToLobby(friendId) {
+  if (!session || !window.PalaceNet) return;
+  const friend = (state.friends || []).find((f) => f.id === friendId);
+  PalaceNet.inbox(friendId, {
+    type: 'invite',
+    code: session.code,
+    fromName: state.profile.name || 'Player',
+    fromId: state.profile.id,
+    mode: session.cfg && session.cfg.mode,
+  });
+  showToast('Invite sent to ' + ((friend && friend.name) || friendId));
+}
+
+function showInviteBanner(kind, payload) {
+  const el = document.getElementById('inviteBanner');
+  if (!el) return;
+  const title = kind === 'friend'
+    ? (payload.name || 'Someone') + ' wants to add you'
+    : (payload.fromName || 'A friend') + ' invited you to a lobby';
+  const sub = kind === 'friend'
+    ? 'ID ' + (payload.id || '')
+    : 'Code ' + (payload.code || '');
+  el.innerHTML = `<div style="font-weight:700; margin-bottom:4px;">${title}</div>
+    <div class="l2" style="margin-bottom:10px;">${sub}</div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn primary" id="inviteAcceptBtn" type="button" style="margin:0;">Accept</button>
+      <button class="btn" id="inviteDeclineBtn" type="button" style="margin:0;">Decline</button>
+    </div>`;
+  el.classList.add('show');
+  const accept = document.getElementById('inviteAcceptBtn');
+  const decline = document.getElementById('inviteDeclineBtn');
+  if (accept) accept.onclick = () => {
+    el.classList.remove('show');
+    if (kind === 'friend') acceptFriend(payload);
+    else joinLobby(payload.code, { fromInvite: true });
+  };
+  if (decline) decline.onclick = () => {
+    el.classList.remove('show');
+    if (kind === 'friend' && window.PalaceNet) {
+      PalaceNet.inbox(payload.id, { type: 'friend_no', id: state.profile.id });
+    }
+  };
+}
+
+function pushInviteNotice(title, body) {
+  if (!state.settings.notifications) return;
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(title, { body, tag: 'palace-invite' });
+    }
+  } catch (_) { /* ignore */ }
+}
+
+async function ensureNotifyPermission() {
+  if (!state.settings.notifications) return;
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (_) { /* ignore */ }
+  }
+}
+
+function upsertFriend(row) {
+  if (!row || !row.id) return;
+  if (row.id === state.profile.id) return;
+  const list = state.friends || [];
+  const idx = list.findIndex((f) => f.id === row.id);
+  const next = { id: row.id, name: row.name || row.id };
+  if (idx >= 0) list[idx] = { ...list[idx], ...next };
+  else list.push(next);
+  state.friends = list;
+  saveState();
+  if (window.PalaceNet) PalaceNet.presenceOf(row.id);
+  renderFriends();
+  if (session) paintLobby();
+}
+
+function acceptFriend(row) {
+  upsertFriend(row);
+  if (window.PalaceNet) {
+    PalaceNet.inbox(row.id, { type: 'friend_ok', id: state.profile.id, name: state.profile.name || 'Player' });
+  }
+  showToast('You and ' + (row.name || row.id) + ' are friends');
+}
+
+function sendFriendRequest(query) {
+  const q = String(query || '').trim();
+  if (!q) return showToast('Enter a nickname or ID');
+  if (!state.profile.id) return showToast('Set your name first');
+  if (q === state.profile.id || q.toLowerCase() === String(state.profile.name || '').toLowerCase()) {
+    return showToast("That's you");
+  }
+  const existing = (state.friends || []).find((f) => f.id === q || String(f.name || '').toLowerCase() === q.toLowerCase());
+  if (existing) return showToast('Already friends');
+  pendingFriendQuery = q;
+  if (window.PalaceNet) {
+    PalaceNet.inbox(q, { type: 'friend_req', id: state.profile.id, name: state.profile.name || 'Player' });
+    const slug = slugName(q);
+    if (slug) PalaceNet.publish('d', slug, { type: 'lookup', id: state.profile.id, name: state.profile.name, q });
+  }
+  showToast('Friend request sent');
+}
+
+function handleNetMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'presence' && msg.id) {
+    presenceMap[msg.id] = { name: msg.name, online: !!msg.online, t: Date.now() };
+    renderFriends();
+    if (session) paintLobby();
+    return;
+  }
+  if (msg.type === 'lookup' && window.PalaceNet) {
+    const mine = slugName(state.profile.name);
+    if (msg.q && (msg.q === state.profile.id || slugName(msg.q) === mine)) {
+      PalaceNet.inbox(msg.id, { type: 'announce', id: state.profile.id, name: state.profile.name || 'Player' });
+    }
+    return;
+  }
+  if (msg.type === 'announce' && pendingFriendQuery) {
+    const q = pendingFriendQuery.toLowerCase();
+    if (msg.id === pendingFriendQuery || String(msg.name || '').toLowerCase() === q) {
+      pendingFriendQuery = '';
+      if (window.PalaceNet) {
+        PalaceNet.inbox(msg.id, { type: 'friend_req', id: state.profile.id, name: state.profile.name || 'Player' });
+      }
+    }
+    return;
+  }
+  if (msg.type === 'friend_req' && msg.id) {
+    showInviteBanner('friend', { id: msg.id, name: msg.name });
+    pushInviteNotice('PALACE friend request', (msg.name || 'Someone') + ' wants to add you');
+    return;
+  }
+  if (msg.type === 'friend_ok' && msg.id) {
+    upsertFriend({ id: msg.id, name: msg.name });
+    showToast((msg.name || 'Player') + ' accepted');
+    return;
+  }
+  if (msg.type === 'invite' && msg.code) {
+    showInviteBanner('lobby', msg);
+    pushInviteNotice('PALACE lobby invite', (msg.fromName || 'A friend') + ' invited you · ' + msg.code);
+    return;
+  }
+  if (!session) return;
+  if (msg.type === 'lobby' && msg.code === session.code) {
+    applyLobbyState(msg);
+    return;
+  }
+  if (msg.type === 'join' && isLobbyHost() && !session.started && msg.id) {
+    if ((session.seats || []).some((s) => s && s.id === msg.id)) {
+      publishLobby();
+      return;
+    }
+    const open = session.seats.findIndex((s) => !s);
+    if (open < 0) {
+      PalaceNet.inbox(msg.id, { type: 'full', code: session.code });
+      return;
+    }
+    session.seats[open] = { id: msg.id, name: msg.name || 'Player', bot: false };
+    if (window.PalaceNet) PalaceNet.presenceOf(msg.id);
+    publishLobby();
+    paintLobby();
+    return;
+  }
+  if (msg.type === 'leave' && isLobbyHost() && msg.id) {
+    session.seats = (session.seats || []).map((s) => (s && s.id === msg.id ? null : s));
+    publishLobby();
+    paintLobby();
+    return;
+  }
+  if (msg.type === 'start' && msg.code === session.code && !isLobbyHost()) {
+    session.started = true;
+    applyLobbyState(msg);
+    if (window.PalaceNet) PalaceNet.watchMatch(session.code);
+    return;
+  }
+  if (msg.type === 'snap' && !isLobbyHost() && msg.match) {
+    session.started = true;
+    if (window.PalaceNet) PalaceNet.watchMatch(session.code);
+    applyHostSnap(msg.match);
+    return;
+  }
+  if (msg.type === 'move' && isLobbyHost() && match && !match.settled) {
+    const seat = msg.seat;
+    const p = match.players[seat];
+    if (!p || p.isBot || p.out) return;
+    if (match.turn !== seat || uiBusy) return;
+    runMove(msg.move);
+    return;
+  }
+  if (msg.type === 'drop' && isLobbyHost() && match) {
+    const p = match.players[msg.seat];
+    if (p && !p.out) {
+      p.isBot = true;
+      if (!uiBusy && match.turn === p.seat) runTurn();
+    }
+  }
+}
+
+function bootNet() {
+  if (!window.PalaceNet || !state.profile.id) return;
+  PalaceNet.connect({ id: state.profile.id, name: state.profile.name || 'Player' });
+  (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
+  const slug = slugName(state.profile.name);
+  if (slug) {
+    PalaceNet.subscribe('d', slug);
+    PalaceNet.publish('d', slug, { type: 'announce', id: state.profile.id, name: state.profile.name });
+  }
+  if (!netBound) {
+    netBound = true;
+    PalaceNet.on(handleNetMessage);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) PalaceNet.beat();
+    });
+    window.addEventListener('pagehide', () => PalaceNet.disconnect());
+  }
+}
+
+function ensureProfileReady() {
+  if (!state.profile.id && state.profile.name) {
+    state.profile.id = makeProfileId(state.profile.name);
+    state.profile.nameSet = true;
+    saveState();
+  }
+}
+
+function openNameSetup() {
+  const el = document.getElementById('nameSetupOverlay');
+  const body = document.getElementById('nameSetupBody');
+  if (!el || !body) return;
+  el.style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  body.innerHTML = `
+    <div class="card">
+      <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">Welcome</div>
+      <h3 style="font-size:24px; margin:8px 0 10px;">Choose a name</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; line-height:1.5;">Friends find you by this nickname or the unique ID we generate with it.</p>
+      <div class="log-form">
+        <input id="nameSetupInput" maxlength="16" placeholder="Your nickname" value="${state.profile.name && state.profile.name !== 'Player' ? state.profile.name : ''}">
+        <button class="btn primary" id="nameSetupSave" type="button">Save</button>
+      </div>
+    </div>`;
+  const input = document.getElementById('nameSetupInput');
+  const save = document.getElementById('nameSetupSave');
+  const commit = () => {
+    const name = (input.value || '').trim().slice(0, 16);
+    if (name.length < 2) return showToast('Enter at least 2 letters');
+    state.profile.name = name;
+    state.profile.id = makeProfileId(name);
+    state.profile.nameSet = true;
+    saveState();
+    hideNameSetup();
+    document.body.classList.remove('overlay-open');
+    renderHeader();
+    bootNet();
+    consumeJoinHash();
+  };
+  if (save) save.addEventListener('click', commit);
+  if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') commit(); });
+  setTimeout(() => { if (input) input.focus(); }, 50);
+}
+
+function consumeJoinHash() {
+  try {
+    const hash = String(location.hash || '');
+    const m = hash.match(/j=([A-Za-z0-9]+)/);
+    const q = new URLSearchParams(location.search).get('j');
+    const code = (m && m[1]) || q;
+    if (code) joinLobby(code);
+  } catch (_) { /* ignore */ }
+}
+
+function openJoin() {
+  closeMode();
+  const el = document.getElementById('joinOverlay');
+  const body = document.getElementById('joinBody');
+  el.style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  body.innerHTML = `
+    <div class="card">
+      <div class="kicker" style="font-family:'Barlow Condensed'; letter-spacing:0.1em; text-transform:uppercase; color:var(--gain);">Join Session</div>
+      <h3 style="font-size:24px; margin:8px 0 10px;">Enter a lobby code</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; line-height:1.5;">Paste the code or link your friend shared from their match lobby.</p>
+      <div class="log-form">
+        <input id="joinCodeInput" maxlength="48" placeholder="Code or link" autocomplete="off">
+        <button class="btn primary" id="joinGoBtn" type="button">Join</button>
+      </div>
+    </div>`;
+  const go = () => {
+    let raw = (document.getElementById('joinCodeInput').value || '').trim();
+    const hash = raw.match(/j=([A-Za-z0-9]+)/i);
+    if (hash) raw = hash[1];
+    joinLobby(raw);
+  };
+  document.getElementById('joinGoBtn').addEventListener('click', go);
+  document.getElementById('joinCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+}
+
+window.openLobby = openLobby;
+window.openJoin = openJoin;
+window.joinLobby = joinLobby;
+window.startLobbyMatch = startLobbyMatch;
+window.__palaceSession = () => session;
 
 function startMatch(cfg) {
   if (!window.PalaceEngine) {
@@ -3310,8 +3982,20 @@ function startMatch(cfg) {
     saveState();
     renderHeader();
   }
-  pendingCfg = cfg;
+  pendingCfg = {
+    mode: cfg.mode,
+    practiceSub: cfg.practiceSub,
+    seats: cfg.seats,
+    difficulty: cfg.difficulty,
+    buyIn: cfg.buyIn || 0,
+  };
   selectedIds = [];
+  const roster = Array.isArray(cfg.roster) ? cfg.roster : null;
+  let humanSeat = cfg.humanSeat == null ? 0 : cfg.humanSeat;
+  if (roster && state.profile.id) {
+    const idx = roster.findIndex((r) => r && !r.bot && r.id === state.profile.id);
+    if (idx >= 0) humanSeat = idx;
+  }
   match = PalaceEngine.newMatch({
     seats: cfg.seats,
     difficulty: cfg.difficulty,
@@ -3319,8 +4003,20 @@ function startMatch(cfg) {
     mode: cfg.mode,
     practiceSub: cfg.practiceSub,
     names: [state.profile.name || 'You'],
+    roster,
+    humanSeat,
+    id: cfg.matchId,
   });
   closeMode();
+  hideLobby(true);
+  if (session) {
+    session.started = true;
+    session.cfg = pendingCfg;
+    if (window.PalaceNet) {
+      PalaceNet.watchMatch(session.code);
+      if (isLobbyHost()) publishMatchSnap();
+    }
+  }
   openTable();
   animateDeal().then(() => runTurn());
 }
@@ -3393,43 +4089,45 @@ function stakeCardHtml(opts) {
 }
 
 function openMode(mode) {
-  if (mode === 'ranked' || mode === 'custom') {
-    showToast(mode === 'ranked' ? 'Ranked is deferred' : 'Custom is a later placeholder');
+  if (mode === 'join' || mode === 'ranked') {
+    openJoin();
     return;
   }
   document.getElementById('modeOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
-  document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : 'Standard';
+  document.getElementById('modeTitle').textContent = mode === 'practice' ? 'Practice' : mode === 'custom' ? 'Custom' : 'Standard';
   paintModeGold();
   const body = document.getElementById('modeBody');
-  if (mode === 'practice') {
-    let seats = 4;
-    let sub = 'standard';
+  if (mode === 'practice' || mode === 'custom') {
+    let seats = mode === 'custom' ? 4 : 4;
+    let sub = mode === 'custom' ? 'custom' : 'standard';
     let difficulty = 'Easy';
     const diffs = ['Easy', 'Medium', 'Hard', 'Expert'];
     function paint() {
-      const custom = sub === 'custom'
+      const custom = (mode === 'custom' || sub === 'custom')
         ? `<div class="stake-custom"><div class="tier-row">${[2,3,4].map((n) => `<div class="tier-chip${n===seats?' active':''}" data-seats="${n}"><div class="n">${n}</div><div class="l">players</div></div>`).join('')}</div></div>`
         : '';
-      body.innerHTML = `
-        <div class="stake-screen">
+      const toggles = mode === 'custom' ? '' : `
           <div class="seat-toggle">
             <button type="button" data-practice="standard"${sub==='standard'?' class="on"':''}>4 seats</button>
             <button type="button" data-practice="duel"${sub==='duel'?' class="on"':''}>1v1</button>
             <button type="button" data-practice="custom"${sub==='custom'?' class="on"':''}>Custom</button>
-          </div>
+          </div>`;
+      body.innerHTML = `
+        <div class="stake-screen">
+          ${toggles}
           ${custom}
           <div class="stake-rail">
             ${diffs.map((d) => stakeCardHtml({
               difficulty: d,
-              kicker: 'Bots',
+              kicker: mode === 'custom' ? 'Table' : 'Bots',
               hero: d.toUpperCase(),
               need: d,
               selected: d === difficulty,
             })).join('')}
           </div>
           <div class="stake-footer">
-            <div class="stake-hint">No coin risk · vs bots</div>
+            <div class="stake-hint">${mode === 'custom' ? 'Invite friends in the lobby · empty seats become bots' : 'No coin risk · invite friends or fill with bots'}</div>
             <button class="btn primary" id="startPracticeBtn">Start ${difficulty}</button>
           </div>
         </div>`;
@@ -3450,7 +4148,7 @@ function openMode(mode) {
         if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
       }));
       document.getElementById('startPracticeBtn').addEventListener('click', () => {
-        startMatch({ mode: 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
+        openLobby({ mode: mode === 'custom' ? 'custom' : 'practice', practiceSub: sub, seats, difficulty, buyIn: 0 });
       });
     }
     paint();
@@ -3482,7 +4180,7 @@ function openMode(mode) {
           }).join('')}
         </div>
         <div class="stake-footer">
-          <div class="stake-hint">Higher stake = bigger payout</div>
+          <div class="stake-hint">Lobby first · empty seats fill with bots</div>
           <button class="btn primary" id="startStandardBtn">Start ${difficulty} · ${buyIn} coins</button>
         </div>
       </div>`;
@@ -3495,7 +4193,7 @@ function openMode(mode) {
       if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     }));
     document.getElementById('startStandardBtn').addEventListener('click', () => {
-      startMatch({ mode: 'standard', seats: 4, difficulty, buyIn });
+      openLobby({ mode: 'standard', seats: 4, difficulty, buyIn });
     });
   }
   paintStandard();
@@ -3503,16 +4201,22 @@ function openMode(mode) {
 
 function closeMode() {
   document.getElementById('modeOverlay').style.display = 'none';
-  if (!match) document.body.classList.remove('overlay-open');
+  const lobbyOpen = document.getElementById('lobbyOverlay') && document.getElementById('lobbyOverlay').style.display === 'flex';
+  const joinOpen = document.getElementById('joinOverlay') && document.getElementById('joinOverlay').style.display === 'flex';
+  if (!match && !lobbyOpen && !joinOpen) document.body.classList.remove('overlay-open');
 }
 
 function renderFriends() {
   const list = document.getElementById('friendsList');
-  if (!state.friends.length) {
-    list.innerHTML = `<div class="empty"><div class="big">No friends yet</div>Add by nickname or profile ID. Google login comes with the social pass.</div>`;
+  if (!list) return;
+  if (!(state.friends || []).length) {
+    list.innerHTML = `<div class="empty"><div class="big">No friends yet</div>Add by nickname or profile ID. Match lobbies are where you send a play request.</div>`;
     return;
   }
-  list.innerHTML = state.friends.map((f) => `<div class="friend-row"><div>${f.name}<div class="l2">Offline</div></div><button class="inv-btn">Invite</button></div>`).join('');
+  list.innerHTML = state.friends.map((f) => {
+    const on = friendOnline(f.id);
+    return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${on ? 'Online' : 'Offline'} · ${f.id || ''}</div></div></div>`;
+  }).join('');
 }
 
 function renderSettings() {
@@ -3581,6 +4285,10 @@ function init() {
   document.getElementById('craftWindowLeaveBtn').addEventListener('click', closeCraft);
   document.getElementById('profileLeaveBtn').addEventListener('click', closeProfile);
   document.getElementById('modeLeaveBtn').addEventListener('click', closeMode);
+  const lobbyLeave = document.getElementById('lobbyLeaveBtn');
+  if (lobbyLeave) lobbyLeave.addEventListener('click', () => leaveSession());
+  const joinLeave = document.getElementById('joinLeaveBtn');
+  if (joinLeave) joinLeave.addEventListener('click', () => { hideJoin(); document.body.classList.remove('overlay-open'); });
   document.getElementById('tableLeaveBtn').addEventListener('click', () => {
     if (match && !match.ended && !confirm('Leave this match?')) return;
     closeTable();
@@ -3591,13 +4299,17 @@ function init() {
   document.getElementById('itemDetailPopupBackdrop').addEventListener('click', closeItemDetail);
   document.getElementById('sfxRange').addEventListener('input', (e) => { state.settings.sfx = Number(e.target.value); document.getElementById('sfxVal').textContent = state.settings.sfx + '%'; saveState(); });
   document.getElementById('musicRange').addEventListener('input', (e) => { state.settings.music = Number(e.target.value); document.getElementById('musicVal').textContent = state.settings.music + '%'; saveState(); });
-  document.getElementById('notifToggle').addEventListener('click', () => { state.settings.notifications = !state.settings.notifications; saveState(); renderSettings(); });
+  document.getElementById('notifToggle').addEventListener('click', async () => {
+    state.settings.notifications = !state.settings.notifications;
+    saveState();
+    renderSettings();
+    if (state.settings.notifications) await ensureNotifyPermission();
+  });
   document.getElementById('googleBtn').addEventListener('click', () => showToast('Google sign-in ships with the social pass'));
   document.getElementById('logoutBtn').addEventListener('click', () => showToast('Signed out locally — Google comes later'));
   document.getElementById('addFriendBtn').addEventListener('click', () => {
     const name = document.getElementById('friendSearch').value.trim();
-    if (!name) return showToast('Enter a nickname or ID');
-    showToast('Friend requests need Google login');
+    sendFriendRequest(name);
   });
   document.getElementById('shareBackupBtn').addEventListener('click', async () => {
     const text = JSON.stringify(window.buildBackupPayload(), null, 2);
@@ -3626,6 +4338,7 @@ function init() {
     saveState();
     renderAll();
     showToast('Save reset — 400 coins');
+    openNameSetup();
   });
   document.getElementById('addHomeBtn').addEventListener('click', async () => {
     if (window.__deferredInstallPrompt) {
@@ -3641,6 +4354,12 @@ function init() {
     window.__deferredInstallPrompt = e;
   });
   window.addEventListener('resize', syncHeaderHeight);
+  if (needsNameSetup()) openNameSetup();
+  else {
+    bootNet();
+    consumeJoinHash();
+    if (state.settings.notifications) ensureNotifyPermission();
+  }
 }
 
 init();

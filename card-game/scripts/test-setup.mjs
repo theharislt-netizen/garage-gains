@@ -36,6 +36,12 @@ must(html.includes('data-view="subscription"') && html.includes('data-view="frie
 must(html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory must reuse Enchant + Craft entry points');
 must(html.includes('id="enchantWindow"'), 'enchant window overlay required');
 must(html.includes('id="exportBtn"') && html.includes('id="importBtn"') && html.includes('id="addHomeBtn"'), 'settings backup + add-home hooks required for native-bridge');
+must(html.includes('palace-net.js'), 'card-game.html must load palace-net.js');
+must(existsSync(join(root, 'palace-net.js')), 'palace-net.js required');
+must(existsSync(join(root, 'scripts/web-play.html')), 'web play loader required');
+must(read('scripts/prepare-www.mjs').includes('palace-net.js'), 'prepare:www copies palace-net.js');
+must(read('scripts/prepare-www.mjs').includes('web-play.html'), 'prepare:www writes the play loader');
+must(read('scripts/install-page.html').includes('./play/'), 'install page links the browser table');
 must(html.includes('Starting balance') || html.includes('400'), 'starter coins (400) should be in the shell');
 must(html.includes('function buildBackupPayload') || html.includes('window.buildBackupPayload'), 'backup payload must be exposed');
 must(html.includes('applyImportedBackupText'), 'import hook must be exposed');

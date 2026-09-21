@@ -852,6 +852,41 @@ while (!auto.ended && guard++ < 8000) {
 must(auto.ended, 'a 4-bot Easy match should finish');
 must(auto.finishOrder.length === 4, 'all four seats get a place');
 
+must(html.includes('id="lobbyOverlay"') && html.includes('id="joinOverlay"') && html.includes('id="nameSetupOverlay"'), 'lobby, join, and name setup overlays required');
+must(html.includes('Join Session') && html.includes('data-mode="join"'), 'Ranked tile is Join Session');
+must(!html.includes('data-mode="ranked"'), 'ranked mode tile is gone');
+must(html.includes('palace-net.js') && html.includes('function openLobby'), 'net + lobby helpers are loaded');
+must(html.includes("openLobby({ mode: mode === 'custom' ? 'custom' : 'practice'"), 'practice and custom Start open the lobby');
+must(html.includes("openLobby({ mode: 'standard'"), 'standard Start opens the lobby');
+must(!html.includes("startMatch({ mode: 'practice'"), 'practice Start does not skip the lobby');
+must(!html.includes("startMatch({ mode: 'standard', seats: 4"), 'standard Start does not skip the lobby');
+must(html.includes('function openNameSetup') && html.includes('makeProfileId'), 'nameless players get a name + unique ID');
+must(html.includes('type: \'invite\'') && html.includes('inviteAcceptBtn') && html.includes('new Notification'), 'lobby invites are in-app plus push');
+{
+  const rf = html.slice(html.indexOf('function renderFriends'), html.indexOf('function renderSettings'));
+  must(rf.includes('Online') && rf.includes('Offline'), 'friends list shows online status');
+  must(!rf.includes('inv-btn') && !rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+}
+
+const Net = require(join(root, 'palace-net.js'));
+must(typeof Net.topic === 'function' && Net.topic('l', 'ABC12') === 'pal1labc12', 'lobby topic is compact');
+
+const twoHumans = E.newMatch({
+  roster: [
+    { name: 'Host', bot: false, id: 'HOST1' },
+    { name: 'Guest', bot: false, id: 'GUEST1' },
+  ],
+  humanSeat: 0,
+  rng: seededRng(3),
+});
+must(twoHumans.players.length === 2 && !twoHumans.players[0].isBot && !twoHumans.players[1].isBot, 'roster can seat two humans');
+must(twoHumans.players[1].profileId === 'GUEST1', 'roster keeps profile ids');
+const packed = E.packMatch(twoHumans);
+must(packed && JSON.stringify(packed).length < 3500, 'packed match fits a ntfy payload');
+const back = E.unpackMatch(packed, 1);
+must(back.humanSeat === 1 && back.players[1].hand.length === E.HAND_SIZE, 'guest hydrates from a host snapshot');
+must(back.players[0].hand[0].rank && back.players[0].hand[0].suit, 'unpacked cards keep rank and suit');
+
 if (fails.length) {
   console.error('GAMEPLAY CHECKS FAILED:');
   fails.forEach((f) => console.error(' -', f));

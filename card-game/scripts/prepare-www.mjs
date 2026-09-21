@@ -129,6 +129,7 @@ const src = join(root, 'card-game.html');
 const html = patchHtml(await readFile(src, 'utf8'));
 await writeFile(join(www, 'index.html'), html);
 await copyFile(join(root, 'palace-engine.js'), join(www, 'palace-engine.js'));
+await copyFile(join(root, 'palace-net.js'), join(www, 'palace-net.js'));
 await writeFile(join(www, '.nojekyll'), '');
 await writeFile(
   join(www, 'manifest.webmanifest'),
@@ -165,4 +166,11 @@ if (await exists(apkSrc)) {
 let landing = await readFile(join(root, 'scripts/install-page.html'), 'utf8');
 await writeFile(join(docs, 'index.html'), landing);
 
-console.log('www/ prepared (docs/ is the install page, not the web app)');
+const playDir = join(docs, 'play');
+await mkdir(playDir, { recursive: true });
+await writeFile(join(playDir, 'index.html'), await readFile(join(root, 'scripts/web-play.html'), 'utf8'));
+if (await exists(iconSrc)) {
+  await copyFile(iconSrc, join(playDir, 'icon.png'));
+}
+
+console.log('www/ prepared (docs/ is the install page + auto-updating play loader)');

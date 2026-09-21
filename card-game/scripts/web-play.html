@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PALACE</title>
+<meta name="theme-color" content="#09080f">
+<style>
+  html, body { margin: 0; background: #09080f; color: #f4f2f9; font-family: Inter, system-ui, sans-serif; height: 100%; }
+  #boot { display: flex; min-height: 100dvh; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 24px; text-align: center; }
+  #boot b { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.12em; font-size: 22px; }
+  #boot p { color: #8d859f; font-size: 13px; margin: 0; }
+</style>
+</head>
+<body>
+<div id="boot"><b>PALACE</b><p>Loading the live table…</p></div>
+<script>
+(async function () {
+  const REPO = 'theharislt-netizen/garage-gains';
+  const REFS = ['cursor/winner-kick-rewards-e78b', 'cursor/card-game-setup-e78b', 'main'];
+  const DIR = 'card-game/live-update';
+  const boot = document.getElementById('boot');
+  function note(msg) { if (boot) boot.querySelector('p').textContent = msg; }
+
+  async function inflateRaw(bytes) {
+    const ds = new DecompressionStream('deflate-raw');
+    const w = ds.writable.getWriter();
+    await w.write(bytes);
+    await w.close();
+    return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  }
+
+  async function unzip(buf) {
+    const u8 = new Uint8Array(buf);
+    const view = new DataView(buf);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= 0; i--) {
+      if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('zip');
+    const count = view.getUint16(eocd + 10, true);
+    let p = view.getUint32(eocd + 16, true);
+    const files = {};
+    for (let n = 0; n < count; n++) {
+      if (view.getUint32(p, true) !== 0x02014b50) break;
+      const method = view.getUint16(p + 10, true);
+      const comp = view.getUint32(p + 20, true);
+      const nameLen = view.getUint16(p + 28, true);
+      const extraLen = view.getUint16(p + 30, true);
+      const commentLen = view.getUint16(p + 32, true);
+      const localOff = view.getUint32(p + 42, true);
+      const name = new TextDecoder().decode(u8.slice(p + 46, p + 46 + nameLen));
+      p += 46 + nameLen + extraLen + commentLen;
+      const lname = view.getUint16(localOff + 26, true);
+      const lextra = view.getUint16(localOff + 28, true);
+      const data = u8.slice(localOff + 30 + lname + lextra, localOff + 30 + lname + lextra + comp);
+      files[name] = method === 8 ? await inflateRaw(data) : data;
+    }
+    return files;
+  }
+
+  async function manifest(ref) {
+    const url = 'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/manifest.json?t=' + Date.now();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const j = await res.json();
+    if (!j || !j.version) return null;
+    return { version: j.version, zip: 'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + DIR + '/www.zip?v=' + encodeURIComponent(j.version) };
+  }
+
+  let picked = null;
+  for (const ref of REFS) {
+    try { picked = await manifest(ref); } catch (_) { picked = null; }
+    if (picked) break;
+  }
+  if (!picked) {
+    note('Could not reach the live table. Check your connection.');
+    return;
+  }
+  note('Updating to ' + picked.version + '…');
+  const zipRes = await fetch(picked.zip, { cache: 'no-store' });
+  if (!zipRes.ok) throw new Error('zip ' + zipRes.status);
+  const files = await unzip(await zipRes.arrayBuffer());
+  const blobs = {};
+  Object.keys(files).forEach((name) => {
+    const lower = name.toLowerCase();
+    const mime = lower.endsWith('.html') ? 'text/html'
+      : lower.endsWith('.js') ? 'text/javascript'
+      : lower.endsWith('.css') ? 'text/css'
+      : lower.endsWith('.woff2') ? 'font/woff2'
+      : lower.endsWith('.png') ? 'image/png'
+      : 'application/octet-stream';
+    blobs[name] = URL.createObjectURL(new Blob([files[name]], { type: mime }));
+  });
+  let html = new TextDecoder().decode(files['index.html'] || new Uint8Array());
+  Object.keys(blobs).forEach((name) => {
+    if (name === 'index.html') return;
+    html = html.split('./' + name).join(blobs[name]);
+    html = html.split(name).join(blobs[name]);
+  });
+  const hash = location.hash || '';
+  const search = location.search || '';
+  const next = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  location.replace(next + search + hash);
+})().catch((err) => {
+  const p = document.querySelector('#boot p');
+  if (p) p.textContent = 'Load failed — ' + (err && err.message ? err.message : 'try again');
+});
+</script>
+</body>
+</html>
