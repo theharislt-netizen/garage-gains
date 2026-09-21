@@ -309,6 +309,7 @@ try {
       dragon: rows.filter((r) => r.diff === 'Dragon').map((r) => r.buy + ':' + r.open),
       boss: !!document.querySelector('.table-card.boss.art-dragon .table-fx'),
       spark: !!document.querySelector('.table-card.art-legend .fx-spark'),
+      emberArt: getComputedStyle(document.querySelector('.table-card.art-legend .table-face')).backgroundImage,
       emberFx: !!document.querySelector('.table-card.art-mythic .fx-ember'),
       fireFx: (document.querySelectorAll('.table-card.art-dragon .fx-fire span') || []).length,
     };
@@ -319,9 +320,31 @@ try {
   must(newLadder.dragon.join(',') === '10000:1,15000:1,20000:1', 'Dragon Crown tiers 10000/15000/20000 unlock');
   must(newLadder.boss, 'Dragon Crown has the boss fire treatment');
   must(newLadder.spark, 'Ember Gallery has a light spark treatment');
+  must(/ember-gallery\.jpg/.test(newLadder.emberArt || ''), 'Ember Gallery challenge card uses the painted table image');
   must(newLadder.emberFx, 'Obsidian Court has ember flames');
   must(newLadder.fireFx >= 8, 'Dragon Crown has a full fire ring');
   await page.screenshot({ path: join(artifacts, 'ember_gallery_card.png'), type: 'png' });
+  await page.evaluate(() => {
+    closeMode();
+    startMatch({ mode: 'practice', practiceSub: 'duel', seats: 2, difficulty: 'Legend', buyIn: 0 });
+  });
+  await page.waitForFunction(() => document.body.classList.contains('in-match') && match);
+  const feltTheme = await page.evaluate(() => {
+    const felt = document.getElementById('tableFelt');
+    const cs = felt ? getComputedStyle(felt) : null;
+    return {
+      cls: felt && felt.className,
+      bg: cs && cs.backgroundImage,
+      watermark: !!document.querySelector('.table-watermark'),
+    };
+  });
+  must(/\bfelt-legend\b/.test(feltTheme.cls || ''), 'Ember Gallery match felt uses felt-legend');
+  must(/ember-gallery\.jpg/.test(feltTheme.bg || ''), 'Ember Gallery match felt paints the table image');
+  must(!feltTheme.watermark, 'Ember Gallery felt does not stack the PALACE watermark over the art');
+  await page.screenshot({ path: join(artifacts, 'ember_gallery_match_table.png'), type: 'png' });
+  await page.evaluate(() => { if (typeof closeTable === 'function') closeTable(); else leaveMatchView(); });
+  await page.evaluate(() => openMode('standard'));
+  await page.waitForSelector('.table-card.art-mythic');
   await page.evaluate(() => {
     const el = document.querySelector('.table-card.art-mythic');
     if (el) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
