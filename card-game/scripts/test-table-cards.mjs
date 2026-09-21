@@ -136,11 +136,14 @@ try {
     };
   });
   console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, cardW: layout.cardW, cardH: layout.cardH, fullyOn: layout.fullyOn, bodyMid: layout.bodyMid, cardMid: layout.cardMid }));
-  must(layout.count === 4, 'four themed table cards');
-  must(layout.names[0] === 'CANDLELIGHT' || layout.names[0] === 'Candlelight', 'Easy table is Candlelight');
+  must(layout.count === 6, 'six themed table cards');
+  must(layout.names[0] === 'VELVET ROOM' || layout.names[0] === 'Velvet Room', 'first table is Velvet Room');
   must(layout.names.includes('VELVET ROOM') || layout.names.includes('Velvet Room'), 'Medium table is Velvet Room');
   must(layout.names.includes('HIGH COURT') || layout.names.includes('High Court'), 'Hard table is High Court');
   must(layout.names.includes('MIDNIGHT CROWN') || layout.names.includes('Midnight Crown'), 'Expert table is Midnight Crown');
+  must(layout.names.includes('EMBER GALLERY') || layout.names.includes('Ember Gallery'), 'fifth table is Ember Gallery');
+  must(layout.names.includes('OBSIDIAN COURT') || layout.names.includes('Obsidian Court'), 'sixth table is Obsidian Court');
+  must(layout.names.includes('DRAGON CROWN') || layout.names.includes('Dragon Crown'), 'seventh table is Dragon Crown');
   must(!layout.tiltOval, 'no tilted stake cards');
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
   must(layout.fullyOn === 2, 'exactly two table cards fit on screen');
@@ -150,14 +153,14 @@ try {
   must(!layout.themedRows, 'inner rows are not themed sub-names');
 
   const byBuy = Object.fromEntries(layout.rows.map((r) => [r.buy, r]));
-  must(byBuy[30] && byBuy[30].open === '1', 'Candlelight 30 open');
   must(byBuy[100] && byBuy[100].open === '1' && byBuy[200].open === '1' && byBuy[300].open === '1', 'Velvet Room all open from medium:2');
   must(byBuy[500] && byBuy[500].open === '1', 'High Court 500 open from hard:0');
   must(byBuy[700] && byBuy[700].open === '0' && byBuy[700].locked, 'High Court 700 still locked');
   must(byBuy[1200] && byBuy[1200].open === '0', 'Midnight Crown still locked');
+  must(byBuy[2500] && byBuy[2500].open === '0', 'Ember Gallery stays locked until Midnight Crown tier III');
+  must(byBuy[10000] && byBuy[10000].open === '0', 'Dragon Crown stays locked at the end of the chain');
   must(/\btier i\b/i.test(byBuy[100].text) && /\btier ii\b/i.test(byBuy[200].text) && /\btier iii\b/i.test(byBuy[300].text), 'Velvet rows are Tier I / II / III + priced');
   must(/🪙 100/.test(byBuy[100].text) && /🪙 200/.test(byBuy[200].text) && /🪙 300/.test(byBuy[300].text), 'Velvet rows still show coin costs');
-  must(/\btier i\b/i.test(byBuy[30].text), 'Candlelight paid row is Tier I');
   must(/\btier i\b/i.test(byBuy[500].text) && /\btier ii\b/i.test(byBuy[700].text) && /\btier iii\b/i.test(byBuy[900].text), 'High Court rows are Tier I / II / III');
 
   await page.screenshot({ path: join(artifacts, 'standard_table_cards.png'), type: 'png' });
@@ -190,14 +193,14 @@ try {
   must(/previous stake/i.test(lockedToast), 'locked row explains unlock rule');
   must(stillMode, 'locked row does not open the lobby');
 
-  await page.click('.tier-play[data-buy="30"]');
+  await page.click('.tier-play[data-buy="100"]');
   await page.waitForFunction(() => document.getElementById('lobbyOverlay').style.display === 'flex');
   const lobby = await page.evaluate(() => {
     const s = window.__palaceSession && window.__palaceSession();
     return { mode: s && s.cfg && s.cfg.mode, difficulty: s && s.cfg && s.cfg.difficulty, buyIn: s && s.cfg && s.cfg.buyIn };
   });
   console.log('lobby', lobby);
-  must(lobby.mode === 'standard' && lobby.difficulty === 'Easy' && lobby.buyIn === 30, 'Candlelight row opens Easy 30 lobby');
+  must(lobby.mode === 'standard' && lobby.difficulty === 'Medium' && lobby.buyIn === 100, 'Velvet Room row opens Medium 100 lobby');
   await page.screenshot({ path: join(artifacts, 'standard_tier_opens_lobby.png'), type: 'png' });
 
   await page.evaluate(() => { hideLobby(false); closeMode(); });
@@ -208,7 +211,7 @@ try {
     plays: [...document.querySelectorAll('.tier-play')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()),
     names: [...document.querySelectorAll('.table-card h3')].map((h) => h.textContent.trim()),
   }));
-  must(practice.cards === 4 && practice.plays.length === 4, 'practice has one play row per themed table');
+  must(practice.cards === 6 && practice.plays.length === 6, 'practice has one play row per themed table');
   must(practice.plays.every((t) => /Play/i.test(t)), 'practice rows are Play, not coin stakes');
   await page.screenshot({ path: join(artifacts, 'practice_table_cards.png'), type: 'png' });
   await page.click('.table-card.art-medium .tier-play');
@@ -225,6 +228,62 @@ try {
     wins: state.stats.wins,
   }));
   must(after.coins === 777 && after.unlocks.medium === 2 && after.wins === 6, 'opening lobbies did not reset the save');
+
+  await page.evaluate(() => { hideLobby(false); closeMode(); });
+  await page.evaluate(() => {
+    state.unlocks = { medium: 3, hard: 3, expert: 3, legend: 3, mythic: 3, dragon: 3 };
+    saveState();
+    openMode('standard');
+  });
+  await page.waitForSelector('.table-card.art-dragon');
+  await page.evaluate(() => {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.textContent = '';
+      toast.classList.remove('show');
+      toast.style.opacity = '0';
+    }
+    const el = document.querySelector('.table-card.art-legend');
+    if (el) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  });
+  const newLadder = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.tier-play')].map((b) => ({
+      diff: b.dataset.diff,
+      buy: Number(b.dataset.buy),
+      open: b.dataset.open,
+      text: b.innerText.replace(/\s+/g, ' ').trim(),
+    }));
+    return {
+      names: [...document.querySelectorAll('.table-card h3')].map((h) => h.textContent.trim()),
+      candle: /candlelight/i.test(document.body.innerText),
+      ember: rows.filter((r) => r.diff === 'Legend').map((r) => r.buy + ':' + r.open),
+      mythic: rows.filter((r) => r.diff === 'Mythic').map((r) => r.buy + ':' + r.open),
+      dragon: rows.filter((r) => r.diff === 'Dragon').map((r) => r.buy + ':' + r.open),
+      boss: !!document.querySelector('.table-card.boss.art-dragon .table-fx'),
+      spark: !!document.querySelector('.table-card.art-legend .fx-spark'),
+      emberFx: !!document.querySelector('.table-card.art-mythic .fx-ember'),
+      fireFx: (document.querySelectorAll('.table-card.art-dragon .fx-fire span') || []).length,
+    };
+  });
+  must(!newLadder.candle, 'Candlelight copy is gone from Standard');
+  must(newLadder.ember.join(',') === '2500:1,3000:1,4000:1', 'Ember Gallery tiers 2500/3000/4000 unlock');
+  must(newLadder.mythic.join(',') === '5000:1,6500:1,8000:1', 'Obsidian Court tiers 5000/6500/8000 unlock');
+  must(newLadder.dragon.join(',') === '10000:1,15000:1,20000:1', 'Dragon Crown tiers 10000/15000/20000 unlock');
+  must(newLadder.boss, 'Dragon Crown has the boss fire treatment');
+  must(newLadder.spark, 'Ember Gallery has a light spark treatment');
+  must(newLadder.emberFx, 'Obsidian Court has ember flames');
+  must(newLadder.fireFx >= 8, 'Dragon Crown has a full fire ring');
+  await page.screenshot({ path: join(artifacts, 'ember_gallery_card.png'), type: 'png' });
+  await page.evaluate(() => {
+    const el = document.querySelector('.table-card.art-mythic');
+    if (el) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  });
+  await page.screenshot({ path: join(artifacts, 'obsidian_court_card.png'), type: 'png' });
+  await page.evaluate(() => {
+    const el = document.querySelector('.table-card.art-dragon');
+    if (el) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  });
+  await page.screenshot({ path: join(artifacts, 'dragon_crown_boss.png'), type: 'png' });
 } catch (err) {
   fails.push(String(err && err.stack ? err.stack : err));
   try { await page.screenshot({ path: join(artifacts, 'table_cards_fail.png'), type: 'png' }); } catch (_) { /* ignore */ }

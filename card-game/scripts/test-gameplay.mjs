@@ -17,7 +17,9 @@ must(html.includes('play-hand') && html.includes('play-card'), 'home must use pl
 must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must be UNO-style illustrated cards');
 must(html.includes('table-rail') && html.includes('table-card') && html.includes('tier-play') && html.includes('seat-toggle'), 'mode setup uses upright table cards with stacked tiers');
 must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
-must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
+must(!html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'Candlelight is gone; classic tables keep their names');
+must(html.includes("const DIFF_ORDER = ['Medium', 'Hard', 'Expert', 'Legend', 'Mythic', 'Dragon']"), 'Standard ladder is six tables after Candlelight');
+must(html.includes('Ember Gallery') && html.includes('Obsidian Court') && html.includes('Dragon Crown'), 'three new themed tables follow Midnight Crown');
 must(html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('scroll-snap-align: start'), 'table cards are two-up and snap along the rail');
 must(html.includes('min(56vh, 380px)') && html.includes('min(52vh, 340px)') && html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('justify-content: center'), 'tier cards are two-up, tall, and vertically centered');
 must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
@@ -820,11 +822,21 @@ const evSecond = E.applyMove(winSecond, { type: 'play', seat: 1, cardIds: ['9H']
 must(winSecond.players[1].out && winSecond.players[1].place === 2, 'emptying all cards in 2nd still finishes that seat');
 must(evSecond.some((e) => e.type === 'out' && e.seat === 1 && e.place === 2), '2nd place is an out event');
 must(!winSecond.ended, 'the match keeps running after 2nd goes out');
-must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Easy', 30), 'easy 30 always unlocked');
+must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100), 'Velvet Room tier I starts unlocked');
 must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 200), 'medium 200 starts locked');
 const unlocked = E.nextUnlocks({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100, true);
 must(E.isBuyInUnlocked(unlocked, 'Medium', 200), 'winning medium 100 unlocks 200');
-must(E.BUYINS.Easy[0] === 30 && E.BUYINS.Medium[0] === 100 && E.BUYINS.Hard[0] === 500 && E.BUYINS.Expert[0] === 1200, 'coin ladder is unchanged');
+must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1, legend: -1, mythic: -1, dragon: -1 }, 'Legend', 2500), 'Ember Gallery starts locked');
+const afterCrown = E.nextUnlocks({ medium: 2, hard: 3, expert: 2, legend: -1 }, 'Expert', 1800, true);
+must(E.isBuyInUnlocked(afterCrown, 'Legend', 2500), 'winning Midnight Crown tier III unlocks Ember Gallery');
+must(!E.isBuyInUnlocked(afterCrown, 'Mythic', 5000), 'Obsidian Court stays locked until Ember Gallery tier III');
+const afterEmber = E.nextUnlocks(afterCrown, 'Legend', 4000, true);
+must(E.isBuyInUnlocked(afterEmber, 'Mythic', 5000), 'winning Ember Gallery tier III unlocks Obsidian Court');
+const afterObsidian = E.nextUnlocks(afterEmber, 'Mythic', 8000, true);
+must(E.isBuyInUnlocked(afterObsidian, 'Dragon', 10000), 'winning Obsidian Court tier III unlocks Dragon Crown');
+must(E.BUYINS.Medium[0] === 100 && E.BUYINS.Hard[0] === 500 && E.BUYINS.Expert[0] === 1200, 'existing coin ladder is unchanged');
+must(E.BUYINS.Legend.join(',') === '2500,3000,4000' && E.BUYINS.Mythic.join(',') === '5000,6500,8000' && E.BUYINS.Dragon.join(',') === '10000,15000,20000', 'new tables use the 2500–20000 ladder');
+must(!E.BUYINS.Easy, 'Candlelight / Easy buy-in is gone');
 must(html.includes("unlocks: { ...defaultState().unlocks, ...(src.unlocks || {}) }"), 'imports keep existing unlocks');
 must(html.includes("const STORE_KEY = 'palaceCards_v1'"), 'save key is still palaceCards_v1');
 
