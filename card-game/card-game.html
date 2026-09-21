@@ -1573,7 +1573,7 @@ const TABLE_THEMES = {
     art: 'expert',
   },
 };
-const TIER_ROMAN = ['I', 'II', 'III'];
+const TIER_LABELS = ['Tier I', 'Tier II', 'Tier III'];
 function tableThemeOf(diff) {
   return TABLE_THEMES[diff] || TABLE_THEMES.Easy;
 }
@@ -1584,7 +1584,7 @@ function tableThemeRows(diff) {
   const buys = (window.PalaceEngine && PalaceEngine.BUYINS[diff]) || [];
   return buys.map((buyIn, i) => ({
     buyIn,
-    label: 'Tier ' + (TIER_ROMAN[i] || String(i + 1)),
+    label: TIER_LABELS[i] || ('Tier ' + (i + 1)),
   }));
 }
 window.TABLE_THEMES = TABLE_THEMES;
