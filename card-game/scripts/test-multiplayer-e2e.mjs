@@ -201,6 +201,11 @@ try {
   });
   must(sheetOpen, 'empty pad opens invite sheet with the guest');
   await host.evaluate(() => inviteFriendToLobby('GUESTTEST1'));
+  await host.evaluate(() => {
+    const t = document.getElementById('toast');
+    if (t) t.classList.remove('show');
+  });
+  await host.screenshot({ path: join(artifacts, 'palace_invite_seat_cooldown.png') });
   const inviteCool = await host.evaluate(() => {
     const pads = [...document.querySelectorAll('[data-invite-open]')];
     const coolingSeat = pads.find((p) => p.disabled);
@@ -220,6 +225,10 @@ try {
   must(inviteCool.seatDisabled, 'open-seat Invite pad is disabled after send');
   must(inviteCool.opacity < 0.7, 'cooldown Invite looks grayed out');
   must(inviteCool.pill, 'Invite button uses the HUD pill look');
+  await host.evaluate(() => {
+    const t = document.getElementById('toast');
+    if (t) t.classList.remove('show');
+  });
   await host.screenshot({ path: join(artifacts, 'palace_invite_cooldown.png') });
   await host.evaluate(() => { if (typeof hideLobbyInviteSheet === 'function') hideLobbyInviteSheet(); });
   const inviteText = await guest.evaluate(async () => {

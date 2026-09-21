@@ -1145,7 +1145,9 @@
   .cosmetic-slot { background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px 12px; min-height: 92px; }
   .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
   .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
-  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; }
+  .friend-row > div:first-child { min-width: 0; flex: 1; }
+  .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; }
   .range { width: 100%; accent-color: var(--a2); }
 </style>
 </head>
