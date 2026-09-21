@@ -110,6 +110,7 @@ try {
       const r = c.getBoundingClientRect();
       return { left: r.left, right: r.right, width: r.width, visible: r.left < vw - 8 && r.right > 8 };
     });
+    const first = boxes[0] || { left: 0, right: 0 };
     const rot = cards.map((c) => getComputedStyle(c).transform);
     return {
       count: cards.length,
@@ -117,11 +118,15 @@ try {
       rows,
       boxes,
       rot,
+      vw,
+      leftGap: first.left,
+      rightGap: vw - first.right,
       hasEasy: document.body.innerText.includes('Easy'),
       tiltOval: !!document.querySelector('.stake-oval, .stake-card'),
+      themedRows: /side table|main felt|high roller|audience|council|throne|night watch|inner vault|crown table/i.test(document.body.innerText),
     };
   });
-  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, rows: layout.rows, rot: layout.rot }));
+  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, rows: layout.rows, rot: layout.rot, leftGap: layout.leftGap, rightGap: layout.rightGap }));
   must(layout.count === 4, 'four themed table cards');
   must(layout.names[0] === 'CANDLELIGHT' || layout.names[0] === 'Candlelight', 'Easy table is Candlelight');
   must(layout.names.includes('VELVET ROOM') || layout.names.includes('Velvet Room'), 'Medium table is Velvet Room');
@@ -130,8 +135,10 @@ try {
   must(!layout.tiltOval, 'no tilted stake cards');
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
   const fullyOn = layout.boxes.filter((b) => b.left >= -4 && b.right <= 390 + 4).length;
-  must(fullyOn >= 1 && fullyOn <= 2, 'about two table cards fit on screen');
-  must(layout.boxes.filter((b) => b.visible).length >= 2, 'two cards visible');
+  must(fullyOn >= 1 && fullyOn <= 2, 'one centered table card (maybe a peek of the next)');
+  must(layout.boxes.filter((b) => b.visible).length >= 1, 'current table card is on screen');
+  must(Math.abs(layout.leftGap - layout.rightGap) <= 8, 'first table card is horizontally centered');
+  must(!layout.themedRows, 'inner rows are not themed sub-names');
 
   const byBuy = Object.fromEntries(layout.rows.map((r) => [r.buy, r]));
   must(byBuy[30] && byBuy[30].open === '1', 'Candlelight 30 open');
@@ -139,9 +146,30 @@ try {
   must(byBuy[500] && byBuy[500].open === '1', 'High Court 500 open from hard:0');
   must(byBuy[700] && byBuy[700].open === '0' && byBuy[700].locked, 'High Court 700 still locked');
   must(byBuy[1200] && byBuy[1200].open === '0', 'Midnight Crown still locked');
-  must(/side table/i.test(byBuy[100].text) && /main felt/i.test(byBuy[200].text) && /high roller/i.test(byBuy[300].text), 'Velvet rows are themed + priced');
+  must(/\btier i\b/i.test(byBuy[100].text) && /\btier ii\b/i.test(byBuy[200].text) && /\btier iii\b/i.test(byBuy[300].text), 'Velvet rows are Tier I / II / III + priced');
+  must(/🪙 100/.test(byBuy[100].text) && /🪙 200/.test(byBuy[200].text) && /🪙 300/.test(byBuy[300].text), 'Velvet rows still show coin costs');
+  must(/\btier i\b/i.test(byBuy[30].text), 'Candlelight paid row is Tier I');
+  must(/\btier i\b/i.test(byBuy[500].text) && /\btier ii\b/i.test(byBuy[700].text) && /\btier iii\b/i.test(byBuy[900].text), 'High Court rows are Tier I / II / III');
 
   await page.screenshot({ path: join(artifacts, 'standard_table_cards.png'), type: 'png' });
+  await page.evaluate(() => {
+    const velvet = document.querySelector('.table-card.art-medium');
+    if (velvet) velvet.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+  const velvetCenter = await page.evaluate(() => {
+    const card = document.querySelector('.table-card.art-medium');
+    const r = card.getBoundingClientRect();
+    const vw = window.innerWidth;
+    return {
+      leftGap: r.left,
+      rightGap: vw - r.right,
+      labels: [...card.querySelectorAll('.tier-play')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()),
+    };
+  });
+  console.log('velvetCenter', velvetCenter);
+  must(Math.abs(velvetCenter.leftGap - velvetCenter.rightGap) <= 8, 'Velvet Room card is horizontally centered');
+  must(velvetCenter.labels.length === 3 && velvetCenter.labels.every((t, i) => new RegExp('tier ' + ['i', 'ii', 'iii'][i] + '\\b', 'i').test(t)), 'Velvet Room inner rows are Tier I / II / III');
+  await page.screenshot({ path: join(artifacts, 'standard_velvet_tiers.png'), type: 'png' });
   await page.evaluate(() => {
     const hard = document.querySelector('.table-card.art-hard');
     if (hard) hard.scrollIntoView({ inline: 'center', block: 'nearest' });

@@ -18,7 +18,11 @@ must(html.includes('mode-face') && html.includes('home-globe'), 'mode tiles must
 must(html.includes('table-rail') && html.includes('table-card') && html.includes('tier-play') && html.includes('seat-toggle'), 'mode setup uses upright table cards with stacked tiers');
 must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
 must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
-must(html.includes('grid-auto-columns: calc(50% - 8px)'), 'about two table cards fit on screen');
+must(html.includes('--table-peek') && html.includes('scroll-snap-align: center'), 'table cards snap in the center of the rail');
+must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
+must(!html.includes('Side Table') && !html.includes('Main Felt') && !html.includes('High Roller'), 'Velvet rows are not themed sub-names');
+must(!html.includes('Audience') && !html.includes("'Council'") && !html.includes('Throne'), 'High Court rows are not themed sub-names');
+must(!html.includes('Night Watch') && !html.includes('Inner Vault') && !html.includes('Crown Table'), 'Midnight Crown rows are not themed sub-names');
 must(html.includes('.table-card') && html.includes('transform: none'), 'table cards are straight, not tilted');
 must(html.includes('header-currency') && html.includes('modeGold'), 'mode overlay header shows coins beside the title');
 must(html.includes('header-copy') && html.includes('min-height: 36px'), 'header rows share a 36px control height');
