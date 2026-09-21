@@ -62,6 +62,14 @@ must(html.includes('const DIRECT_CARRY_PX'), 'direct swipe-up has its own pickup
   must(!directBlock.includes('PREVIEW_LIFT_RATIO'), 'direct swipe-up is not gated by the 70% preview ratio');
   must(html.includes('PREVIEW_SKIP_PX') && html.includes('peekTimer'), 'an upward swipe skips preview instead of falling into the 70% handoff');
 }
+must(html.includes('function handleAppBack') && html.includes("window.handleAppBack = handleAppBack"), 'Android back is handled by the PALACE screen stack');
+must(html.includes('function requestLeaveMatch') && html.includes("confirm('Leave this match?')"), 'back mid-match uses the same Leave confirmation as the table Leave button');
+must(html.includes("Press back again to exit") && html.includes("return 'exit'"), 'home requires a second back press before the app exits');
+must(html.includes('tabStack') && html.includes('fromBack'), 'tab screens pop back to the previous tab then home');
+must(html.includes('layerOpen(\'modeOverlay\')') && html.includes('layerOpen(\'lobbyOverlay\')') && html.includes('layerOpen(\'joinOverlay\')'), 'back closes mode, lobby, and join overlays');
+must(html.includes('layerOpen(\'enchantWindow\')') && html.includes('layerOpen(\'craftWindow\')') && html.includes('layerOpen(\'profileOverlay\')'), 'back closes enchant, craft, and profile');
+must(html.includes('layerOpen(\'itemDetailPopup\')') && html.includes('inviteBanner'), 'back closes item detail and invite banners before screens');
+must(html.includes('in-match') && html.includes('requestLeaveMatch'), 'an in-match back press asks to leave rather than exiting');
 must(html.includes('body.on-home') && html.includes('html.on-home') && html.includes('bindHomeScrollLock') && html.includes('touch-action: pan-x') && html.includes('position: fixed'), 'the main menu does not scroll or rubber-band vertically');
 must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');

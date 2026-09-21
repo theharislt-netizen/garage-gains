@@ -73,26 +73,8 @@ function hideHomeScreenShortcut() {
 }
 
 function closeTopOverlay() {
-  const leave = document.querySelector(
-    '#enchantWindow[style*="display: block"] .instance-leave-btn, #enchantWindow:not([style*="display:none"]) .instance-leave-btn'
-  );
-  if (leave && leave.offsetParent) {
-    leave.click();
-    return true;
-  }
-  const visibleModals = [...document.querySelectorAll('.modal-overlay, .full-overlay')].filter((el) => {
-    const s = getComputedStyle(el);
-    return s.display !== 'none' && s.visibility !== 'hidden' && el.style.display !== 'none';
-  });
-  if (visibleModals.length) {
-    const last = visibleModals[visibleModals.length - 1];
-    const closeBtn = last.querySelector('.modal-close, [id$="Close"], [id$="LeaveBtn"], .instance-leave-btn');
-    if (closeBtn) {
-      closeBtn.click();
-      return true;
-    }
-    last.style.display = 'none';
-    return true;
+  if (typeof window.handleAppBack === 'function') {
+    return window.handleAppBack() === 'stay';
   }
   return false;
 }
@@ -459,10 +441,9 @@ async function setup() {
   localBundleVersion().then((v) => wireUpdateStatus(v));
   checkAndApplyUpdate();
 
-  App.addListener('backButton', ({ canGoBack }) => {
-    if (closeTopOverlay()) return;
-    if (canGoBack) window.history.back();
-    else App.exitApp();
+  App.addListener('backButton', () => {
+    const result = typeof window.handleAppBack === 'function' ? window.handleAppBack() : (closeTopOverlay() ? 'stay' : 'exit');
+    if (result === 'exit') App.exitApp();
   });
   App.addListener('appStateChange', ({ isActive }) => {
     if (isActive) checkAndApplyUpdate();
