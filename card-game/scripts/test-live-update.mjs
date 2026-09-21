@@ -81,6 +81,7 @@ must(discovered.includes(INSTALL_CHANNEL), 'install channel parsed from urls');
 const bridge = readFileSync(join(root, 'scripts/native-bridge.mjs'), 'utf8');
 must(bridge.includes('pickNewestCandidate'), 'native-bridge must pick newest, not first-match');
 must(bridge.includes('live-update-select.mjs'), 'native-bridge shares the channel list');
+must(bridge.includes('commit?.sha || ref'), 'raw fallback must use the commit SHA, not the cached branch URL');
 must(!/for \(const ref of UPDATE_REFS\) \{\s*try \{\s*const api = await fetchManifestFromApi/.test(bridge),
   'native-bridge must not first-match-return inside the ref loop');
 

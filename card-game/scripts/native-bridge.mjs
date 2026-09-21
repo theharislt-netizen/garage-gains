@@ -286,19 +286,24 @@ async function fetchManifestCommit(ref) {
 }
 
 async function fetchManifestFromRaw(ref) {
+  let commit = null;
+  try { commit = await fetchManifestCommit(ref); } catch (_) { /* fall back to branch name */ }
+  const pathRef = commit?.sha || ref;
   const stamp = Date.now();
   const urls = [
-    `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/${UPDATE_DIR}/manifest.json?t=${stamp}`,
-    `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/manifest.json?t=${stamp}`,
+    `https://raw.githubusercontent.com/${UPDATE_REPO}/${pathRef}/${UPDATE_DIR}/manifest.json?t=${stamp}`,
   ];
+  if (!commit?.sha) {
+    urls.push(
+      `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/manifest.json?t=${stamp}`
+    );
+  }
   for (const url of urls) {
     const res = await httpGet(url);
     const manifest = decodeManifest(res.status === 200 ? res.data : null);
     if (!manifest?.version) continue;
-    let commit = null;
-    try { commit = await fetchManifestCommit(ref); } catch (_) { /* keep Last-Modified */ }
     const cdnZip = url.includes('jsdelivr')
-      ? `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(ref)}/${UPDATE_DIR}/www.zip?v=${encodeURIComponent(manifest.version)}`
+      ? `https://cdn.jsdelivr.net/gh/${UPDATE_REPO}@${encodeURIComponent(commit?.sha || ref)}/${UPDATE_DIR}/www.zip?v=${encodeURIComponent(manifest.version)}`
       : '';
     return candidateFromManifest(ref, manifest, {
       public: true,
