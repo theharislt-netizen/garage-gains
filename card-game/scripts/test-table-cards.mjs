@@ -125,6 +125,17 @@ try {
     const overlay = document.getElementById('modeOverlay').getBoundingClientRect();
     const body = document.getElementById('modeBody').getBoundingClientRect();
     const rot = cards.map((c) => getComputedStyle(c).transform);
+    const kickerText = [...document.querySelectorAll('.table-card')].map((c) => (c.innerText || '')).join('\n');
+    const tiersFit = cards.slice(0, 2).every((c) => {
+      const cr = c.getBoundingClientRect();
+      const plays = [...c.querySelectorAll('.tier-play')];
+      if (plays.length !== 3) return plays.length <= 1;
+      return plays.every((b) => {
+        const r = b.getBoundingClientRect();
+        return r.top >= cr.top + 4 && r.bottom <= cr.bottom - 4 && r.height >= 40;
+      });
+    });
+    const peek = boxes[1] ? (boxes[1].left < vw - 8 && boxes[1].right > vw + 8) : false;
     return {
       count: cards.length,
       names,
@@ -140,12 +151,15 @@ try {
       cardH: first.height,
       cardW: first.width,
       fullyOn: boxes.filter((b) => b.left >= -4 && b.right <= vw + 4).length,
+      peek,
+      tiersFit,
+      hasKicker: /standard table|practice table|custom table/i.test(kickerText),
       hasEasy: document.body.innerText.includes('Easy'),
       tiltOval: !!document.querySelector('.stake-oval, .stake-card'),
       themedRows: /side table|main felt|high roller|audience|council|throne|night watch|inner vault|crown table/i.test(document.body.innerText),
     };
   });
-  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, cardW: layout.cardW, cardH: layout.cardH, fullyOn: layout.fullyOn, bodyMid: layout.bodyMid, cardMid: layout.cardMid }));
+  console.log('layout', JSON.stringify({ count: layout.count, names: layout.names, cardW: layout.cardW, cardH: layout.cardH, fullyOn: layout.fullyOn, peek: layout.peek, tiersFit: layout.tiersFit, bodyMid: layout.bodyMid, cardMid: layout.cardMid }));
   must(layout.count === 6, 'six themed table cards');
   must(layout.names[0] === 'VELVET ROOM' || layout.names[0] === 'Velvet Room', 'first table is Velvet Room');
   must(layout.names.includes('VELVET ROOM') || layout.names.includes('Velvet Room'), 'Medium table is Velvet Room');
@@ -156,9 +170,12 @@ try {
   must(layout.names.includes('DRAGON CROWN') || layout.names.includes('Dragon Crown'), 'seventh table is Dragon Crown');
   must(!layout.tiltOval, 'no tilted stake cards');
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
-  must(layout.fullyOn === 2, 'exactly two table cards fit on screen');
-  must(layout.cardW >= layout.vw * 0.42 && layout.cardW <= layout.vw * 0.52, 'each card is about half the screen wide');
-  must(Math.abs(layout.cardH - homeCard.css) <= 2, 'challenge cards use the same height as mode-select cards');
+  must(layout.fullyOn === 1, 'one full table card fits, with the next peeking');
+  must(layout.peek, 'about 1.5 cards are on screen');
+  must(layout.cardW >= layout.vw * 0.58 && layout.cardW <= layout.vw * 0.76, 'each card is about two-thirds of the screen wide');
+  must(layout.cardH >= 330 && layout.cardH <= 440, 'challenge cards are taller than the old 268px cap');
+  must(layout.tiersFit, 'Tier I / II / III rows sit fully inside the card');
+  must(!layout.hasKicker, 'no STANDARD TABLE category label on the cards');
   must(Math.abs(layout.cardMid - layout.bodyMid) <= 48, 'cards are vertically centered in the mode body');
   must(!layout.themedRows, 'inner rows are not themed sub-names');
 
@@ -191,6 +208,27 @@ try {
   must(velvetCenter.fullyOn, 'Velvet Room card can be scrolled fully on screen');
   must(velvetCenter.labels.length === 3 && velvetCenter.labels.every((t, i) => new RegExp('tier ' + ['i', 'ii', 'iii'][i] + '\\b', 'i').test(t)), 'Velvet Room inner rows are Tier I / II / III');
   await page.screenshot({ path: join(artifacts, 'standard_velvet_tiers.png'), type: 'png' });
+  await page.evaluate(() => {
+    const expert = document.querySelector('.table-card.art-expert');
+    if (expert) expert.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+  const midnightTiers = await page.evaluate(() => {
+    const card = document.querySelector('.table-card.art-expert');
+    const cr = card.getBoundingClientRect();
+    const plays = [...card.querySelectorAll('.tier-play')].map((b) => {
+      const r = b.getBoundingClientRect();
+      return {
+        text: b.innerText.replace(/\s+/g, ' ').trim(),
+        bottom: r.bottom,
+        inside: r.top >= cr.top + 4 && r.bottom <= cr.bottom - 4,
+      };
+    });
+    return { plays, cardBottom: cr.bottom, kicker: /standard table/i.test(card.innerText) };
+  });
+  console.log('midnightTiers', midnightTiers);
+  must(midnightTiers.plays.length === 3 && midnightTiers.plays.every((p) => p.inside), 'Midnight Crown Tier III is fully inside the card');
+  must(!midnightTiers.kicker, 'Midnight Crown has no STANDARD TABLE label');
+  await page.screenshot({ path: join(artifacts, 'midnight_crown_tiers.png'), type: 'png' });
   await page.evaluate(() => {
     const hard = document.querySelector('.table-card.art-hard');
     if (hard) hard.scrollIntoView({ inline: 'center', block: 'nearest' });
