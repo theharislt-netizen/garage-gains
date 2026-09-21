@@ -1062,10 +1062,9 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    /* 100vw, not 100%: percentages inside custom props resolve on the using
-       element, so a card-width var with 100% would shrink to the rail content box. */
-    --table-card-w: min(320px, calc(100vw - 72px));
-    --table-peek: max(16px, calc((100vw - var(--table-card-w)) / 2));
+    container-type: inline-size;
+    --table-card-w: min(320px, calc(100cqw - 72px));
+    --table-peek: max(16px, calc((100cqw - var(--table-card-w)) / 2));
   }
   .table-rail {
     display: flex;
