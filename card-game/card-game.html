@@ -2007,6 +2007,8 @@ let pendingNet = [];
 let joinRetryTimer = 0;
 let lobbyPulseTimer = 0;
 const INVITE_COOL_MS = 5000;
+const PRESENCE_LIVE_MS = 50000;
+const INVITE_LIVE_MS = 60000;
 const inviteCoolUntil = {};
 let pendingInviteSeat = null;
 let inviteCoolTimer = 0;
@@ -4383,9 +4385,21 @@ function sameLobbyCode(a, b) {
 function presenceId(id) {
   return String(id || '').toUpperCase();
 }
+function netMsgSentAt(msg) {
+  const sent = Number(msg && msg.t);
+  if (!Number.isFinite(sent) || sent <= 0) return 0;
+  if (sent > Date.now() + 5000) return 0;
+  return sent;
+}
+function netMsgFresh(msg, maxAge) {
+  const sent = netMsgSentAt(msg);
+  if (!sent) return false;
+  const age = Date.now() - sent;
+  return age >= 0 && age < (maxAge || PRESENCE_LIVE_MS);
+}
 function friendOnline(id) {
   const row = presenceMap[presenceId(id)] || presenceMap[id];
-  return !!(row && row.online && Date.now() - (row.t || 0) < 60000);
+  return !!(row && row.online && Date.now() - (row.t || 0) < PRESENCE_LIVE_MS);
 }
 function inviteCoolKey(kind, id) {
   return String(kind) + ':' + String(id);
@@ -4786,9 +4800,6 @@ function joinLobby(code, opts) {
     PalaceNet.lobbyPub(clean, payload);
     const hostId = session.hostId || hostHint;
     if (hostId) PalaceNet.inbox(hostId, payload);
-    (state.friends || []).forEach((f) => {
-      if (f && f.id && !samePlayerId(f.id, state.profile.id)) PalaceNet.inbox(f.id, payload);
-    });
   };
   sendJoin();
   if (joinRetryTimer) clearInterval(joinRetryTimer);
@@ -4800,7 +4811,14 @@ function joinLobby(code, opts) {
       return;
     }
     tries += 1;
-    if (tries === 8) showToast('Still looking for lobby ' + clean);
+    if (tries >= 10) {
+      clearInterval(joinRetryTimer);
+      joinRetryTimer = 0;
+      showToast('That lobby is empty. The host is not there.');
+      leaveSession();
+      return;
+    }
+    if (tries === 5) showToast('Still looking for lobby ' + clean);
     sendJoin();
   }, 2000);
   showToast((opts && opts.fromInvite) ? 'Joining host lobby…' : 'Looking for lobby ' + clean);
@@ -5012,13 +5030,12 @@ function sendFriendRequest(query) {
 function handleNetMessage(msg) {
   if (!msg || !msg.type) return;
   if (msg.type === 'presence' && (msg.id || msg.from)) {
-    const sent = Number(msg.t) || Date.now();
-    const age = Date.now() - sent;
-    const live = !!msg.online && age < 60000;
-    const at = live ? Date.now() : sent;
+    const sent = netMsgSentAt(msg);
+    if (!sent) return;
+    const live = !!msg.online && netMsgFresh(msg, PRESENCE_LIVE_MS);
     const id = presenceId(msg.id || msg.from);
-    presenceMap[id] = { name: msg.name, online: live, t: at, border: msg.border || '' };
-    rememberFriendSeen(id, at, live);
+    presenceMap[id] = { name: msg.name, online: live, t: sent, border: msg.border || '' };
+    rememberFriendSeen(id, sent, live);
     if (msg.border || msg.stats) {
       const f = (state.friends || []).find((x) => samePlayerId(x.id, id));
       if (f) {
@@ -5049,6 +5066,7 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'friend_req' && msg.id) {
+    if (msg.t && !netMsgFresh(msg, 120000)) return;
     showInviteBanner('friend', { id: msg.id, name: msg.name });
     pushInviteNotice('PALACE friend request', (msg.name || 'Someone') + ' wants to add you');
     return;
@@ -5071,6 +5089,8 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'invite' && msg.code) {
+    if (!netMsgFresh(msg, INVITE_LIVE_MS)) return;
+    if (!(msg.fromId || msg.from)) return;
     showInviteBanner('lobby', msg);
     pushInviteNotice('PALACE lobby invite', (msg.fromName || 'A friend') + ' invited you · ' + msg.code);
     return;
@@ -5081,6 +5101,7 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'join' && isLobbyHost() && !session.started && msg.id) {
+    if (msg.t && !netMsgFresh(msg, 25000)) return;
     if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
     if ((session.seats || []).some((s) => s && samePlayerId(s.id, msg.id))) {
       publishLobby();
@@ -5188,7 +5209,10 @@ function bootNet() {
     netBound = true;
     PalaceNet.on(handleNetMessage);
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) return;
+      if (document.hidden) {
+        if (window.PalaceNet && typeof PalaceNet.away === 'function') PalaceNet.away();
+        return;
+      }
       resumeNetSession();
     });
     window.addEventListener('pageshow', () => resumeNetSession());

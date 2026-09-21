@@ -958,9 +958,12 @@ must(html.includes('.inv-btn') && html.includes('border-radius: 100px') && html.
 const Net = require(join(root, 'palace-net.js'));
 must(typeof Net.topic === 'function' && Net.topic('l', 'ABC12') === 'pal1labc12', 'lobby topic is compact');
 must(typeof Net.resume === 'function', 'net can resume lobby and presence subscriptions');
+must(typeof Net.away === 'function', 'net can mark the player offline without disconnecting');
 {
   const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
-  must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
+  must(netSrc.includes("seedSince") && netSrc.includes("'20s'") && netSrc.includes("'30s'"), 'inbox replays 20s max, lobby 30s — not 10 minutes of ghosts');
+  must(!/['"]10m['"]/.test(netSrc), 'inbox default is not a 10-minute ntfy replay');
+  must(netSrc.includes('function away') && netSrc.includes('presenceBody(false)'), 'backgrounding publishes offline and stops the heartbeat');
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
   must(netSrc.includes('openMux(true)'), 'resume rebuilds ntfy listeners');
   must(netSrc.includes('ntfy.envs.net') && netSrc.includes('ntfy.sh'), 'publishes past ntfy.sh onto a working relay');
@@ -975,7 +978,12 @@ must(html.includes('localPlayerSeated') && html.includes('Still looking for lobb
 must(html.includes('Joining host lobby') && html.includes('session.joining'), 'guests do not paint an empty host lobby while connecting');
 must(html.includes('if (hostId) PalaceNet.inbox(hostId, payload)'), 'guest DMs the host inbox after learning hostId');
 must(html.includes("joinLobby(payload.code, { fromInvite: true, hostId: payload.fromId || payload.from })"), 'accepting an invite joins that host id and code');
-must(html.includes('PalaceNet.inbox(f.id, payload)'), 'guest also DMs friends so join does not depend on lobby SSE');
+must(html.includes('That lobby is empty. The host is not there.'), 'a ghost invite times out instead of becoming an empty host table');
+must(!html.includes("(state.friends || []).forEach((f) => {\n      if (f && f.id && !samePlayerId(f.id, state.profile.id)) PalaceNet.inbox(f.id, payload);"), 'join does not spam every friend inbox');
+must(html.includes('function netMsgFresh') && html.includes('INVITE_LIVE_MS') && html.includes('netMsgSentAt(msg)'), 'presence and invites require a real send timestamp');
+must(html.includes('Number(msg.t) || Date.now()') === false || html.includes('function netMsgSentAt'), 'stale ntfy replays are not stamped with receive-time');
+must(!html.includes('const sent = Number(msg.t) || Date.now()'), 'missing presence timestamps are not treated as live now');
+must(html.includes("PalaceNet.away()") && html.includes("document.hidden"), 'leaving the app marks the player offline');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
 must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('inboxSnapSent'), 'missed snaps are requested, busy moves are queued, inbox is not flooded');
