@@ -77,12 +77,7 @@ print('zipped', len(files), 'files')
   }
 
   const zipBytes = await readFile(zipPath);
-  const git = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-    cwd: join(root, '..'),
-    encoding: 'utf8',
-  });
-  const branch = git.status === 0 ? (git.stdout || '').trim() : '';
-  const refs = uniqueRefs([INSTALL_CHANNEL, ...STABLE_REFS, branch]);
+  const refs = uniqueRefs([INSTALL_CHANNEL, ...STABLE_REFS]);
   const checksum = createHash('sha256').update(zipBytes).digest('hex');
   const manifest = {
     version,
