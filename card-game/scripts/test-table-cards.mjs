@@ -139,9 +139,14 @@ try {
   must(byBuy[500] && byBuy[500].open === '1', 'High Court 500 open from hard:0');
   must(byBuy[700] && byBuy[700].open === '0' && byBuy[700].locked, 'High Court 700 still locked');
   must(byBuy[1200] && byBuy[1200].open === '0', 'Midnight Crown still locked');
-  must(/Side Table/.test(byBuy[100].text) && /Main Felt/.test(byBuy[200].text) && /High Roller/.test(byBuy[300].text), 'Velvet rows are themed + priced');
+  must(/side table/i.test(byBuy[100].text) && /main felt/i.test(byBuy[200].text) && /high roller/i.test(byBuy[300].text), 'Velvet rows are themed + priced');
 
   await page.screenshot({ path: join(artifacts, 'standard_table_cards.png'), type: 'png' });
+  await page.evaluate(() => {
+    const hard = document.querySelector('.table-card.art-hard');
+    if (hard) hard.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+  await page.screenshot({ path: join(artifacts, 'standard_locked_tiers.png'), type: 'png' });
 
   await page.click('.tier-play[data-buy="700"]');
   const lockedToast = await page.evaluate(() => (document.getElementById('toast') || {}).textContent || '');

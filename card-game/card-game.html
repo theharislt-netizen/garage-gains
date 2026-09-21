@@ -1077,8 +1077,8 @@
   .table-rail::-webkit-scrollbar { display: none; }
   .table-card {
     width: 100%;
-    min-height: min(52vh, 340px);
-    height: 100%;
+    height: min(44vh, 286px);
+    min-height: 252px;
     margin: 0;
     padding: 9px;
     border: 0;
@@ -1094,12 +1094,12 @@
   .table-face {
     position: relative;
     width: 100%; height: 100%;
-    min-height: min(48vh, 318px);
     border-radius: 10px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 10px;
     padding: 14px 10px 10px;
     text-align: left;
     transform: none;
@@ -1137,7 +1137,7 @@
     margin: 6px 0 0; font-family: Inter, sans-serif; font-size: 12px; font-weight: 500;
     line-height: 1.35; color: rgba(255,255,255,0.78); letter-spacing: 0; text-transform: none;
   }
-  .table-tiers { display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; }
+  .table-tiers { display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; margin-top: auto; }
   .tier-play {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     width: 100%; min-height: 40px; padding: 0 12px; margin: 0;
