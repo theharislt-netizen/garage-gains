@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Profile items-by-category, avatar photo/border, Social messenger, bot names.
+ * Profile without an items grid, chat compose pin, Take Pile HUD, Social messenger.
  */
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -94,62 +94,46 @@ must(/\bshow\b/.test(homeBadge), 'Social tab badge lights when a friend-came-onl
 await page.screenshot({ path: join(artifacts, 'social_online_badge.png'), type: 'png' });
 
 await page.evaluate(() => openProfile());
-await page.waitForSelector('#profileInvFilter');
-await page.waitForSelector('#profileInvList .inv-slot[data-slot-item]');
-const profileOpen = await page.evaluate(() => ({
-  overlay: layerOpen('profileOverlay'),
-  chips: [...document.querySelectorAll('#profileInvFilter [data-inv-filter]')].map((c) => c.textContent.trim()),
-  items: document.querySelectorAll('#profileInvList [data-slot-item]').length,
-  earned: (document.querySelector('.stat-tile .n') || {}).textContent,
-  places: [...document.querySelectorAll('.place-cell .n')].map((n) => n.textContent),
-  borders: document.querySelectorAll('[data-equip-border]').length,
-  title: (document.querySelector('#profileOverlay .instance-title') || {}).textContent,
-  enchant: !!document.getElementById('profileEnchantBtn'),
-  craft: !!document.getElementById('profileCraftBtn'),
-  inventoryView: !!document.getElementById('view-inventory'),
-}));
+await page.waitForSelector('#profileBody .border-pick');
+const profileOpen = await page.evaluate(() => {
+  const vw = window.innerWidth;
+  const chips = [...document.querySelectorAll('[data-equip-border]')];
+  const chipBoxes = chips.map((el) => el.getBoundingClientRect());
+  const row = document.querySelector('#profileBody .border-pick');
+  const rowBox = row && row.getBoundingClientRect();
+  const frames = [...document.querySelectorAll('#profileBody .border-chip .avatar-frame')].map((el) => el.getBoundingClientRect());
+  return {
+    overlay: layerOpen('profileOverlay'),
+    items: !!document.getElementById('profileInvList') || !!document.getElementById('profileInvFilter'),
+    slots: document.querySelectorAll('#profileBody .inv-slot').length,
+    earned: (document.querySelector('.stat-tile .n') || {}).textContent,
+    places: [...document.querySelectorAll('.place-cell .n')].map((n) => n.textContent),
+    borders: chips.length,
+    title: (document.querySelector('#profileOverlay .instance-title') || {}).textContent,
+    enchant: !!document.getElementById('profileEnchantBtn'),
+    craft: !!document.getElementById('profileCraftBtn'),
+    inventoryView: !!document.getElementById('view-inventory'),
+    rowLeft: rowBox ? rowBox.left : -1,
+    rowRight: rowBox ? rowBox.right : -1,
+    firstChipLeft: chipBoxes[0] ? chipBoxes[0].left : -1,
+    lastChipRight: chipBoxes.length ? chipBoxes[chipBoxes.length - 1].right : -1,
+    firstFrameLeft: frames[0] ? frames[0].left : -1,
+    lastFrameRight: frames.length ? frames[frames.length - 1].right : -1,
+    vw,
+  };
+});
 must(profileOpen.overlay, 'own profile overlay is open');
-must(profileOpen.chips.includes('All') && profileOpen.chips.includes('Card backs') && profileOpen.chips.includes('Borders'), 'profile items have category chips');
-must(!profileOpen.chips.includes('Shards') && !profileOpen.chips.includes('Stones'), 'empty or unused material categories stay hidden');
+must(!profileOpen.items && profileOpen.slots === 0, 'Profile has no items grid');
 must(!profileOpen.enchant && !profileOpen.craft, 'Enchant and Craft are not on Profile');
 must(!profileOpen.inventoryView, 'Inventory screen is removed from the DOM');
-must(profileOpen.items >= 4, 'profile lists owned cosmetics');
-must(await page.evaluate(() => {
-  const row = document.getElementById('profileInvFilter');
-  return !!(row && row.offsetHeight > 20 && row.scrollWidth > 100);
-}), 'category chips are visible in the Profile overlay');
 must(profileOpen.earned === '420', 'coins earned tile is filled');
 must(profileOpen.places.join(',') === '5,3,2,2', '1st-4th placement breakdown is shown');
 must(profileOpen.borders >= 3, 'owned avatar borders are listed');
-await page.screenshot({ path: join(artifacts, 'profile_items_in_overlay.png'), type: 'png' });
-
-await page.evaluate(() => {
-  const chip = document.querySelector('#profileInvFilter [data-inv-filter="profileBorder"]');
-  if (chip) chip.click();
-});
-await page.waitForFunction(() => state.invFilter === 'profileBorder');
-const borderFilter = await page.evaluate(() => {
-  const slots = [...document.querySelectorAll('#profileInvList [data-slot-item]')];
-  return {
-    count: slots.length,
-    ids: slots.map((s) => s.getAttribute('data-slot-item')),
-    mats: document.querySelectorAll('#profileInvList [data-slot-mat]').length,
-  };
-});
-must(borderFilter.count >= 3 && borderFilter.ids.every((id) => /border/i.test(id || '')), 'Borders category shows only avatar borders');
-must(borderFilter.mats === 0, 'Borders category does not mix in shards/stones');
-await page.screenshot({ path: join(artifacts, 'profile_items_borders_filter.png'), type: 'png' });
-
-await page.evaluate(() => {
-  state.inventory.items = (state.inventory.items || []).filter((i) => i.slot !== 'emote');
-  paintProfile();
-});
-const noEmote = await page.evaluate(() => [...document.querySelectorAll('#profileInvFilter [data-inv-filter]')].map((c) => c.textContent.trim()));
-must(!noEmote.includes('Emotes'), 'a category with zero owned items is not shown');
-await page.evaluate(() => {
-  state = loadState();
-  paintProfile();
-});
+must(profileOpen.rowLeft <= 1 && profileOpen.rowRight >= profileOpen.vw - 1, 'border row uses the full screen width');
+must(profileOpen.firstFrameLeft >= 0 && profileOpen.firstChipLeft >= 8, 'first border chip is fully on screen');
+must(profileOpen.lastChipRight <= profileOpen.vw || profileOpen.rowRight - profileOpen.rowLeft > 300, 'border row can scroll instead of clipping');
+await page.screenshot({ path: join(artifacts, 'profile_no_items_grid.png'), type: 'png' });
+await page.screenshot({ path: join(artifacts, 'profile_border_row_full.png'), type: 'png' });
 
 const photoInfo = await page.evaluate(async () => {
   const c = document.createElement('canvas');
@@ -264,11 +248,30 @@ await page.screenshot({ path: join(artifacts, 'friend_profile_stats.png'), type:
 await page.evaluate(() => closeProfile());
 await page.click('#threadList .thread-row');
 await page.waitForFunction(() => layerOpen('threadOverlay'));
+const chatLayout = await page.evaluate(() => {
+  const ov = document.getElementById('threadOverlay');
+  const compose = document.getElementById('threadCompose');
+  const input = document.getElementById('threadInput');
+  const ovBox = ov.getBoundingClientRect();
+  const box = compose.getBoundingClientRect();
+  return {
+    composeInBody: !!(document.getElementById('threadBody') && document.getElementById('threadBody').contains(compose)),
+    inputY: input ? input.getBoundingClientRect().top : -1,
+    composeBottom: box.bottom,
+    overlayBottom: ovBox.bottom,
+    vh: window.innerHeight,
+    gap: ovBox.bottom - box.bottom,
+  };
+});
+must(!chatLayout.composeInBody, 'chat input is not inside the scrolling transcript');
+must(chatLayout.gap >= 0 && chatLayout.gap <= 24, 'chat compose sits on the overlay bottom, not mid-screen');
+must(chatLayout.composeBottom > chatLayout.vh * 0.72, 'chat input is in the lower part of the screen');
 await page.type('#threadInput', 'On my way');
 await page.click('#threadSendBtn');
 const sent = await page.evaluate(() => (document.querySelector('#threadBody .chat-bubble.me') || {}).textContent || '');
 must(/On my way/.test(sent), 'DM send lands in the thread');
 await page.screenshot({ path: join(artifacts, 'social_dm_thread.png'), type: 'png' });
+await page.screenshot({ path: join(artifacts, 'chat_compose_bottom.png'), type: 'png' });
 
 await page.evaluate(() => { closeThread(); closeMessages(); });
 const beforeDel = await page.evaluate(() => (state.friends || []).length);
@@ -290,9 +293,60 @@ const chatUi = await page.evaluate(() => ({
   noLog: /No chat log/.test(document.documentElement.innerHTML) || typeof showSeatChat === 'function',
 }));
 must(chatUi.overlay && chatUi.noLog, 'in-match chat is bubbles, not a log');
+await page.waitForSelector('.table-actions');
+const hud = await page.evaluate(() => {
+  let btn = document.getElementById('pickupBtn');
+  const actions = document.querySelector('.table-actions');
+  if (!btn && actions) {
+    actions.insertAdjacentHTML('beforeend', '<button class="btn danger" id="pickupBtn">Take pile</button>');
+    btn = document.getElementById('pickupBtn');
+  }
+  const br = btn.getBoundingClientRect();
+  function overlap(a, b, pad) {
+    const p = pad || 0;
+    return a.left + p < b.right && a.right - p > b.left && a.top + p < b.bottom && a.bottom - p > b.top;
+  }
+  const avatars = [...document.querySelectorAll('.seat .avatar')].map((el) => el.getBoundingClientRect());
+  const tableCards = [...document.querySelectorAll('.seat .table-slot .pcard, .pile-stack .pcard, .draw-stack .pcard')].map((el) => el.getBoundingClientRect());
+  return {
+    hint: !!document.querySelector('.table-hint') && getComputedStyle(document.querySelector('.table-hint')).display !== 'none',
+    hintText: (document.querySelector('.table-hint') || {}).textContent || '',
+    width: br.width,
+    bottom: br.bottom,
+    vh: window.innerHeight,
+    overlapAvatar: avatars.some((a) => overlap(br, a, 1)),
+    overlapTable: tableCards.some((a) => overlap(br, a, 1)),
+  };
+});
+must(!hud.hint && !/tap to select/i.test(hud.hintText || ''), 'tap-to-select tip is gone from the match HUD');
+must(hud.width > 50 && hud.width <= 96, 'Take Pile is about 40% of the old auto width');
+must(!hud.overlapAvatar, 'Take Pile does not overlap a player avatar');
+must(!hud.overlapTable, 'Take Pile does not overlap cards on the table');
+await page.screenshot({ path: join(artifacts, 'match_take_pile_hud.png'), type: 'png' });
 await page.screenshot({ path: join(artifacts, 'match_bot_name.png'), type: 'png' });
 
-const report = { ok: fails.length === 0, fails, profileOpen, borderFilter, photoInfo, afterBorder, social, friendProf, bots };
+await page.evaluate(() => {
+  if (!(state.friends || []).some((f) => f.id === 'RIM1')) {
+    state.friends = (state.friends || []).concat([{ id: 'RIM1', name: 'Rim' }]);
+  }
+  knownOnline.RIM1 = false;
+  noteFriendOnline('RIM1', true, 'Rim');
+});
+const onlineToast = await page.evaluate(() => {
+  const el = document.getElementById('toast');
+  return { text: el.textContent, cls: el.className };
+});
+must(/came online/i.test(onlineToast.text) && /presence/.test(onlineToast.cls) && /online/.test(onlineToast.cls), 'online toast is the prominent presence banner');
+await page.screenshot({ path: join(artifacts, 'friend_online_toast.png'), type: 'png' });
+await page.evaluate(() => noteFriendOnline('RIM1', false, 'Rim'));
+const offlineToast = await page.evaluate(() => {
+  const el = document.getElementById('toast');
+  return { text: el.textContent, cls: el.className };
+});
+must(/went offline/i.test(offlineToast.text) && /presence/.test(offlineToast.cls) && /offline/.test(offlineToast.cls), 'offline toast appears when a friend logs off');
+await page.screenshot({ path: join(artifacts, 'friend_offline_toast.png'), type: 'png' });
+
+const report = { ok: fails.length === 0, fails, profileOpen, photoInfo, afterBorder, social, friendProf, bots, chatLayout, hud, onlineToast, offlineToast };
 await writeFile(join(artifacts, 'profile_social.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 await browser.close();

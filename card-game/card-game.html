@@ -112,8 +112,29 @@
   .tab { flex: 1; min-width: 0; background: none; border: none; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: 'Barlow Condensed'; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 1px; cursor: pointer; border-radius: 10px; }
   .tab.active { color: var(--a2); }
   .tab svg { width: 20px; height: 20px; }
-  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 300; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 420; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.presence {
+    bottom: auto; top: 16%;
+    padding: 16px 22px; border-radius: 18px;
+    font-size: 16px; font-weight: 700; letter-spacing: 0.04em;
+    white-space: normal; text-align: center; line-height: 1.25;
+    max-width: 86vw; overflow: visible;
+    animation: presencePop 0.5s cubic-bezier(0.2, 1.4, 0.3, 1);
+  }
+  .toast.presence.online {
+    background: #103528; border: 2px solid #38e29a; color: #e8fff4;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 28px rgba(56,226,154,0.55), inset 0 0 18px rgba(56,226,154,0.18);
+  }
+  .toast.presence.offline {
+    background: #2a2430; border: 2px solid #c9a45b; color: #f7efe0;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 22px rgba(201,164,91,0.4);
+  }
+  @keyframes presencePop {
+    0% { transform: translateX(-50%) scale(0.78); opacity: 0; }
+    55% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1); }
+  }
   input[type=file] { display: none; }
   .settings-row { display:flex; justify-content:space-between; align-items:center; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 14px;}
   .settings-row:last-child{border-bottom:none;}
@@ -342,12 +363,7 @@
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 1px 4px rgba(0,0,0,0.45); pointer-events: none;
   }
-  .table-hint {
-    font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em;
-    text-transform: uppercase; background: rgba(0,0,0,0.45); color: #f4efe4;
-    padding: 6px 10px; border-radius: 100px; border: 1px solid rgba(201,164,91,0.35);
-    max-width: 140px; text-align: center;
-  }
+  .table-hint { display: none; }
   .pcard.legal { box-shadow: 0 0 0 2px #ffd24a, 0 0 14px 4px rgba(255,210,74,0.62); }
   .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
   .pcard.tiny { width: 40px; height: 58px; border-radius: 6px; }
@@ -865,10 +881,16 @@
     transition: transform 0.14s ease;
   }
   .table-actions {
-    position: absolute; right: 10px; bottom: calc(128px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 8px; z-index: 6;
+    position: absolute; right: 10px; bottom: calc(148px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 6;
+    pointer-events: none;
   }
-  .table-actions .btn { width: auto; padding: 10px 14px; margin: 0; }
+  .table-actions .btn { pointer-events: auto; width: auto; padding: 8px 10px; margin: 0; min-height: 36px; }
+  #pickupBtn {
+    width: 88px;
+    padding: 6px 8px; min-height: 34px; font-size: 12px; line-height: 1.1;
+    white-space: normal; text-align: center; align-self: flex-end;
+  }
   .match-over {
     position: fixed; inset: 0; z-index: 300;
     background:
@@ -1349,8 +1371,6 @@
   .profile-hero .avatar-wrap { width: 88px; height: 88px; }
   .profile-hero .avatar { width: 88px; height: 88px; cursor: pointer; }
   .profile-hero .avatar img { border-radius: 50%; }
-  #profileInvGems { margin: 2px 0 8px; flex-shrink: 0; }
-  #profileInvList { flex-shrink: 0; }
   .profile-hero .l2 { text-align: center; }
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .stat-tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -1360,7 +1380,12 @@
   .place-cell { text-align: center; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px; }
   .place-cell .n { font-family: 'JetBrains Mono'; font-size: 16px; font-weight: 700; }
   .place-cell .l { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-  .border-pick { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+  .border-pick {
+    display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden;
+    margin: 0 -16px; padding: 10px 16px 14px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .border-pick::-webkit-scrollbar { display: none; }
   .border-chip {
     flex-shrink: 0; width: 56px; text-align: center; cursor: pointer;
     background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px;
@@ -1370,12 +1395,18 @@
   .border-chip .avatar { width: 36px; height: 36px; border-width: 2px; }
   .thread-row { display: flex; gap: 10px; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
   .thread-row .preview { color: var(--text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chat-log { display: flex; flex-direction: column; gap: 8px; min-height: 42vh; padding: 8px 0 12px; }
+  .chat-log { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 8px 0 12px; }
   .chat-bubble { max-width: 78%; padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; }
   .chat-bubble.me { align-self: flex-end; background: var(--a2); color: #081018; }
   .chat-bubble.them { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); }
   .chat-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
-  .chat-compose { display: flex; gap: 8px; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
+  .chat-compose { display: flex; gap: 8px; background: var(--bg); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
+  #threadOverlay .overlay-scroll { min-height: 0; padding-bottom: 8px; }
+  #threadCompose {
+    flex-shrink: 0; margin-top: 0;
+    padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); z-index: 2;
+  }
   .chat-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
   .table-chat-btn {
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -1606,6 +1637,10 @@
     <div class="instance-title" id="threadTitle">Chat</div>
   </div>
   <div class="overlay-scroll" id="threadBody"></div>
+  <div class="chat-compose log-form" id="threadCompose">
+    <input id="threadInput" maxlength="160" placeholder="Message" autocomplete="off">
+    <button class="btn primary" id="threadSendBtn" type="button">Send</button>
+  </div>
 </div>
 
 <div id="matchChatOverlay">
@@ -2067,11 +2102,22 @@ window.applyImportedBackupText = applyImportedBackupText;
 function showToast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.classList.add('show');
+  el.className = 'toast show';
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+  showToast._t = setTimeout(() => { el.className = 'toast'; }, 2200);
 }
 window.showToast = showToast;
+
+function showPresenceToast(kind, name) {
+  const el = document.getElementById('toast');
+  const online = kind === 'online';
+  const who = name || 'A friend';
+  el.textContent = online ? (who + ' came online') : (who + ' went offline');
+  el.className = 'toast show presence ' + (online ? 'online' : 'offline');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { el.className = 'toast'; }, 4200);
+}
+window.showPresenceToast = showPresenceToast;
 
 function maybeDailyLogin() {
   const today = todayStamp();
@@ -2384,7 +2430,6 @@ function openItemDetail(kind, key, anchor) {
       saveState();
       closeItemDetail();
       if (layerOpen('profileOverlay') && !viewingFriendId) paintProfile();
-      else renderInventory();
       renderHeader();
       showToast('Equipped ' + inst.name);
     });
@@ -2636,11 +2681,7 @@ function paintProfile() {
       return `<button type="button" class="border-chip${on ? ' on' : ''}" data-equip-border="${it.id}">${framedAvatarHtml({ seat: 0, photo, border: it.catalogId })}<div class="l2">${it.name.replace(' Border', '').replace(' Ring', '')}</div></button>`;
     }).join('')
     : '';
-  const itemsBlock = own
-    ? `<div class="section-title">Items</div>
-       <div class="inv-filter-row" id="profileInvFilter"></div>
-       <div id="profileInvList"></div>`
-    : `<button class="btn primary" id="friendMsgBtn" type="button">Message</button>`;
+  const friendMsg = own ? '' : `<button class="btn primary" id="friendMsgBtn" type="button">Message</button>`;
   document.getElementById('profileBody').innerHTML = `
     <div class="profile-hero">
       ${av}
@@ -2649,7 +2690,7 @@ function paintProfile() {
       <div class="l2 mono">ID ${id}</div>
     </div>
     ${own ? `<div class="section-title">Avatar border</div><div class="border-pick">${borders || '<div class="empty">No borders yet</div>'}</div>` : ''}
-    ${itemsBlock}
+    ${friendMsg}
     <div class="section-title">Statistics</div>
     <div class="stat-grid">
       <div class="stat-tile"><div class="n">${stats.coinsEarned || 0}</div><div class="l">Coins earned</div></div>
@@ -2675,7 +2716,6 @@ function paintProfile() {
       paintProfile();
       renderHeader();
     }));
-    renderInventory();
   } else {
     const msg = document.getElementById('friendMsgBtn');
     if (msg) msg.addEventListener('click', () => openThread(friend.id));
@@ -3409,28 +3449,6 @@ function renderTable(opts) {
   const pickupBtnHtml = canPickup
     ? '<button class="btn danger" id="pickupBtn">Take pile</button>'
     : '';
-  let hintHtml = '';
-  if (!dealing && myTurn) {
-    if (zone === 'down') {
-      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap a face-down card' : 'Tap a face-down card') + '</div>';
-    } else if (selectedIds.length > 0) {
-      const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
-      const copies = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank) : [];
-      const more = copies.length - selectedIds.length;
-      const auto = c0 && PalaceEngine.isAutoGroupedRank(c0.rank);
-      if (auto && copies.length > 1 && selectedIds.length === 1) {
-        hintHtml = '<div class="table-hint">Tap to select all ' + c0.rank + 's · flick or drag</div>';
-      } else if (auto && more > 0) {
-        hintHtml = '<div class="table-hint">Tap to drop one · flick or drag onto the pile</div>';
-      } else if (!auto && more > 0) {
-        hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
-      } else {
-        hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — flick or drag onto the pile' : 'Flick or drag onto the pile') + '</div>';
-      }
-    } else {
-      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · flick or drag' : 'Tap to select · flick or drag onto the pile') + '</div>';
-    }
-  }
   felt.innerHTML = `
     ${tableWatermarkHtml()}
     ${seatsHtml}
@@ -3439,7 +3457,7 @@ function renderTable(opts) {
       <div class="pile-stack" id="discardPile">${discardPileCardsHtml(pileCards)}</div>
     </div>
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
-    <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
+    <div class="table-actions">${playBtnHtml}${pickupBtnHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = tableThemeLabel(match.difficulty) + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
 
@@ -4950,13 +4968,19 @@ function inviteFriendToLobby(friendId) {
   const seat = pendingInviteSeat;
   if (seat != null && inviteOnCooldown('seat', seat)) return;
   const friend = (state.friends || []).find((f) => f.id === friendId);
-  PalaceNet.inbox(friendId, {
+  const invitePayload = {
     type: 'invite',
     code: session.code,
     fromName: state.profile.name || 'Player',
     fromId: state.profile.id,
     mode: session.cfg && session.cfg.mode,
-  });
+  };
+  PalaceNet.inbox(friendId, invitePayload);
+  setTimeout(() => {
+    if (window.PalaceNet && session && session.code === invitePayload.code) {
+      PalaceNet.inbox(friendId, invitePayload);
+    }
+  }, 400);
   armInviteCooldown('friend', friendId);
   if (seat != null) armInviteCooldown('seat', seat);
   hideLobbyInviteSheet();
@@ -5681,14 +5705,19 @@ function noteFriendOnline(id, online, name) {
   const key = presenceId(id);
   const was = knownOnline[key];
   knownOnline[key] = !!online;
-  if (!online || was !== false) return;
   const friend = (state.friends || []).find((f) => samePlayerId(f.id, id));
   if (!friend) return;
-  state.socialPing = true;
-  saveState();
-  paintSocialBadge();
-  showToast((name || friend.name || 'A friend') + ' came online');
-  pushInviteNotice('Friend online', (name || friend.name || 'A friend') + ' is online');
+  const label = name || friend.name || 'A friend';
+  if (online && was === false) {
+    state.socialPing = true;
+    saveState();
+    paintSocialBadge();
+    showPresenceToast('online', label);
+    pushInviteNotice('Friend online', label + ' is online');
+  } else if (!online && was === true) {
+    showPresenceToast('offline', label);
+    pushInviteNotice('Friend offline', label + ' went offline');
+  }
 }
 
 function removeFriend(id) {
@@ -5756,27 +5785,20 @@ function closeThread() {
   syncOverlayLock();
 }
 
+function sendActiveThread() {
+  const input = document.getElementById('threadInput');
+  if (!activeThreadId) return;
+  sendDm(activeThreadId, input && input.value);
+}
+
 function paintThread() {
   const body = document.getElementById('threadBody');
   if (!body || !activeThreadId) return;
   const rows = getThread(activeThreadId).map((m) =>
     `<div class="chat-bubble ${m.me ? 'me' : 'them'}">${escText(m.text || '')}<div class="chat-meta">${m.me ? 'You' : (m.name || '')}</div></div>`
   ).join('');
-  body.innerHTML = `<div class="chat-log">${rows || '<div class="empty">Say hello</div>'}</div>
-    <div class="chat-compose log-form">
-      <input id="threadInput" maxlength="160" placeholder="Message">
-      <button class="btn primary" id="threadSendBtn" type="button">Send</button>
-    </div>`;
-  const input = document.getElementById('threadInput');
-  const send = document.getElementById('threadSendBtn');
-  const go = () => sendDm(activeThreadId, input && input.value);
-  if (send) send.addEventListener('click', go);
-  if (input) {
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
-    setTimeout(() => input.focus(), 30);
-  }
-  const log = body.querySelector('.chat-log');
-  if (log) log.scrollTop = log.scrollHeight;
+  body.innerHTML = `<div class="chat-log">${rows || '<div class="empty">Say hello</div>'}</div>`;
+  body.scrollTop = body.scrollHeight;
 }
 
 function escText(s) {
@@ -6046,6 +6068,10 @@ function init() {
   if (messagesLeave) messagesLeave.addEventListener('click', closeMessages);
   const threadLeave = document.getElementById('threadLeaveBtn');
   if (threadLeave) threadLeave.addEventListener('click', closeThread);
+  const threadSend = document.getElementById('threadSendBtn');
+  const threadInput = document.getElementById('threadInput');
+  if (threadSend) threadSend.addEventListener('click', sendActiveThread);
+  if (threadInput) threadInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendActiveThread(); });
   const matchChatLeave = document.getElementById('matchChatLeaveBtn');
   if (matchChatLeave) matchChatLeave.addEventListener('click', closeMatchChat);
   const tableChatBtn = document.getElementById('tableChatBtn');

@@ -163,7 +163,7 @@ must(!html.includes('Your turn') && !html.includes('is thinking'), 'no YOUR TURN
 must(!html.includes('pc-pip">P') && !html.includes('pc-pip">pile'), 'card backs have no placeholder letter');
 must(html.includes('pc-back-inner') && html.includes('pc-back-diamond'), 'card backs use a stock framed pattern with no letter');
 must(html.includes('#1e3a6b') && html.includes('#c9a45b'), 'card backs use a stock navy/gold design');
-must(html.includes('playBtnHtml') && html.includes('hintHtml') && html.includes('pile-count'), 'hand chrome is built from strings so a 0 cannot leak');
+must(html.includes('playBtnHtml') && html.includes('pickupBtnHtml') && html.includes('pile-count'), 'hand chrome is built from strings so a 0 cannot leak');
 must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in the table template');
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
 must(html.includes('SELECTION LOCK: table play surface'), 'table CSS locks native text selection on the play surface');
@@ -937,12 +937,16 @@ must(!html.includes('id="mailBtn"'), 'Social mail icon is replaced by the thread
 must(html.includes('id="matchChatOverlay"') && html.includes("function showSeatChat") && html.includes('No chat log') && html.includes("scope: matchChatTab === 'friend' ? 'friend' : 'table'"), 'in-match chat is seat bubbles, not a log');
 must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
 must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto') && html.includes('photoThumb'), 'profile photo is stored locally and a tiny thumb is sent on the wire');
-must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"') && html.includes("label: 'Card backs'") && html.includes("label: 'Borders'"), 'Profile items are organized by category');
-must(html.includes('function ownedInvFilters'), 'empty inventory categories are hidden');
+must(!html.includes('id="profileInvFilter"') && !html.includes('id="profileInvList"'), 'Profile has no items/inventory grid');
 must(!html.includes('id="view-inventory"') && !html.includes('id="profileEnchantBtn"') && !html.includes('id="profileCraftBtn"'), 'Inventory screen and Enchant/Craft entry points are gone');
-must(!html.includes("showView('inventory')"), 'owned items stay inside Profile instead of a separate Inventory view');
+must(!html.includes("showView('inventory')"), 'there is no Inventory view to open');
 must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
-must(html.includes('came online') && html.includes('socialPing'), 'friend-came-online notifies with a Social badge');
+must(html.includes('function showPresenceToast') && html.includes('went offline') && html.includes('came online'), 'friend online and offline toasts exist');
+must(html.includes("className = 'toast show presence") && html.includes('socialPing'), 'presence toasts are prominent and online still pings Social');
+must(!html.includes('Tap to select · flick or drag onto the pile'), 'match HUD no longer shows the tap-to-select tip');
+must(!html.includes('hintHtml'), 'renderTable does not inject table-hint copy');
+must(html.includes('id="threadCompose"') && html.includes('sendActiveThread'), 'friend chat compose is pinned outside the scroll body');
+must(html.includes('#pickupBtn') && html.includes('width: 88px') && html.includes('bottom: calc(148px'), 'Take Pile is narrower and lower');
 must(engineSrc.includes('randomBotName') && engineSrc.includes("'Milo'") && engineSrc.includes("'Sofia'"), 'bots pick realistic names from a pool');
 must(html.includes('PalaceEngine.randomBotName'), 'each match randomizes bot names');
 must(html.includes('INVITE_COOL_MS = 5000'), 'invite cooldown is 5 seconds');
@@ -979,6 +983,9 @@ must(typeof Net.away === 'function', 'net can mark the player offline without di
   must(netSrc.includes('text/plain'), 'ntfy POST is raw text so CORS and JSON-API do not swallow invites');
   must(netSrc.includes('rec.since[base]') || netSrc.includes('since[base]'), 'each ntfy relay keeps its own since cursor');
   must(netSrc.includes('poll=1'), 'quiet EventSources are rescued by ntfy poll');
+  must(netSrc.includes('function shouldFanout') && netSrc.includes('invite: true') && netSrc.includes('Promise.all(RELAYS.map'), 'one-shot invites fan out to every ntfy relay');
+  must(netSrc.includes("topicKind(top) === 'inbox'") && netSrc.includes('rec.esList'), 'inbox listens on every relay at once');
+  must(!netSrc.includes('res.status !== 429 && res.status < 500) return msg'), 'a non-OK 4xx no longer aborts the other relays');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
 must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
