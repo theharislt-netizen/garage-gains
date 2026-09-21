@@ -127,6 +127,10 @@
   .theme-swatch .nm { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Barlow Condensed'; color: var(--text-dim); }
   .theme-swatch.active { border-color: var(--a2); }
   .sticky-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--bg); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6); padding-top: env(safe-area-inset-top); }
+  .ml-icon.bd-crown { border-color: #e6c35a; filter: drop-shadow(0 0 6px rgba(230,195,90,0.5)); }
+  .ml-icon.bd-neon { border-color: #4fd8ff; filter: drop-shadow(0 0 6px rgba(79,216,255,0.5)); }
+  .ml-icon.bd-ember { border-color: #ff7a3a; filter: drop-shadow(0 0 6px rgba(255,122,58,0.5)); }
+  .ml-icon.bd-royal { border-color: #b455f5; filter: drop-shadow(0 0 6px rgba(180,85,245,0.5)); }
   .name-badge-row { display: flex; align-items: center; justify-content: center; padding: 14px 14px 12px; max-width: 100%; overflow: hidden; }
   .ml-badge-frame { position: relative; display: flex; align-items: center; max-width: 100%; min-width: 0; }
   .ml-icon {
@@ -568,7 +572,7 @@
     position: relative; z-index: 1;
     box-shadow: 0 4px 10px rgba(0,0,0,0.35);
   }
-  .avatar svg { width: 100%; height: 100%; display: block; }
+  .avatar svg, .avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
   .avatar-ring {
     position: absolute; inset: -5px; border-radius: 50%;
     border: 3px solid transparent; pointer-events: none;
@@ -642,6 +646,7 @@
     letter-spacing: 0.04em; white-space: nowrap;
     transform: scale(0.4); opacity: 0; pointer-events: none;
   }
+  .speech-bubble.say { white-space: normal; max-width: 132px; line-height: 1.2; }
   .seat.east .speech-bubble { left: auto; right: 58px; border-radius: 12px 12px 4px 12px; }
   .speech-bubble.show { animation: bubbleIn 2.4s ease forwards; }
   @keyframes bubbleIn {
@@ -905,7 +910,7 @@
   .inv-primary-ic svg { width: 100%; height: 100%; }
   .inv-primary-label { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700; text-transform: uppercase; }
   .inv-primary-sub { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
-  .inv-filter-row { display: flex; gap: 8px; padding: 2px 2px 12px; overflow-x: auto; }
+  .inv-filter-row { display: flex; gap: 8px; padding: 2px 2px 12px; overflow-x: auto; flex-shrink: 0; }
   .inv-filter-chip {
     flex: 0 0 auto; padding: 7px 12px; border-radius: 100px; border: 1px solid var(--line);
     background: var(--panel); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
@@ -958,12 +963,14 @@
   .header-currency { margin-left: auto; flex-shrink: 0; }
   .overlay-scroll { flex: 1; overflow-y: auto; padding: 4px 16px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
   #modeOverlay .overlay-scroll { padding: 4px 0 0; }
-  #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay, #lobbyOverlay, #nameSetupOverlay, #joinOverlay {
+  #enchantWindow, #craftWindow, #profileOverlay, #modeOverlay, #lobbyOverlay, #nameSetupOverlay, #joinOverlay, #messagesOverlay, #threadOverlay, #matchChatOverlay {
     position: fixed; inset: 0; z-index: 260; background: var(--bg);
     overflow: hidden; padding: 0;
     display: none; flex-direction: column;
   }
   #joinOverlay, #nameSetupOverlay { z-index: 270; }
+  #messagesOverlay, #threadOverlay, #matchChatOverlay { z-index: 280; }
+  #threadOverlay, #matchChatOverlay { z-index: 285; }
   #lobbyOverlay { z-index: 274; }
   #lobbyOverlay .overlay-scroll { padding-bottom: calc(12px + env(safe-area-inset-bottom)); overflow-y: auto; }
   .lobby-code {
@@ -1062,14 +1069,15 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    justify-content: center;
     container-type: inline-size;
-    --table-card-w: min(320px, calc(100cqw - 72px));
-    --table-peek: max(16px, calc((100cqw - var(--table-card-w)) / 2));
+    --table-card-w: calc((100cqw - 46px) / 2);
+    --table-peek: 16px;
   }
   .table-rail {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: center;
     gap: 14px;
     flex: 1;
     min-height: 0;
@@ -1086,8 +1094,9 @@
   .table-card {
     flex: 0 0 var(--table-card-w);
     width: var(--table-card-w);
-    height: min(44vh, 286px);
-    min-height: 252px;
+    height: min(52vh, 340px);
+    min-height: min(48vh, 318px);
+    align-self: center;
     margin: 0;
     padding: 9px;
     border: 0;
@@ -1103,11 +1112,12 @@
   .table-face {
     position: relative;
     width: 100%; height: 100%;
+    min-height: min(48vh, 318px);
     border-radius: 10px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 10px;
     padding: 14px 10px 10px;
     text-align: left;
@@ -1194,9 +1204,80 @@
   .cosmetic-slot { background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px 12px; min-height: 92px; }
   .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
   .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
-  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; }
-  .friend-row > div:first-child { min-width: 0; flex: 1; }
+  .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; cursor: pointer; }
+  .friend-row .friend-copy, .friend-row > div:not(.friend-ava):not(.friend-menu) { min-width: 0; flex: 1; }
   .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; }
+  .friend-ava { width: 44px; height: 44px; flex: 0 0 44px; }
+  .friend-ava .avatar-wrap { width: 44px; height: 44px; }
+  .friend-ava .avatar { width: 44px; height: 44px; border-width: 2px; }
+  .friend-menu { display: flex; gap: 6px; flex-shrink: 0; }
+  .friend-menu .inv-btn { margin: 0; padding: 6px 10px; min-height: 32px; font-size: 11px; }
+  .social-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mail-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0; cursor: pointer;
+  }
+  .mail-btn svg { width: 20px; height: 20px; }
+  .mail-btn .mail-dot {
+    position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gain); box-shadow: 0 0 6px rgba(56,226,154,0.8); display: none;
+  }
+  .mail-btn .mail-dot.show { display: block; }
+  .tab { position: relative; }
+  .tab .tab-badge {
+    position: absolute; top: 4px; right: calc(50% - 14px);
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #38e29a; box-shadow: 0 0 6px rgba(56,226,154,0.85); display: none;
+  }
+  .tab .tab-badge.show { display: block; }
+  .avatar-frame {
+    position: absolute; inset: -5px; border-radius: 50%; pointer-events: none; z-index: 2;
+    border: 2px solid rgba(255,255,255,0.22);
+  }
+  .avatar-frame.bd-crown { border-color: #e6c35a; box-shadow: 0 0 0 2px rgba(230,195,90,0.28), 0 0 10px rgba(230,195,90,0.45); }
+  .avatar-frame.bd-neon { border-color: #4fd8ff; box-shadow: 0 0 10px rgba(79,216,255,0.7); }
+  .avatar-frame.bd-ember { border-color: #ff7a3a; box-shadow: 0 0 10px rgba(255,122,58,0.65); }
+  .avatar-frame.bd-royal { border-color: #b455f5; box-shadow: 0 0 10px rgba(180,85,245,0.65); }
+  .profile-hero { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 4px 12px; }
+  .profile-hero .avatar-wrap { width: 88px; height: 88px; }
+  .profile-hero .avatar { width: 88px; height: 88px; cursor: pointer; }
+  .profile-hero .avatar img { border-radius: 50%; }
+  #profileInvGems { margin: 2px 0 8px; flex-shrink: 0; }
+  #profileInvList { flex-shrink: 0; }
+  .profile-hero .l2 { text-align: center; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .stat-tile .n { font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; }
+  .stat-tile .l { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+  .place-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .place-cell { text-align: center; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px; }
+  .place-cell .n { font-family: 'JetBrains Mono'; font-size: 16px; font-weight: 700; }
+  .place-cell .l { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .border-pick { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+  .border-chip {
+    flex-shrink: 0; width: 56px; text-align: center; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px;
+  }
+  .border-chip.on { border-color: var(--gain); }
+  .border-chip .avatar-wrap { width: 36px; height: 36px; margin: 0 auto 4px; }
+  .border-chip .avatar { width: 36px; height: 36px; border-width: 2px; }
+  .thread-row { display: flex; gap: 10px; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .thread-row .preview { color: var(--text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-log { display: flex; flex-direction: column; gap: 8px; min-height: 42vh; padding: 8px 0 12px; }
+  .chat-bubble { max-width: 78%; padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; }
+  .chat-bubble.me { align-self: flex-end; background: var(--a2); color: #081018; }
+  .chat-bubble.them { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); }
+  .chat-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .chat-compose { display: flex; gap: 8px; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
+  .chat-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .table-chat-btn {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.18); background: rgba(18,16,25,0.55); color: #f7efe0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .table-chat-btn svg { width: 18px; height: 18px; }
+  .table-chat-btn .mail-dot { top: 4px; right: 4px; }
   .range { width: 100%; accent-color: var(--a2); }
 </style>
 </head>
@@ -1312,7 +1393,13 @@
   </section>
 
   <section id="view-friends" class="view">
-    <h2 class="page-title">Friends</h2>
+    <div class="social-head">
+      <h2 class="page-title" style="margin:4px 0;">Social</h2>
+      <button type="button" class="mail-btn" id="mailBtn" aria-label="Messages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
+        <span class="mail-dot" id="mailDot"></span>
+      </button>
+    </div>
     <div class="card">
       <div class="log-form">
         <input id="friendSearch" placeholder="Nickname or profile ID">
@@ -1321,8 +1408,6 @@
     </div>
     <div class="section-title">Friends list</div>
     <div class="card" id="friendsList"></div>
-    <div class="section-title">Messages</div>
-    <div class="card"><div class="empty"><div class="big">No messages</div>Direct chat ships with the social pass.</div></div>
   </section>
 
   <section id="view-settings" class="view">
@@ -1359,7 +1444,9 @@
       <div class="settings-row" style="margin-top:14px;"><div>Restore backup<div class="l2">Import a file or paste JSON</div></div></div>
       <button class="btn" id="importBtn">Import Backup File</button>
       <button class="btn" id="pasteBackupBtn" style="margin-top:8px;">Paste Backup</button>
-      <input type="file" id="importFile" accept="application/json">
+            <input type="file" id="importFile" accept="application/json">
+    </div>
+    <input type="file" id="photoFile" accept="image/*" hidden>
     </div>
     <div class="section-title">Help</div>
     <div class="card">
@@ -1426,6 +1513,30 @@
   <div class="overlay-scroll" id="joinBody"></div>
 </div>
 
+<div id="messagesOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="messagesLeaveBtn">‹ Leave</button>
+    <div class="instance-title">Messages</div>
+  </div>
+  <div class="overlay-scroll" id="messagesBody"></div>
+</div>
+
+<div id="threadOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="threadLeaveBtn">‹ Leave</button>
+    <div class="instance-title" id="threadTitle">Chat</div>
+  </div>
+  <div class="overlay-scroll" id="threadBody"></div>
+</div>
+
+<div id="matchChatOverlay">
+  <div class="instance-header">
+    <button class="instance-leave-btn" id="matchChatLeaveBtn">‹ Leave</button>
+    <div class="instance-title">Table chat</div>
+  </div>
+  <div class="overlay-scroll" id="matchChatBody"></div>
+</div>
+
 <div id="nameSetupOverlay">
   <div class="instance-header">
     <div class="instance-title">Your name</div>
@@ -1442,6 +1553,10 @@
       <div class="instance-title" id="tableTitle">Palace</div>
       <div class="table-sub" id="tableSub"></div>
     </div>
+    <button type="button" class="table-chat-btn mail-btn" id="tableChatBtn" aria-label="Match chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14v10H8l-3 3V6z"/></svg>
+      <span class="mail-dot" id="tableChatDot"></span>
+    </button>
     <div class="turn-clock" id="turnClock">0:30</div>
   </div>
   <div class="table-felt" id="tableFelt"></div>
@@ -1463,17 +1578,14 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
     Shop
   </button>
-  <button class="tab" data-view="inventory">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 8L12 4 4 8v8l8 4 8-4V8Z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>
-    Inventory
-  </button>
   <button class="tab" data-view="subscription">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.4 6.8H21l-5.4 4.2 2 7-5.6-4.2L6.4 21l2-7L3 9.8h6.6z"/></svg>
     Sub
   </button>
   <button class="tab" data-view="friends">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    Friends
+    Social
+    <span class="tab-badge" id="socialTabBadge"></span>
   </button>
   <button class="tab" data-view="settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1520,9 +1632,21 @@ const SHOP_TABS = [
 const INV_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'cosmetics', label: 'Cosmetics' },
+  { id: 'cardSkin', label: 'Card backs' },
+  { id: 'tableTheme', label: 'Tables' },
+  { id: 'emote', label: 'Emotes' },
+  { id: 'chatBubble', label: 'Bubbles' },
+  { id: 'profileBorder', label: 'Borders' },
   { id: 'shards', label: 'Shards' },
   { id: 'stones', label: 'Stones' },
 ];
+const INV_SLOT_FILTERS = {
+  cardSkin: 1,
+  tableTheme: 1,
+  emote: 1,
+  chatBubble: 1,
+  profileBorder: 1,
+};
 const THEMES = [
   { id: 'rig', name: 'Rig', a: '#b455f5', b: '#3ec6f0' },
   { id: 'magenta', name: 'Magenta', a: '#ff4fa3', b: '#4fd8ff' },
@@ -1534,6 +1658,9 @@ const COSMETIC_CATALOG = [
   { id: 'skin_ember', name: 'Ember Back', slot: 'cardSkin', upgradable: true, stars: 2, icon: '🜂', desc: 'Warm foil on the card back. Enchanting adds a brighter burn.' },
   { id: 'table_velvet', name: 'Velvet Felt', slot: 'tableTheme', upgradable: true, stars: 2, icon: '🟩', desc: 'Deep club felt. Higher tiers add a gold rail glow.' },
   { id: 'border_crown', name: 'Crown Border', slot: 'profileBorder', upgradable: true, stars: 3, icon: '👑', desc: 'A gilded frame for your profile badge.' },
+  { id: 'border_neon', name: 'Neon Ring', slot: 'profileBorder', upgradable: false, stars: 2, icon: '💠', desc: 'A cool cyan ring around your avatar.' },
+  { id: 'border_ember', name: 'Ember Ring', slot: 'profileBorder', upgradable: false, stars: 2, icon: '🔥', desc: 'A warm orange ring around your avatar.' },
+  { id: 'border_royal', name: 'Royal Ring', slot: 'profileBorder', upgradable: false, stars: 2, icon: '💜', desc: 'A violet ring around your avatar.' },
   { id: 'emote_wave', name: 'Wave', slot: 'emote', upgradable: false, stars: 1, icon: '👋', desc: 'A simple hello you can fire at the table later.' },
   { id: 'bubble_ink', name: 'Ink Bubble', slot: 'chatBubble', upgradable: true, stars: 2, icon: '💬', desc: 'Hand-inked chat bubble for in-match talk.' },
 ];
@@ -1656,15 +1783,18 @@ function defaultState() {
   return {
     app: 'palace',
     format: 1,
-    profile: { name: '', photo: '', border: null, id: '', nameSet: false },
+    profile: { name: '', photo: '', photoThumb: '', border: null, id: '', nameSet: false },
     coins: STARTING_COINS,
     xp: 0,
     lastDailyLogin: '',
     inventory: { items: [], shards: { cosmetic: 0 }, stones: { cosmetic: 0 } },
     equipped: { cardSkin: null, tableTheme: null, emote: null, chatBubble: null, profileBorder: null },
     friends: [],
+    messages: {},
     settings: { theme: 'rig', sfx: 80, music: 80, notifications: true, language: 'en' },
-    stats: { matches: 0, wins: 0 },
+    stats: { matches: 0, wins: 0, coinsEarned: 0, coinsLost: 0, places: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+    socialPing: false,
+    unreadMail: 0,
     shopTab: 'skins',
     invFilter: 'all',
     unlocks: { medium: 0, hard: -1, expert: -1 },
@@ -1679,26 +1809,51 @@ function catalogItem(id) {
 }
 
 function seedCosmetics(s) {
-  if (s.cosmeticsSeeded && (s.inventory.items || []).length) return s;
-  if ((s.inventory.items || []).length) {
+  if (!s.cosmeticsSeeded || !(s.inventory.items || []).length) {
+    if (!(s.inventory.items || []).length) {
+      const items = COSMETIC_CATALOG.map((c, i) => ({
+        id: 'i_' + c.id,
+        catalogId: c.id,
+        name: c.name,
+        slot: c.slot,
+        tier: 0,
+        upgradable: !!c.upgradable,
+        new: i > 0,
+      }));
+      s.inventory.items = items;
+      s.inventory.shards.cosmetic = Math.max(s.inventory.shards.cosmetic || 0, 14);
+      s.inventory.stones.cosmetic = Math.max(s.inventory.stones.cosmetic || 0, 1);
+      s.equipped.cardSkin = 'i_skin_classic';
+      s.equipped.tableTheme = 'i_table_velvet';
+    }
     s.cosmeticsSeeded = true;
-    return s;
   }
-  const items = COSMETIC_CATALOG.map((c, i) => ({
-    id: 'i_' + c.id,
-    catalogId: c.id,
-    name: c.name,
-    slot: c.slot,
-    tier: 0,
-    upgradable: !!c.upgradable,
-    new: i > 0,
-  }));
-  s.inventory.items = items;
-  s.inventory.shards.cosmetic = Math.max(s.inventory.shards.cosmetic || 0, 14);
-  s.inventory.stones.cosmetic = Math.max(s.inventory.stones.cosmetic || 0, 1);
-  s.equipped.cardSkin = 'i_skin_classic';
-  s.equipped.tableTheme = 'i_table_velvet';
-  s.cosmeticsSeeded = true;
+  const have = new Set((s.inventory.items || []).map((i) => i.catalogId));
+  COSMETIC_CATALOG.forEach((c) => {
+    if (have.has(c.id)) return;
+    s.inventory.items.push({
+      id: 'i_' + c.id,
+      catalogId: c.id,
+      name: c.name,
+      slot: c.slot,
+      tier: 0,
+      upgradable: !!c.upgradable,
+      new: true,
+    });
+  });
+  s.messages = s.messages && typeof s.messages === 'object' ? s.messages : {};
+  s.stats = {
+    matches: Number(s.stats && s.stats.matches) || 0,
+    wins: Number(s.stats && s.stats.wins) || 0,
+    coinsEarned: Number(s.stats && s.stats.coinsEarned) || 0,
+    coinsLost: Number(s.stats && s.stats.coinsLost) || 0,
+    places: {
+      1: Number(s.stats && s.stats.places && s.stats.places[1]) || 0,
+      2: Number(s.stats && s.stats.places && s.stats.places[2]) || 0,
+      3: Number(s.stats && s.stats.places && s.stats.places[3]) || 0,
+      4: Number(s.stats && s.stats.places && s.stats.places[4]) || 0,
+    },
+  };
   return s;
 }
 
@@ -1723,6 +1878,10 @@ let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
 let lastMatchInboxTurn = null;
+let inboxSnapSent = false;
+let lastHostSnapAt = 0;
+let lastTimeoutAt = 0;
+let pendingNet = [];
 let joinRetryTimer = 0;
 let lobbyPulseTimer = 0;
 const INVITE_COOL_MS = 5000;
@@ -1731,6 +1890,13 @@ let pendingInviteSeat = null;
 let inviteCoolTimer = 0;
 let friendsTickId = 0;
 let lastSeenSaveAt = 0;
+let viewingFriendId = null;
+let activeThreadId = null;
+let matchChatTab = 'table';
+let tableChatLog = [];
+let matchFriendChat = {};
+let tableChatUnread = false;
+let knownOnline = {};
 
 function loadState() {
   try {
@@ -1755,7 +1921,10 @@ function loadState() {
       ...f,
       id: String((f && (f.id || f.name)) || ''),
       name: String((f && (f.name || f.id)) || 'Friend'),
+      photo: f && f.photo ? String(f.photo) : '',
+      border: f && f.border ? String(f.border) : '',
     })).filter((f) => f.id) : [];
+    merged.messages = merged.messages && typeof merged.messages === 'object' ? merged.messages : {};
     return seedCosmetics(merged);
   } catch (_) {
     return seedCosmetics(defaultState());
@@ -1836,6 +2005,9 @@ function showView(id, opts) {
   if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
   if (id === 'friends') {
+    state.socialPing = false;
+    saveState();
+    paintSocialBadge();
     if (window.PalaceNet) {
       PalaceNet.resume();
       (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
@@ -1860,7 +2032,7 @@ function layerOpen(id) {
 }
 
 function syncOverlayLock() {
-  const open = ['enchantWindow', 'craftWindow', 'profileOverlay', 'modeOverlay', 'lobbyOverlay', 'nameSetupOverlay', 'joinOverlay'].some(layerOpen);
+  const open = ['enchantWindow', 'craftWindow', 'profileOverlay', 'modeOverlay', 'lobbyOverlay', 'nameSetupOverlay', 'joinOverlay', 'messagesOverlay', 'threadOverlay', 'matchChatOverlay'].some(layerOpen);
   document.body.classList.toggle('overlay-open', open || document.body.classList.contains('in-match'));
 }
 
@@ -1899,6 +2071,18 @@ function handleAppBack() {
     }
     hideNameSetup();
     syncOverlayLock();
+    return 'stay';
+  }
+  if (layerOpen('matchChatOverlay')) {
+    closeMatchChat();
+    return 'stay';
+  }
+  if (layerOpen('threadOverlay')) {
+    closeThread();
+    return 'stay';
+  }
+  if (layerOpen('messagesOverlay')) {
+    closeMessages();
     return 'stay';
   }
   if (document.body.classList.contains('rewards-open') || (layerOpen('matchOver') && document.getElementById('matchOver').classList.contains('show'))) {
@@ -2016,6 +2200,19 @@ function renderHeader() {
   document.body.setAttribute('data-theme', state.settings.theme || 'rig');
   const due = state.lastDailyLogin !== todayStamp();
   document.getElementById('nbDailyDot').style.display = due ? '' : 'none';
+  const icon = document.getElementById('nameBadgeIcon');
+  if (icon) {
+    const photo = state.profile.photo;
+    if (photo) {
+      icon.innerHTML = `<img src="${String(photo).replace(/"/g, '')}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`;
+    } else {
+      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>';
+    }
+    const bd = borderClassFor(equippedBorderId());
+    icon.style.boxShadow = bd ? '' : '';
+    icon.className = 'ml-icon ' + bd;
+  }
+  paintSocialBadge();
 }
 
 function renderShop() {
@@ -2083,9 +2280,15 @@ function openItemDetail(kind, key, anchor) {
     body.innerHTML = html;
     document.getElementById('detailEquipBtn').addEventListener('click', () => {
       if (eqKey) state.equipped[eqKey] = inst.id;
+      if (eqKey === 'profileBorder') {
+        state.profile.border = inst.catalogId || inst.id;
+        syncNetProfile();
+      }
       saveState();
       closeItemDetail();
-      renderInventory();
+      if (layerOpen('profileOverlay') && !viewingFriendId) paintProfile();
+      else renderInventory();
+      renderHeader();
       showToast('Equipped ' + inst.name);
     });
     const en = document.getElementById('detailEnchantBtn');
@@ -2128,27 +2331,19 @@ function openItemDetail(kind, key, anchor) {
   pop.style.top = top + 'px';
 }
 
-function renderInventory() {
-  document.getElementById('invGoldGems').textContent = state.coins + ' coins';
-  document.getElementById('invGemsCount').textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
-  document.getElementById('invShardCount').textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
-  const filterRow = document.getElementById('invFilterRow');
-  filterRow.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
-  filterRow.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
-    state.invFilter = chip.dataset.invFilter;
-    saveState();
-    renderInventory();
-  }));
-  const list = document.getElementById('invItemList');
+function inventorySlotsHtml() {
   const items = state.inventory.items || [];
   const shards = state.inventory.shards.cosmetic || 0;
   const stones = state.inventory.stones.cosmetic || 0;
-  const showItems = state.invFilter === 'all' || state.invFilter === 'cosmetics';
-  const showShards = state.invFilter === 'all' || state.invFilter === 'shards';
-  const showStones = state.invFilter === 'all' || state.invFilter === 'stones';
+  const f = state.invFilter || 'all';
+  const slotOnly = !!INV_SLOT_FILTERS[f];
+  const showItems = f === 'all' || f === 'cosmetics' || slotOnly;
+  const showShards = f === 'all' || f === 'shards';
+  const showStones = f === 'all' || f === 'stones';
   const slots = [];
   if (showItems) {
     items.forEach((it) => {
+      if (slotOnly && it.slot !== f) return;
       const eqKey = SLOT_TO_EQUIP[it.slot];
       const equipped = eqKey && state.equipped[eqKey] === it.id;
       const glow = it.new ? ' new-item-glow' : '';
@@ -2174,9 +2369,43 @@ function renderInventory() {
   const rows = Math.max(3, Math.ceil(Math.max(filled, 1) / INV_GRID_COLUMNS) + 1);
   const total = rows * INV_GRID_COLUMNS;
   for (let i = filled; i < total; i++) slots.push('<div class="inv-slot empty"></div>');
-  list.innerHTML = `<div class="inv-slot-grid">${slots.join('')}</div>`;
+  return `<div class="inv-slot-grid">${slots.join('')}</div>`;
+}
+
+function bindInvFilterRow(row) {
+  if (!row) return;
+  row.innerHTML = INV_FILTERS.map((f) => `<div class="inv-filter-chip${state.invFilter === f.id ? ' active' : ''}" data-inv-filter="${f.id}">${f.label}</div>`).join('');
+  row.querySelectorAll('[data-inv-filter]').forEach((chip) => chip.addEventListener('click', () => {
+    state.invFilter = chip.dataset.invFilter;
+    saveState();
+    renderInventory();
+  }));
+}
+
+function bindInvList(list) {
+  if (!list) return;
+  list.innerHTML = inventorySlotsHtml();
   list.querySelectorAll('[data-slot-item]').forEach((el) => el.addEventListener('click', () => openItemDetail('item', el.dataset.slotItem, el)));
   list.querySelectorAll('[data-slot-mat]').forEach((el) => el.addEventListener('click', () => openItemDetail(el.dataset.slotMat, el.dataset.slotMat, el)));
+}
+
+function renderInventory() {
+  const gold = document.getElementById('invGoldGems');
+  if (gold) gold.textContent = state.coins + ' coins';
+  const gems = document.getElementById('invGemsCount');
+  if (gems) gems.textContent = (state.inventory.stones.cosmetic || 0) + ' stones';
+  const shardEl = document.getElementById('invShardCount');
+  if (shardEl) shardEl.textContent = (state.inventory.shards.cosmetic || 0) + ' shards';
+  const profileGems = document.getElementById('profileInvGems');
+  if (profileGems) {
+    profileGems.textContent = state.coins + ' coins · '
+      + (state.inventory.stones.cosmetic || 0) + ' stones · '
+      + (state.inventory.shards.cosmetic || 0) + ' shards';
+  }
+  bindInvFilterRow(document.getElementById('invFilterRow'));
+  bindInvFilterRow(document.getElementById('profileInvFilter'));
+  bindInvList(document.getElementById('invItemList'));
+  bindInvList(document.getElementById('profileInvList'));
 }
 
 function enchantChance(tier) {
@@ -2307,29 +2536,135 @@ function closeCraft() {
   syncOverlayLock();
 }
 
-function openProfile() {
+function openProfile(friendId) {
+  viewingFriendId = friendId || null;
   document.body.classList.add('overlay-open');
   document.getElementById('profileOverlay').style.display = 'flex';
-  const eqName = (key) => {
-    const id = state.equipped[key];
-    const it = (state.inventory.items || []).find((i) => i.id === id);
-    return it ? it.name : 'Default';
-  };
+  document.querySelector('#profileOverlay .instance-title').textContent = viewingFriendId ? 'Friend' : 'Profile';
+  paintProfile();
+}
+
+function paintProfile() {
+  const friend = viewingFriendId ? (state.friends || []).find((f) => samePlayerId(f.id, viewingFriendId)) : null;
+  const own = !friend;
+  const name = own ? (state.profile.name || 'Player') : (friend.name || 'Friend');
+  const id = own ? (state.profile.id || '—') : (friend.id || '');
+  const photo = own ? (state.profile.photo || '') : (friend.photo || '');
+  const border = own ? equippedBorderId() : (friend.border || '');
+  const stats = own ? state.stats : (friend.stats || { matches: 0, wins: 0, coinsEarned: 0, coinsLost: 0, places: { 1: 0, 2: 0, 3: 0, 4: 0 } });
+  const places = stats.places || { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const av = framedAvatarHtml({ seat: own ? 0 : seatFromId(id), photo, border });
+  const borders = own
+    ? (state.inventory.items || []).filter((i) => i.slot === 'profileBorder').map((it) => {
+      const on = state.equipped.profileBorder === it.id;
+      return `<button type="button" class="border-chip${on ? ' on' : ''}" data-equip-border="${it.id}">${framedAvatarHtml({ seat: 0, photo, border: it.catalogId })}<div class="l2">${it.name.replace(' Border', '').replace(' Ring', '')}</div></button>`;
+    }).join('')
+    : '';
+  const itemsBlock = own
+    ? `<div class="section-title">Items</div>
+       <div class="l2" id="profileInvGems"></div>
+       <div class="inv-filter-row" id="profileInvFilter"></div>
+       <div id="profileInvList"></div>
+       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
+         <button class="btn" id="profileEnchantBtn" type="button">Enchant</button>
+         <button class="btn" id="profileCraftBtn" type="button">Craft</button>
+       </div>`
+    : `<button class="btn primary" id="friendMsgBtn" type="button">Message</button>`;
   document.getElementById('profileBody').innerHTML = `
-    <div class="card">
-      <div class="settings-row"><div>Name</div><div class="l2">${state.profile.name || '—'}</div></div>
-      <div class="settings-row"><div>Profile ID</div><div class="l2 mono">${state.profile.id || '—'}</div></div>
-      <div class="settings-row"><div>Level</div><div class="l2 mono">${getLevel(state.xp)}</div></div>
-      <div class="settings-row"><div>XP</div><div class="l2 mono">${state.xp}</div></div>
-      <div class="settings-row"><div>Matches / wins</div><div class="l2 mono">${state.stats.matches} / ${state.stats.wins}</div></div>
+    <div class="profile-hero">
+      ${av}
+      ${own ? '<div class="l2">Tap the avatar to set a photo</div>' : ''}
+      <div style="font-family:\'Barlow Condensed\'; font-size:22px; letter-spacing:0.06em; text-transform:uppercase;">${name}</div>
+      <div class="l2 mono">ID ${id}</div>
     </div>
-    <div class="section-title">Cosmetics</div>
-    <div class="cosmetic-grid">
-      <div class="cosmetic-slot"><div class="l">Card skin</div><div class="n">${eqName('cardSkin')}</div></div>
-      <div class="cosmetic-slot"><div class="l">Chat bubble</div><div class="n">${eqName('chatBubble')}</div></div>
-      <div class="cosmetic-slot"><div class="l">Profile border</div><div class="n">${eqName('profileBorder')}</div></div>
-      <div class="cosmetic-slot"><div class="l">Emotes</div><div class="n">${eqName('emote')}</div></div>
+    ${own ? `<div class="section-title">Avatar border</div><div class="border-pick">${borders || '<div class="empty">No borders yet</div>'}</div>` : ''}
+    ${itemsBlock}
+    <div class="section-title">Statistics</div>
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="n">${stats.coinsEarned || 0}</div><div class="l">Coins earned</div></div>
+      <div class="stat-tile"><div class="n">${stats.coinsLost || 0}</div><div class="l">Coins lost</div></div>
+      <div class="stat-tile"><div class="n">${stats.matches || 0}</div><div class="l">Matches</div></div>
+      <div class="stat-tile"><div class="n">${stats.wins || 0}</div><div class="l">Wins</div></div>
+    </div>
+    <div class="place-row">
+      <div class="place-cell"><div class="n">${places[1] || 0}</div><div class="l">1st</div></div>
+      <div class="place-cell"><div class="n">${places[2] || 0}</div><div class="l">2nd</div></div>
+      <div class="place-cell"><div class="n">${places[3] || 0}</div><div class="l">3rd</div></div>
+      <div class="place-cell"><div class="n">${places[4] || 0}</div><div class="l">4th</div></div>
     </div>`;
+  if (own) {
+    const heroAv = document.querySelector('#profileBody .profile-hero .avatar');
+    if (heroAv) heroAv.addEventListener('click', pickProfilePhoto);
+    document.querySelectorAll('[data-equip-border]').forEach((el) => el.addEventListener('click', () => {
+      state.equipped.profileBorder = el.getAttribute('data-equip-border');
+      const it = (state.inventory.items || []).find((i) => i.id === state.equipped.profileBorder);
+      state.profile.border = it ? (it.catalogId || it.id) : null;
+      saveState();
+      syncNetProfile();
+      paintProfile();
+      renderHeader();
+    }));
+    renderInventory();
+    const en = document.getElementById('profileEnchantBtn');
+    if (en) en.addEventListener('click', () => openEnchant());
+    const cr = document.getElementById('profileCraftBtn');
+    if (cr) cr.addEventListener('click', () => openCraft());
+  } else {
+    const msg = document.getElementById('friendMsgBtn');
+    if (msg) msg.addEventListener('click', () => openThread(friend.id));
+  }
+}
+
+function pickProfilePhoto() {
+  const input = document.getElementById('photoFile');
+  if (!input) return;
+  input.onchange = () => {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    compressPhoto(file, (data) => {
+      const photo = typeof data === 'string' ? data : (data && data.photo) || '';
+      const thumb = typeof data === 'string' ? '' : (data && data.thumb) || '';
+      if (!photo) return showToast('Could not read that image');
+      state.profile.photo = photo;
+      state.profile.photoThumb = thumb;
+      saveState();
+      paintProfile();
+      renderHeader();
+      syncNetProfile();
+      showToast('Photo updated');
+    });
+  };
+  input.click();
+}
+
+function jpegSquare(img, size, maxLen, startQ, minQ) {
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d');
+  const s = Math.min(img.width, img.height) || 1;
+  ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+  let q = startQ;
+  let data = c.toDataURL('image/jpeg', q);
+  while (data.length > maxLen && q > minQ) {
+    q -= 0.08;
+    data = c.toDataURL('image/jpeg', q);
+  }
+  return data;
+}
+
+function compressPhoto(file, cb) {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const photo = jpegSquare(img, 192, 42000, 0.86, 0.48);
+    const thumb = jpegSquare(img, 48, 1400, 0.55, 0.18);
+    URL.revokeObjectURL(url);
+    cb({ photo, thumb });
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); showToast('Could not read that image'); };
+  img.src = url;
 }
 
 function closeProfile() {
@@ -2396,13 +2731,57 @@ function remainingCount(p) {
   return (p.hand ? p.hand.length : 0) + (p.up ? p.up.length : 0) + (p.down ? p.down.length : 0);
 }
 
-function lobbyAvatarHtml(seatIndex, you) {
-  const photo = you && state.profile && state.profile.photo;
-  if (photo) {
-    const src = String(photo).replace(/"/g, '');
-    return `<div class="avatar av-${seatIndex}" aria-hidden="true"><img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`;
+function lobbyAvatarHtml(seatIndex, you, extra) {
+  const o = extra || {};
+  const photo = you ? (state.profile && state.profile.photo) : o.photo;
+  const border = you ? equippedBorderId() : o.border;
+  return framedAvatarHtml({ seat: seatIndex, photo, border });
+}
+
+function equippedBorderId() {
+  const id = state.equipped && state.equipped.profileBorder;
+  const it = (state.inventory.items || []).find((i) => i.id === id);
+  if (it) return it.catalogId || it.id;
+  return (state.profile && state.profile.border) || '';
+}
+
+function borderClassFor(borderId) {
+  const id = String(borderId || '');
+  if (id.indexOf('crown') >= 0) return 'bd-crown';
+  if (id.indexOf('neon') >= 0) return 'bd-neon';
+  if (id.indexOf('ember') >= 0) return 'bd-ember';
+  if (id.indexOf('royal') >= 0) return 'bd-royal';
+  return '';
+}
+
+function seatFromId(id) {
+  const s = String(id || '');
+  let n = 0;
+  for (let i = 0; i < s.length; i++) n = (n + s.charCodeAt(i)) % 4;
+  return n;
+}
+
+function cosmeticsForPlayer(p) {
+  if (!p) return { photo: '', border: '' };
+  if (match && p.seat === match.humanSeat) {
+    return { photo: state.profile.photo || '', border: equippedBorderId() };
   }
-  return avatarArtHtml(seatIndex);
+  const f = (state.friends || []).find((x) => samePlayerId(x.id, p.profileId));
+  return {
+    photo: (f && f.photo) || '',
+    border: p.border || (f && f.border) || '',
+  };
+}
+
+function framedAvatarHtml(opts) {
+  const o = opts || {};
+  const seat = o.seat == null ? 0 : o.seat;
+  const bd = borderClassFor(o.border);
+  const photo = o.photo ? String(o.photo).replace(/"/g, '') : '';
+  const inner = photo
+    ? `<div class="avatar av-${seat}" aria-hidden="true"><img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`
+    : avatarArtHtml(seat);
+  return `<div class="avatar-wrap">${o.ring ? '<div class="avatar-ring"></div>' : ''}<div class="avatar-frame ${bd}"></div>${inner}${o.extra || ''}</div>`;
 }
 
 function avatarArtHtml(seat) {
@@ -2517,7 +2896,16 @@ function tickTurnClock() {
     el.textContent = fmtClock(left);
     el.classList.toggle('low', left <= 5);
   }
-  if (left <= 0 && !uiBusy && !match.ended && !match.settled) {
+  if (isNetGuest() && Date.now() - lastHostSnapAt > 4000) {
+    lastHostSnapAt = Date.now();
+    if (window.PalaceNet && session) PalaceNet.matchPub(session.code, { type: 'want-snap', id: state.profile.id });
+  }
+  if (left <= 0 && !match.ended && !match.settled) {
+    if (uiBusy) return;
+    if (isNetGuest()) {
+      autoTurnTimeout();
+      return;
+    }
     stopTurnClock();
     autoTurnTimeout();
   }
@@ -2529,6 +2917,8 @@ function autoTurnTimeout() {
   const p = match.players[seat];
   if (!p || p.out) return;
   if (isNetGuest()) {
+    if (Date.now() - lastTimeoutAt < 2500) return;
+    lastTimeoutAt = Date.now();
     if (window.PalaceNet && session) {
       PalaceNet.matchPub(session.code, { type: 'timeout', seat });
     }
@@ -2797,6 +3187,7 @@ function paintEmote(seat, icon) {
   const spark = document.getElementById('sparkle-' + seat);
   if (bubble) {
     bubble.textContent = icon;
+    bubble.classList.remove('say');
     bubble.classList.remove('show');
     void bubble.offsetWidth;
     bubble.classList.add('show');
@@ -2909,16 +3300,18 @@ function renderTable(opts) {
       ? ''
       : tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks });
     const remainBadge = remain > 0 ? '<div class="count-badge">' + remain + '</div>' : '';
+    const look = cosmeticsForPlayer(p);
+    const av = framedAvatarHtml({
+      seat: p.seat,
+      photo: look.photo,
+      border: look.border,
+      ring: true,
+      extra: remainBadge + `<div class="speech-bubble" id="bubble-${p.seat}"></div><div class="sparkle" id="sparkle-${p.seat}"></div>`,
+    });
     return `<div class="seat ${place}${active ? ' active' : ''}${thinking ? ' thinking' : ''}" id="seat-${p.seat}" data-seat="${p.seat}">
       <div class="seat-id">
         <div class="seat-head">
-          <div class="avatar-wrap">
-            <div class="avatar-ring"></div>
-            ${avatarArtHtml(p.seat)}
-            ${remainBadge}
-            <div class="speech-bubble" id="bubble-${p.seat}"></div>
-            <div class="sparkle" id="sparkle-${p.seat}"></div>
-          </div>
+          ${av}
           <button type="button" class="emote-btn" data-emote-seat="${p.seat}" aria-label="React">☺</button>
         </div>
         <div class="seat-name">${p.out ? 'Out · ' + p.place : p.name}</div>
@@ -3559,6 +3952,12 @@ function playTone(freq, dur) {
   } catch (_) { /* ignore */ }
 }
 
+function flushPendingNet() {
+  if (uiBusy || !pendingNet.length) return;
+  const fn = pendingNet.shift();
+  try { fn(); } catch (_) { /* ignore */ }
+}
+
 async function runMove(move) {
   if (!match || uiBusy || match.settled) return;
   if (isNetGuest()) {
@@ -3569,15 +3968,19 @@ async function runMove(move) {
   }
   const token = matchToken;
   uiBusy = true;
-  const events = PalaceEngine.applyMove(match, move);
-  await animateEvents(events);
-  if (!stillThisMatch(token)) return;
-  selectedIds = [];
-  uiBusy = false;
-  publishMatchSnap(true);
-  if (settleIfDone()) return;
-  renderTable();
-  await runTurn();
+  try {
+    const events = PalaceEngine.applyMove(match, move);
+    publishMatchSnap(true);
+    await animateEvents(events);
+    if (!stillThisMatch(token)) return;
+    selectedIds = [];
+    if (settleIfDone()) return;
+    renderTable();
+  } finally {
+    if (stillThisMatch(token)) uiBusy = false;
+  }
+  flushPendingNet();
+  if (stillThisMatch(token) && match && !match.settled) await runTurn();
 }
 
 async function runTurn() {
@@ -3607,20 +4010,24 @@ async function runTurn() {
     publishMatchSnap();
     if (!p.isBot) return;
     uiBusy = true;
-    await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
-    if (!stillThisMatch(token) || match.settled) return;
-    let mv = PalaceEngine.chooseBotMove(match, p);
-    let events = PalaceEngine.applyMove(match, mv);
-    if (!events.length) {
-      const fallback = PalaceEngine.legalMoves(match, p.seat)[0];
-      if (fallback) events = PalaceEngine.applyMove(match, fallback);
+    try {
+      await sleep(BOT_THINK_MIN + Math.random() * (BOT_THINK_MAX - BOT_THINK_MIN));
+      if (!stillThisMatch(token) || match.settled) return;
+      let mv = PalaceEngine.chooseBotMove(match, p);
+      let events = PalaceEngine.applyMove(match, mv);
+      if (!events.length) {
+        const fallback = PalaceEngine.legalMoves(match, p.seat)[0];
+        if (fallback) events = PalaceEngine.applyMove(match, fallback);
+      }
+      publishMatchSnap(true);
+      await animateEvents(events);
+      if (!stillThisMatch(token)) return;
+      selectedIds = [];
+      if (settleIfDone()) return;
+    } finally {
+      if (stillThisMatch(token)) uiBusy = false;
     }
-    await animateEvents(events);
-    publishMatchSnap(true);
-    if (!stillThisMatch(token)) return;
-    selectedIds = [];
-    uiBusy = false;
-    if (settleIfDone()) return;
+    flushPendingNet();
   }
   if (stillThisMatch(token)) settleIfDone();
 }
@@ -3663,6 +4070,7 @@ async function animateDeal() {
     renderTable();
   } finally {
     if (stillThisMatch(token)) uiBusy = false;
+    flushPendingNet();
   }
 }
 
@@ -3767,6 +4175,13 @@ function finishMatch() {
   }
   state.stats.matches += 1;
   if (won) state.stats.wins += 1;
+  if (!state.stats.places) state.stats.places = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const placeKey = String(Math.min(4, Math.max(1, place)));
+  state.stats.places[placeKey] = (state.stats.places[placeKey] || 0) + 1;
+  if (match.mode === 'standard' && match.buyIn) {
+    state.stats.coinsLost = (state.stats.coinsLost || 0) + match.buyIn;
+  }
+  if (payout > 0) state.stats.coinsEarned = (state.stats.coinsEarned || 0) + payout;
   saveState();
   const rows = earlyExit ? '' : match.players.slice().sort((a, b) => (a.place || 99) - (b.place || 99)).map((p) =>
     `<div class="settings-row"><div>${p.place}. ${p.name}${p.seat === match.humanSeat ? ' (you)' : ''}</div><div class="l2">${p.out ? 'out' : ''}</div></div>`
@@ -3982,7 +4397,8 @@ function publishMatchSnap(force) {
   lastMatchSnapAt = now;
   const packed = PalaceEngine.packMatch(match);
   PalaceNet.matchPub(session.code, { type: 'snap', match: packed, code: session.code });
-  if (force || lastMatchInboxTurn !== match.turn) {
+  if (!inboxSnapSent) {
+    inboxSnapSent = true;
     lastMatchInboxTurn = match.turn;
     (session.seats || []).forEach((row) => {
       if (row && row.id && !samePlayerId(row.id, state.profile.id)) {
@@ -4010,6 +4426,14 @@ function hideNameSetup() {
 function leaveSession() {
   stopLobbyPulse();
   if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
+  pendingNet = [];
+  inboxSnapSent = false;
+  lastHostSnapAt = 0;
+  lastTimeoutAt = 0;
+  tableChatLog = [];
+  matchFriendChat = {};
+  tableChatUnread = false;
+  closeMatchChat();
   Object.keys(inviteCoolUntil).forEach((k) => { delete inviteCoolUntil[k]; });
   if (session && window.PalaceNet) {
     if (session.started && match && !isLobbyHost()) {
@@ -4052,8 +4476,9 @@ function paintLobby() {
       return `<button type="button" class="lobby-pad open${lock}" data-seat="${i}" data-invite-open="${i}" aria-label="Open seat"${cooling ? ' disabled' : ''}><span class="plus">+</span></button>`;
     }
     const you = samePlayerId(seat.id, state.profile.id);
+    const f = (state.friends || []).find((x) => samePlayerId(x.id, seat.id));
     const tag = seat.bot ? 'Bot' : (you ? 'You' : (samePlayerId(seat.id, session.hostId) ? 'Host' : 'Player'));
-    return `<div class="lobby-pad${you ? ' you' : ''}" data-seat="${i}">${lobbyAvatarHtml(i, you)}<div class="pad-name">${seat.name || tag}</div></div>`;
+    return `<div class="lobby-pad${you ? ' you' : ''}" data-seat="${i}">${lobbyAvatarHtml(i, you, { photo: f && f.photo, border: (f && f.border) || '' })}<div class="pad-name">${seat.name || tag}</div></div>`;
   }).join('');
   const startLabel = host ? 'Start match' : 'Waiting for host';
   if (body) {
@@ -4205,7 +4630,10 @@ function joinLobby(code, opts) {
   document.getElementById('lobbyOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   paintLobby();
-  if (window.PalaceNet) PalaceNet.resume();
+  if (window.PalaceNet) {
+    PalaceNet.watchLobby(clean);
+    PalaceNet.resume();
+  }
   const sendJoin = () => {
     if (!window.PalaceNet || !session || !sameLobbyCode(session.code, clean)) return;
     if (localPlayerSeated()) return;
@@ -4239,9 +4667,22 @@ function startLobbyMatch() {
   if (!session || !isLobbyHost()) return;
   stopLobbyPulse();
   const cfg = session.cfg || {};
-  const roster = (session.seats || []).map((seat, i) => {
-    if (seat && seat.id && !seat.bot) return { name: seat.name, bot: false, id: seat.id };
-    const botName = (PalaceEngine.BOT_NAMES || ['Bot'])[i % (PalaceEngine.BOT_NAMES || ['Bot']).length];
+  const rosterBotNames = [];
+  const roster = (session.seats || []).map((seat) => {
+    if (seat && seat.id && !seat.bot) {
+      const you = samePlayerId(seat.id, state.profile.id);
+      const f = (state.friends || []).find((x) => samePlayerId(x.id, seat.id));
+      return {
+        name: seat.name,
+        bot: false,
+        id: seat.id,
+        border: you ? equippedBorderId() : (f && f.border) || '',
+        photo: you ? (state.profile.photo || '') : (f && f.photo) || '',
+      };
+    }
+    const used = rosterBotNames;
+    const botName = (PalaceEngine.randomBotName || function () { return 'Bot'; })(used);
+    used.push(botName);
     return { name: botName, bot: true, id: null };
   });
   if (roster.length < 2) {
@@ -4280,6 +4721,7 @@ function applyHostSnap(raw) {
   const first = !match;
   match = next;
   match.humanSeat = seat;
+  lastHostSnapAt = Date.now();
   pendingCfg = session && session.cfg ? session.cfg : pendingCfg;
   if (first) {
     if (match.mode === 'standard' && match.buyIn && !session._paid) {
@@ -4381,7 +4823,13 @@ function upsertFriend(row) {
   if (row.id === state.profile.id) return;
   const list = state.friends || [];
   const idx = list.findIndex((f) => f.id === row.id);
-  const next = { id: row.id, name: row.name || row.id };
+  const next = {
+    id: row.id,
+    name: row.name || row.id,
+    photo: row.photo || (idx >= 0 && list[idx].photo) || '',
+    border: row.border || (idx >= 0 && list[idx].border) || '',
+    stats: row.stats || (idx >= 0 && list[idx].stats) || null,
+  };
   if (presenceMap[row.id] && presenceMap[row.id].t) next.lastSeen = presenceMap[row.id].t;
   if (idx >= 0) list[idx] = { ...list[idx], ...next };
   else list.push(next);
@@ -4395,7 +4843,7 @@ function upsertFriend(row) {
 function acceptFriend(row) {
   upsertFriend(row);
   if (window.PalaceNet) {
-    PalaceNet.inbox(row.id, { type: 'friend_ok', id: state.profile.id, name: state.profile.name || 'Player' });
+    PalaceNet.inbox(row.id, Object.assign({}, profileCard(), { type: 'friend_ok' }));
   }
   showToast('You and ' + (row.name || row.id) + ' are friends');
 }
@@ -4411,7 +4859,7 @@ function sendFriendRequest(query) {
   if (existing) return showToast('Already friends');
   pendingFriendQuery = q;
   if (window.PalaceNet) {
-    PalaceNet.inbox(q, { type: 'friend_req', id: state.profile.id, name: state.profile.name || 'Player' });
+    PalaceNet.inbox(q, Object.assign({}, profileCard(), { type: 'friend_req' }));
     const slug = slugName(q);
     if (slug) PalaceNet.publish('d', slug, { type: 'lookup', id: state.profile.id, name: state.profile.name, q });
   }
@@ -4423,8 +4871,16 @@ function handleNetMessage(msg) {
   if (msg.type === 'presence' && (msg.id || msg.from)) {
     const at = Date.now();
     const id = presenceId(msg.id || msg.from);
-    presenceMap[id] = { name: msg.name, online: !!msg.online, t: at };
+    presenceMap[id] = { name: msg.name, online: !!msg.online, t: at, border: msg.border || '' };
     rememberFriendSeen(id, at, !!msg.online);
+    if (msg.border || msg.stats) {
+      const f = (state.friends || []).find((x) => samePlayerId(x.id, id));
+      if (f) {
+        if (msg.border) f.border = msg.border;
+        if (msg.stats) f.stats = msg.stats;
+      }
+    }
+    noteFriendOnline(id, !!msg.online, msg.name);
     renderFriends();
     if (session) paintLobby();
     return;
@@ -4432,7 +4888,7 @@ function handleNetMessage(msg) {
   if (msg.type === 'lookup' && window.PalaceNet) {
     const mine = slugName(state.profile.name);
     if (msg.q && (msg.q === state.profile.id || slugName(msg.q) === mine)) {
-      PalaceNet.inbox(msg.id, { type: 'announce', id: state.profile.id, name: state.profile.name || 'Player' });
+      PalaceNet.inbox(msg.id, Object.assign({}, profileCard(), { type: 'announce' }));
     }
     return;
   }
@@ -4441,7 +4897,7 @@ function handleNetMessage(msg) {
     if (msg.id === pendingFriendQuery || String(msg.name || '').toLowerCase() === q) {
       pendingFriendQuery = '';
       if (window.PalaceNet) {
-        PalaceNet.inbox(msg.id, { type: 'friend_req', id: state.profile.id, name: state.profile.name || 'Player' });
+        PalaceNet.inbox(msg.id, Object.assign({}, profileCard(), { type: 'friend_req' }));
       }
     }
     return;
@@ -4452,8 +4908,20 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'friend_ok' && msg.id) {
-    upsertFriend({ id: msg.id, name: msg.name });
+    cacheFriendProfile(msg);
     showToast((msg.name || 'Player') + ' accepted');
+    return;
+  }
+  if (msg.type === 'profile' && msg.id) {
+    cacheFriendProfile(msg);
+    return;
+  }
+  if (msg.type === 'dm') {
+    receiveDm(msg);
+    return;
+  }
+  if (msg.type === 'chat') {
+    receiveTableChat(msg);
     return;
   }
   if (msg.type === 'invite' && msg.code) {
@@ -4504,8 +4972,17 @@ function handleNetMessage(msg) {
     applyHostSnap(msg.match);
     return;
   }
+  if (msg.type === 'want-snap' && isLobbyHost() && match && !match.settled) {
+    publishMatchSnap(true);
+    return;
+  }
   if (msg.type === 'timeout' && isLobbyHost() && match && !match.settled) {
-    if (Number(msg.seat) === match.turn && !uiBusy) autoTurnTimeout();
+    const run = () => {
+      if (!match || match.settled) return;
+      if (Number(msg.seat) === match.turn && !uiBusy) autoTurnTimeout();
+      else if (Number(msg.seat) === match.turn) pendingNet.push(() => autoTurnTimeout());
+    };
+    run();
     return;
   }
   if (msg.type === 'end' && session && sameLobbyCode(msg.code, session.code) && !isLobbyHost()) {
@@ -4514,11 +4991,19 @@ function handleNetMessage(msg) {
     return;
   }
   if (msg.type === 'move' && isLobbyHost() && match && !match.settled) {
-    const seat = msg.seat;
-    const p = match.players[seat];
-    if (!p || p.isBot || p.out) return;
-    if (match.turn !== seat || uiBusy) return;
-    runMove(msg.move);
+    const run = () => {
+      if (!match || match.settled) return;
+      const seat = msg.seat;
+      const p = match.players[seat];
+      if (!p || p.isBot || p.out) return;
+      if (match.turn !== seat) return;
+      if (uiBusy) {
+        pendingNet.push(run);
+        return;
+      }
+      runMove(msg.move);
+    };
+    run();
     return;
   }
   if (msg.type === 'drop' && isLobbyHost() && match) {
@@ -4532,7 +5017,7 @@ function handleNetMessage(msg) {
 
 function resumeNetSession() {
   if (!window.PalaceNet) return;
-  PalaceNet.resume();
+  PalaceNet.resume(true);
   (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
   if (session && session.code) {
     PalaceNet.watchLobby(session.code);
@@ -4546,7 +5031,7 @@ function resumeNetSession() {
 
 function bootNet() {
   if (!window.PalaceNet || !state.profile.id) return;
-  PalaceNet.connect({ id: state.profile.id, name: state.profile.name || 'Player' });
+  PalaceNet.connect({ id: state.profile.id, name: state.profile.name || 'Player', border: equippedBorderId() });
   (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
   const slug = slugName(state.profile.name);
   if (slug) {
@@ -4695,11 +5180,24 @@ function startMatch(cfg) {
     buyIn: cfg.buyIn || 0,
     mode: cfg.mode,
     practiceSub: cfg.practiceSub,
-    names: [state.profile.name || 'You'],
+    names: roster ? undefined : (function () {
+      const used = [];
+      const list = [state.profile.name || 'You'];
+      for (let i = 1; i < (cfg.seats || 4); i++) {
+        const n = (PalaceEngine.randomBotName || function () { return 'Bot ' + i; })(used);
+        used.push(n);
+        list.push(n);
+      }
+      return list;
+    }()),
     roster,
     humanSeat,
     id: cfg.matchId,
   });
+  if (match && match.players[humanSeat]) match.players[humanSeat].border = equippedBorderId();
+  tableChatLog = [];
+  matchFriendChat = {};
+  tableChatUnread = false;
   closeMode();
   hideLobby(true);
   if (session) {
@@ -4876,17 +5374,346 @@ function closeMode() {
   syncOverlayLock();
 }
 
+function threadKey(id) {
+  return String(id || '').toUpperCase();
+}
+
+function getThread(id) {
+  state.messages = state.messages || {};
+  const k = threadKey(id);
+  if (!Array.isArray(state.messages[k])) state.messages[k] = [];
+  return state.messages[k];
+}
+
+function pushDm(id, row) {
+  const t = getThread(id);
+  t.push(row);
+  if (t.length > 80) t.splice(0, t.length - 80);
+  saveState();
+}
+
+function unreadMailCount() {
+  const mine = threadKey(state.profile.id);
+  let n = 0;
+  Object.keys(state.messages || {}).forEach((k) => {
+    (state.messages[k] || []).forEach((m) => {
+      if (!m || m.me || m.read) return;
+      n += 1;
+    });
+  });
+  return n;
+}
+
+function paintSocialBadge() {
+  const tab = document.getElementById('socialTabBadge');
+  const mail = document.getElementById('mailDot');
+  const unread = unreadMailCount();
+  if (tab) tab.classList.toggle('show', !!(state.socialPing || unread));
+  if (mail) mail.classList.toggle('show', unread > 0);
+  const tableDot = document.getElementById('tableChatDot');
+  if (tableDot) tableDot.classList.toggle('show', !!tableChatUnread);
+}
+
+function syncNetProfile() {
+  if (!window.PalaceNet || !state.profile.id) return;
+  PalaceNet.connect({
+    id: state.profile.id,
+    name: state.profile.name || 'Player',
+    border: equippedBorderId(),
+  });
+}
+
+function profileCard() {
+  const thumb = state.profile.photoThumb || '';
+  const photo = state.profile.photo || '';
+  const netPhoto = thumb || (photo.length && photo.length < 1800 ? photo : '');
+  return {
+    type: 'profile',
+    id: state.profile.id,
+    name: state.profile.name || 'Player',
+    border: equippedBorderId(),
+    photo: netPhoto,
+    stats: {
+      matches: state.stats.matches || 0,
+      wins: state.stats.wins || 0,
+      coinsEarned: state.stats.coinsEarned || 0,
+      coinsLost: state.stats.coinsLost || 0,
+      places: state.stats.places || { 1: 0, 2: 0, 3: 0, 4: 0 },
+    },
+  };
+}
+
+function cacheFriendProfile(msg) {
+  if (!msg || !msg.id) return;
+  upsertFriend({
+    id: msg.id,
+    name: msg.name,
+    photo: msg.photo || '',
+    border: msg.border || '',
+    stats: msg.stats || null,
+  });
+}
+
+function noteFriendOnline(id, online, name) {
+  const key = presenceId(id);
+  const was = knownOnline[key];
+  knownOnline[key] = !!online;
+  if (!online || was !== false) return;
+  const friend = (state.friends || []).find((f) => samePlayerId(f.id, id));
+  if (!friend) return;
+  state.socialPing = true;
+  saveState();
+  paintSocialBadge();
+  showToast((name || friend.name || 'A friend') + ' came online');
+  pushInviteNotice('Friend online', (name || friend.name || 'A friend') + ' is online');
+}
+
+function removeFriend(id) {
+  if (!id) return;
+  state.friends = (state.friends || []).filter((f) => !samePlayerId(f.id, id));
+  if (window.PalaceNet) PalaceNet.dropPresence(id);
+  saveState();
+  renderFriends();
+  if (session) paintLobby();
+  showToast('Friend removed');
+}
+
+function openMessages() {
+  document.body.classList.add('overlay-open');
+  document.getElementById('messagesOverlay').style.display = 'flex';
+  paintMessages();
+}
+
+function closeMessages() {
+  document.getElementById('messagesOverlay').style.display = 'none';
+  syncOverlayLock();
+}
+
+function paintMessages() {
+  const body = document.getElementById('messagesBody');
+  if (!body) return;
+  const friends = state.friends || [];
+  if (!friends.length) {
+    body.innerHTML = '<div class="empty"><div class="big">No conversations</div>Add a friend first, then send a message.</div>';
+    return;
+  }
+  body.innerHTML = friends.map((f) => {
+    const t = getThread(f.id);
+    const last = t.length ? t[t.length - 1] : null;
+    const preview = last ? ((last.me ? 'You: ' : '') + (last.text || '')) : 'Start a chat';
+    return `<div class="thread-row" data-thread="${f.id}">
+      <div class="friend-ava">${framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border })}</div>
+      <div style="min-width:0;flex:1;"><div>${f.name}</div><div class="preview">${preview}</div></div>
+    </div>`;
+  }).join('');
+  body.querySelectorAll('[data-thread]').forEach((el) => el.addEventListener('click', () => openThread(el.getAttribute('data-thread'))));
+}
+
+function openThread(id) {
+  const friend = (state.friends || []).find((f) => samePlayerId(f.id, id));
+  if (!friend) return showToast('Add them as a friend first');
+  activeThreadId = friend.id;
+  getThread(friend.id).forEach((m) => { m.read = true; });
+  saveState();
+  paintSocialBadge();
+  document.body.classList.add('overlay-open');
+  document.getElementById('threadOverlay').style.display = 'flex';
+  document.getElementById('threadTitle').textContent = friend.name || 'Chat';
+  paintThread();
+}
+
+function closeThread() {
+  document.getElementById('threadOverlay').style.display = 'none';
+  activeThreadId = null;
+  syncOverlayLock();
+}
+
+function paintThread() {
+  const body = document.getElementById('threadBody');
+  if (!body || !activeThreadId) return;
+  const rows = getThread(activeThreadId).map((m) =>
+    `<div class="chat-bubble ${m.me ? 'me' : 'them'}">${escText(m.text || '')}<div class="chat-meta">${m.me ? 'You' : (m.name || '')}</div></div>`
+  ).join('');
+  body.innerHTML = `<div class="chat-log">${rows || '<div class="empty">Say hello</div>'}</div>
+    <div class="chat-compose log-form">
+      <input id="threadInput" maxlength="160" placeholder="Message">
+      <button class="btn primary" id="threadSendBtn" type="button">Send</button>
+    </div>`;
+  const input = document.getElementById('threadInput');
+  const send = document.getElementById('threadSendBtn');
+  const go = () => sendDm(activeThreadId, input && input.value);
+  if (send) send.addEventListener('click', go);
+  if (input) {
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    setTimeout(() => input.focus(), 30);
+  }
+  const log = body.querySelector('.chat-log');
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+function escText(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function sendDm(id, text) {
+  const msg = String(text || '').trim().slice(0, 160);
+  if (!msg) return;
+  pushDm(id, { me: true, text: msg, t: Date.now(), name: state.profile.name, read: true });
+  if (window.PalaceNet) {
+    PalaceNet.inbox(id, { type: 'dm', id: state.profile.id, name: state.profile.name || 'Player', text: msg });
+  }
+  const input = document.getElementById('threadInput');
+  if (input) input.value = '';
+  paintThread();
+  paintMessages();
+}
+
+function receiveDm(msg) {
+  if (!msg || !msg.id || !msg.text) return;
+  const friend = (state.friends || []).find((f) => samePlayerId(f.id, msg.id));
+  if (!friend) {
+    upsertFriend({ id: msg.id, name: msg.name });
+  }
+  pushDm(msg.id, { me: false, text: String(msg.text).slice(0, 160), t: Date.now(), name: msg.name || 'Friend', read: !!(activeThreadId && samePlayerId(activeThreadId, msg.id)) });
+  paintSocialBadge();
+  if (activeThreadId && samePlayerId(activeThreadId, msg.id)) paintThread();
+  if (layerOpen('messagesOverlay')) paintMessages();
+  if (document.body.classList.contains('in-match') && matchChatTab === 'friend' && layerOpen('matchChatOverlay')) paintMatchChat();
+  showToast((msg.name || 'Friend') + ': ' + String(msg.text).slice(0, 40));
+}
+
+function matchHumans() {
+  if (!match) return [];
+  return match.players.filter((p) => !p.isBot && p.profileId && !samePlayerId(p.profileId, state.profile.id));
+}
+
+function friendsInMatch() {
+  return matchHumans().filter((p) => (state.friends || []).some((f) => samePlayerId(f.id, p.profileId)));
+}
+
+function openMatchChat() {
+  tableChatUnread = false;
+  paintSocialBadge();
+  document.body.classList.add('overlay-open');
+  document.getElementById('matchChatOverlay').style.display = 'flex';
+  paintMatchChat();
+}
+
+function closeMatchChat() {
+  const el = document.getElementById('matchChatOverlay');
+  if (el) el.style.display = 'none';
+  syncOverlayLock();
+}
+
+function showSeatChat(seat, text) {
+  const bubble = document.getElementById('bubble-' + seat);
+  if (!bubble) return;
+  bubble.textContent = String(text || '').slice(0, 80);
+  bubble.classList.add('say');
+  bubble.classList.remove('show');
+  void bubble.offsetWidth;
+  bubble.classList.add('show');
+  playTone(520, 0.05);
+}
+
+function paintMatchChat() {
+  const body = document.getElementById('matchChatBody');
+  if (!body) return;
+  const pals = friendsInMatch();
+  const friendId = pals[0] && pals[0].profileId;
+  body.innerHTML = `
+    <div class="chat-tabs seat-toggle">
+      <button type="button" data-chat-tab="table"${matchChatTab === 'table' ? ' class="on"' : ''}>Table</button>
+      <button type="button" data-chat-tab="friend"${matchChatTab === 'friend' ? ' class="on"' : ''}>Friends</button>
+    </div>
+    <p style="color:var(--text-dim); font-size:13px; line-height:1.4; margin:0 2px 10px;">${matchChatTab === 'friend' ? (friendId ? 'Sends a bubble only to friends at this table.' : 'No friends at this table.') : 'Sends a bubble everyone at the table can see. No chat log.'}</p>
+    <div class="chat-compose log-form">
+      <input id="matchChatInput" maxlength="80" placeholder="${matchChatTab === 'friend' ? 'Bubble a friend' : 'Bubble the table'}">
+      <button class="btn primary" id="matchChatSendBtn" type="button">Send</button>
+    </div>`;
+  body.querySelectorAll('[data-chat-tab]').forEach((btn) => btn.addEventListener('click', () => {
+    matchChatTab = btn.getAttribute('data-chat-tab');
+    paintMatchChat();
+  }));
+  const input = document.getElementById('matchChatInput');
+  const send = document.getElementById('matchChatSendBtn');
+  const go = () => sendMatchChat(input && input.value, friendId);
+  if (send) send.addEventListener('click', go);
+  if (input) {
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    setTimeout(() => input.focus(), 30);
+  }
+}
+
+function sendMatchChat(text, friendId) {
+  const msg = String(text || '').trim().slice(0, 80);
+  if (!msg || !match) return;
+  if (matchChatTab === 'friend') {
+    if (!friendId) return showToast('No friend at this table');
+  }
+  showSeatChat(match.humanSeat, msg);
+  if (window.PalaceNet && session) {
+    PalaceNet.matchPub(session.code, {
+      type: 'chat',
+      scope: matchChatTab === 'friend' ? 'friend' : 'table',
+      to: matchChatTab === 'friend' ? friendId : null,
+      id: state.profile.id,
+      name: state.profile.name || 'Player',
+      text: msg,
+    });
+  }
+  closeMatchChat();
+}
+
+function receiveTableChat(msg) {
+  if (!msg || !msg.text || !match) return;
+  if (samePlayerId(msg.id, state.profile.id)) return;
+  if (msg.scope === 'friend') {
+    const toMe = samePlayerId(msg.to, state.profile.id);
+    const fromFriend = (state.friends || []).some((f) => samePlayerId(f.id, msg.id));
+    if (!toMe || !fromFriend) return;
+  }
+  const seat = match.players.findIndex((p) => samePlayerId(p.profileId, msg.id));
+  if (seat >= 0) showSeatChat(seat, msg.text);
+}
+
 function renderFriends() {
   const list = document.getElementById('friendsList');
   if (!list) return;
+  paintSocialBadge();
   if (!(state.friends || []).length) {
     list.innerHTML = `<div class="empty"><div class="big">No friends yet</div>Add by nickname or profile ID. Match lobbies are where you send a play request.</div>`;
     return;
   }
   list.innerHTML = state.friends.map((f) => {
     const on = friendOnline(f.id);
-    return `<div class="friend-row" data-fid="${f.id}"><div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div></div>`;
+    const av = framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border });
+    return `<div class="friend-row" data-fid="${f.id}">
+      <div class="friend-ava">${av}</div>
+      <div class="friend-copy"><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div>
+      <div class="friend-menu">
+        <button class="inv-btn" data-friend-msg="${f.id}" type="button">Chat</button>
+        <button class="inv-btn" data-friend-del="${f.id}" type="button">Remove</button>
+      </div>
+    </div>`;
   }).join('');
+  list.querySelectorAll('.friend-row').forEach((row) => {
+    const id = row.getAttribute('data-fid');
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-friend-msg], [data-friend-del]')) return;
+      openProfile(id);
+    });
+  });
+  list.querySelectorAll('[data-friend-msg]').forEach((btn) => btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    openThread(btn.getAttribute('data-friend-msg'));
+  }));
+  list.querySelectorAll('[data-friend-del]').forEach((btn) => btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const id = btn.getAttribute('data-friend-del');
+    const f = (state.friends || []).find((x) => samePlayerId(x.id, id));
+    if (confirm('Remove ' + ((f && f.name) || id) + ' from friends?')) removeFriend(id);
+  }));
   startFriendsPresenceTick();
 }
 
@@ -4942,7 +5769,7 @@ function init() {
     };
     modeHand.addEventListener('scroll', syncDots, { passive: true });
   }
-  document.getElementById('nameBadge').addEventListener('click', openProfile);
+  document.getElementById('nameBadge').addEventListener('click', () => openProfile());
   document.getElementById('nbGold').addEventListener('click', () => showView('shop'));
   document.getElementById('modeGold').addEventListener('click', () => {
     closeMode();
@@ -4981,6 +5808,16 @@ function init() {
     const name = document.getElementById('friendSearch').value.trim();
     sendFriendRequest(name);
   });
+  const mailBtn = document.getElementById('mailBtn');
+  if (mailBtn) mailBtn.addEventListener('click', openMessages);
+  const messagesLeave = document.getElementById('messagesLeaveBtn');
+  if (messagesLeave) messagesLeave.addEventListener('click', closeMessages);
+  const threadLeave = document.getElementById('threadLeaveBtn');
+  if (threadLeave) threadLeave.addEventListener('click', closeThread);
+  const matchChatLeave = document.getElementById('matchChatLeaveBtn');
+  if (matchChatLeave) matchChatLeave.addEventListener('click', closeMatchChat);
+  const tableChatBtn = document.getElementById('tableChatBtn');
+  if (tableChatBtn) tableChatBtn.addEventListener('click', openMatchChat);
   document.getElementById('shareBackupBtn').addEventListener('click', async () => {
     const text = JSON.stringify(window.buildBackupPayload(), null, 2);
     try {

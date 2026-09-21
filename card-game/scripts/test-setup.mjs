@@ -31,9 +31,13 @@ const workflow = readFileSync(join(repoRoot, '.github/workflows/card-game-androi
 must(html.includes("const STORE_KEY = 'palaceCards_v1'"), 'card-game.html must use palaceCards_v1');
 must(!html.includes("STORE_KEY = 'garageGains_v1'") && !html.includes("getItem('garageGains_v1')"), 'card-game.html must not read/write garageGains_v1');
 must(html.includes('APP_NAME = \'PALACE\''), 'app title must be PALACE');
-must(html.includes('data-view="home"') && html.includes('data-view="shop"') && html.includes('data-view="inventory"'), 'home/shop/inventory tabs required');
-must(html.includes('data-view="subscription"') && html.includes('data-view="friends"') && html.includes('data-view="settings"'), 'subscription/friends/settings tabs required');
-must(html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory must reuse Enchant + Craft entry points');
+must(html.includes('data-view="home"') && html.includes('data-view="shop"'), 'home/shop tabs required');
+must(html.includes('id="view-inventory"') && html.includes('id="invEnchantEntry"') && html.includes('id="invCraftEntry"'), 'inventory shell remains in the DOM for Profile item browsing');
+must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"'), 'owned items browse inside Profile by category');
+must(!html.includes("showView('inventory')"), 'Profile does not navigate away to a separate Inventory screen');
+must(html.includes('>Social<') && html.includes('data-view="friends"') && html.includes('data-view="settings"'), 'Social tab replaces Friends');
+must(!html.includes('data-view="inventory"'), 'Inventory is not a bottom-nav tab');
+must(html.includes('data-view="subscription"'), 'subscription tab required');
 must(html.includes('id="enchantWindow"'), 'enchant window overlay required');
 must(html.includes('id="exportBtn"') && html.includes('id="importBtn"') && html.includes('id="addHomeBtn"'), 'settings backup + add-home hooks required for native-bridge');
 must(html.includes('palace-net.js'), 'card-game.html must load palace-net.js');

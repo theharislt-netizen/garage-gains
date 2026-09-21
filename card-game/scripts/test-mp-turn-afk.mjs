@@ -126,6 +126,15 @@ try {
     if (btn) btn.click();
   });
   await sleep(400);
+  await host.evaluate(() => showView('friends'));
+  await guest.evaluate(() => showView('friends'));
+  const onlineBefore = await Promise.all([
+    waitEval(host, () => typeof friendOnline === 'function' && friendOnline('GUESTTEST1')),
+    waitEval(guest, () => typeof friendOnline === 'function' && friendOnline('HOSTTEST1')),
+  ]);
+  console.log('online before match', onlineBefore);
+  must(onlineBefore[0], 'host sees guest Online before the match');
+  must(onlineBefore[1], 'guest sees host Online before the match');
 
   await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 2, difficulty: 'Easy', buyIn: 0 }));
   const code = await host.evaluate(() => (document.getElementById('lobbyCodeText') || {}).textContent.trim());
@@ -190,6 +199,17 @@ try {
   await host.evaluate(() => { if (typeof closeTable === 'function') closeTable(); else if (typeof requestLeaveMatch === 'function') requestLeaveMatch(); });
   await guest.evaluate(() => { if (typeof closeTable === 'function') closeTable(); else if (typeof requestLeaveMatch === 'function') requestLeaveMatch(); });
   await sleep(500);
+
+  await host.evaluate(() => showView('friends'));
+  await guest.evaluate(() => showView('friends'));
+  const onlineAfter = await Promise.all([
+    waitEval(host, () => typeof friendOnline === 'function' && friendOnline('GUESTTEST1')),
+    waitEval(guest, () => typeof friendOnline === 'function' && friendOnline('HOSTTEST1')),
+  ]);
+  console.log('online after match', onlineAfter);
+  must(onlineAfter[0], 'host still sees guest Online after leaving the match');
+  must(onlineAfter[1], 'guest still sees host Online after leaving the match');
+  await host.screenshot({ path: join(artifacts, 'mp_online_after_match.png') });
 
   await host.evaluate(() => openLobby({ mode: 'practice', practiceSub: 'duel', seats: 2, difficulty: 'Easy', buyIn: 0 }));
   await host.evaluate(() => {

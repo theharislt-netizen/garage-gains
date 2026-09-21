@@ -19,6 +19,7 @@ must(html.includes('table-rail') && html.includes('table-card') && html.includes
 must(!html.includes('class="stake-card') && !html.includes('stake-oval'), 'tilted per-difficulty stake cards are gone');
 must(html.includes('Candlelight') && html.includes('Velvet Room') && html.includes('High Court') && html.includes('Midnight Crown'), 'tables use themed names not Easy/Medium/Hard/Expert');
 must(html.includes('--table-peek') && html.includes('scroll-snap-align: center') && html.includes('100cqw'), 'table cards snap in the center of the rail');
+must(html.includes('min(52vh, 340px)') && html.includes('align-items: center') && html.includes('justify-content: center'), 'tier cards are large and vertically centered');
 must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
 must(!html.includes('Side Table') && !html.includes('Main Felt') && !html.includes('High Roller'), 'Velvet rows are not themed sub-names');
 must(!html.includes('Audience') && !html.includes("'Council'") && !html.includes('Throne'), 'High Court rows are not themed sub-names');
@@ -911,8 +912,20 @@ must(!html.includes('lobby-slot') && !html.includes('Tap to invite a friend'), '
   const rf = html.slice(html.indexOf('function renderFriends'), html.indexOf('function renderSettings'));
   must(rf.includes('friendPresenceLine') && rf.includes('Online'), 'friends list shows online status');
   must(rf.includes('Last online') || html.includes("return formatLastOnline"), 'offline friends use last-seen copy');
-  must(!rf.includes('inv-btn') && !rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+  must(!rf.includes('>Invite<'), 'friends tab is not an invite launcher');
+  must(rf.includes('data-friend-del') && rf.includes('data-friend-msg'), 'friends list can message and remove');
+  must(rf.includes('framedAvatarHtml'), 'friends list shows avatar and border');
 }
+must(html.includes('>Social<') && html.includes('id="mailBtn"') && html.includes("type: 'dm'"), 'Social tab has messenger-style DMs');
+must(html.includes('id="matchChatOverlay"') && html.includes("function showSeatChat") && html.includes('No chat log') && html.includes("scope: matchChatTab === 'friend' ? 'friend' : 'table'"), 'in-match chat is seat bubbles, not a log');
+must(html.includes('coinsEarned') && html.includes('coinsLost') && html.includes('place-cell'), 'profile stats include coins and placements');
+must(html.includes('function pickProfilePhoto') && html.includes('function compressPhoto') && html.includes('photoThumb'), 'profile photo is stored locally and a tiny thumb is sent on the wire');
+must(html.includes('id="profileInvFilter"') && html.includes('id="profileInvList"') && html.includes("label: 'Card backs'") && html.includes("label: 'Borders'"), 'Profile items are organized by category');
+must(!html.includes("showView('inventory')"), 'owned items stay inside Profile instead of a separate Inventory view');
+must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
+must(html.includes('came online') && html.includes('socialPing'), 'friend-came-online notifies with a Social badge');
+must(engineSrc.includes('randomBotName') && engineSrc.includes("'Milo'") && engineSrc.includes("'Sofia'"), 'bots pick realistic names from a pool');
+must(html.includes('PalaceEngine.randomBotName'), 'each match randomizes bot names');
 must(html.includes('INVITE_COOL_MS = 5000'), 'invite cooldown is 5 seconds');
 must(html.includes('function armInviteCooldown') && html.includes('function inviteOnCooldown'), 'invite cooldown helpers exist');
 must(html.includes('armInviteCooldown(\'friend\'') && html.includes('armInviteCooldown(\'seat\''), 'invite cooldown keys friend and seat');
@@ -937,13 +950,16 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
   must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
-  must(netSrc.includes('closeSource(top);\n      openSource(top)'), 'resume force-reopens ntfy SSE');
+  must(netSrc.includes('openMux(true)'), 'resume force-reopens the multiplexed ntfy SSE');
+  must(netSrc.includes("join(',')") && netSrc.includes('wantedKey'), 'one EventSource covers every ntfy topic');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
 must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
 must(html.includes('if (session.hostId) PalaceNet.inbox(session.hostId, payload)'), 'guest DMs the host inbox after learning hostId');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
+must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('inboxSnapSent'), 'missed snaps are requested, busy moves are queued, inbox is not flooded');
+must(html.includes('publishMatchSnap(true);\n    await animateEvents'), 'host publishes the new turn before the local animation');
 
 const twoHumans = E.newMatch({
   roster: [
