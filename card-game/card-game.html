@@ -115,20 +115,21 @@
   .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-family: 'JetBrains Mono'; opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 420; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.presence {
-    bottom: auto; top: 16%;
-    padding: 16px 22px; border-radius: 18px;
-    font-size: 16px; font-weight: 700; letter-spacing: 0.04em;
+    bottom: auto; top: 36%;
+    padding: 18px 26px; border-radius: 18px;
+    font-size: 18px; font-weight: 800; letter-spacing: 0.05em;
     white-space: normal; text-align: center; line-height: 1.25;
-    max-width: 86vw; overflow: visible;
-    animation: presencePop 0.5s cubic-bezier(0.2, 1.4, 0.3, 1);
+    max-width: 86vw; overflow: visible; min-width: 220px;
+    transition: none;
+    animation: presencePop 0.5s cubic-bezier(0.2, 1.4, 0.3, 1) forwards;
   }
   .toast.presence.online {
-    background: #103528; border: 2px solid #38e29a; color: #e8fff4;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 28px rgba(56,226,154,0.55), inset 0 0 18px rgba(56,226,154,0.18);
+    background: #3dffb0; border: 2px solid #e8fff4; color: #052016;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.55), 0 0 32px rgba(61,255,176,0.7);
   }
   .toast.presence.offline {
-    background: #2a2430; border: 2px solid #c9a45b; color: #f7efe0;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 22px rgba(201,164,91,0.4);
+    background: #ffd36a; border: 2px solid #fff4d4; color: #2a1c04;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.55), 0 0 28px rgba(255,211,106,0.65);
   }
   @keyframes presencePop {
     0% { transform: translateX(-50%) scale(0.78); opacity: 0; }
@@ -363,7 +364,12 @@
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 1px 4px rgba(0,0,0,0.45); pointer-events: none;
   }
-  .table-hint { display: none; }
+  .table-hint {
+    font-family: 'Barlow Condensed'; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; background: rgba(0,0,0,0.45); color: #f4efe4;
+    padding: 5px 8px; border-radius: 100px; border: 1px solid rgba(201,164,91,0.35);
+    max-width: 120px; text-align: center; pointer-events: none;
+  }
   .pcard.legal { box-shadow: 0 0 0 2px #ffd24a, 0 0 14px 4px rgba(255,210,74,0.62); }
   .pcard.selected { transform: translateY(-16px) scale(1.06); z-index: 3; }
   .pcard.tiny { width: 40px; height: 58px; border-radius: 6px; }
@@ -3449,6 +3455,26 @@ function renderTable(opts) {
   const pickupBtnHtml = canPickup
     ? '<button class="btn danger" id="pickupBtn">Take pile</button>'
     : '';
+  let hintHtml = '';
+  if (!dealing && myTurn) {
+    if (zone === 'down') {
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap a face-down card' : 'Tap a face-down card') + '</div>';
+    } else if (selectedIds.length > 0) {
+      const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
+      const copies = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank) : [];
+      const more = copies.length - selectedIds.length;
+      const auto = c0 && PalaceEngine.isAutoGroupedRank(c0.rank);
+      if (auto && copies.length > 1 && selectedIds.length === 1) {
+        hintHtml = '<div class="table-hint">Tap to select all ' + c0.rank + 's</div>';
+      } else if (auto && more > 0) {
+        hintHtml = '<div class="table-hint">Tap to drop one</div>';
+      } else if (!auto && more > 0) {
+        hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
+      }
+    } else if (match.phase === 'bonus') {
+      hintHtml = '<div class="table-hint">Bonus — tap matching ranks</div>';
+    }
+  }
   felt.innerHTML = `
     ${tableWatermarkHtml()}
     ${seatsHtml}
@@ -3457,7 +3483,7 @@ function renderTable(opts) {
       <div class="pile-stack" id="discardPile">${discardPileCardsHtml(pileCards)}</div>
     </div>
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
-    <div class="table-actions">${playBtnHtml}${pickupBtnHtml}</div>`;
+    <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
   document.getElementById('tableTitle').textContent = match.mode === 'practice' ? 'Practice' : 'Standard';
   document.getElementById('tableSub').textContent = tableThemeLabel(match.difficulty) + (match.buyIn ? ' · ' + match.buyIn + ' coins' : ' · no risk');
 

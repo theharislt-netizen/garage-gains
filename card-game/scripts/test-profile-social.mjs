@@ -293,6 +293,10 @@ const chatUi = await page.evaluate(() => ({
   noLog: /No chat log/.test(document.documentElement.innerHTML) || typeof showSeatChat === 'function',
 }));
 must(chatUi.overlay && chatUi.noLog, 'in-match chat is bubbles, not a log');
+await page.evaluate(() => {
+  const el = document.getElementById('toast');
+  if (el) el.className = 'toast';
+});
 await page.waitForSelector('.table-actions');
 const hud = await page.evaluate(() => {
   let btn = document.getElementById('pickupBtn');
@@ -332,18 +336,21 @@ await page.evaluate(() => {
   knownOnline.RIM1 = false;
   noteFriendOnline('RIM1', true, 'Rim');
 });
+await new Promise((r) => setTimeout(r, 450));
 const onlineToast = await page.evaluate(() => {
   const el = document.getElementById('toast');
-  return { text: el.textContent, cls: el.className };
+  return { text: el.textContent, cls: el.className, bg: getComputedStyle(el).backgroundColor };
 });
 must(/came online/i.test(onlineToast.text) && /presence/.test(onlineToast.cls) && /online/.test(onlineToast.cls), 'online toast is the prominent presence banner');
 await page.screenshot({ path: join(artifacts, 'friend_online_toast.png'), type: 'png' });
 await page.evaluate(() => noteFriendOnline('RIM1', false, 'Rim'));
+await new Promise((r) => setTimeout(r, 450));
 const offlineToast = await page.evaluate(() => {
   const el = document.getElementById('toast');
-  return { text: el.textContent, cls: el.className };
+  return { text: el.textContent, cls: el.className, bg: getComputedStyle(el).backgroundColor };
 });
 must(/went offline/i.test(offlineToast.text) && /presence/.test(offlineToast.cls) && /offline/.test(offlineToast.cls), 'offline toast appears when a friend logs off');
+must(!/online/.test(offlineToast.cls.replace('offline', '')), 'offline toast is not still tagged online');
 await page.screenshot({ path: join(artifacts, 'friend_offline_toast.png'), type: 'png' });
 
 const report = { ok: fails.length === 0, fails, profileOpen, photoInfo, afterBorder, social, friendProf, bots, chatLayout, hud, onlineToast, offlineToast };

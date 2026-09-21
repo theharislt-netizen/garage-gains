@@ -118,7 +118,7 @@ must(html.includes('drawEmpty ? \'\' : cardBackHtml()'), 'draw pile card-back is
 must(!html.includes('dt < 320'), 'taps are not dropped after a 320ms hold window');
 must(html.includes('pruneSelectedIds') && html.includes('onHumanCardTap(g.id)'), 'a tap selects without auto-playing');
 must(!html.includes('skipAuto'), 'a tap no longer auto-plays a singleton rank');
-must(html.includes('Tap to select') && html.includes('flick or drag onto the pile'), 'the table hint separates select from flick/carry play');
+must(!html.includes('Tap to select · flick or drag onto the pile') && !html.includes('flick or drag onto the pile'), 'the tap-to-select / flick-onto-pile tip is gone');
 must(html.includes('legalGlow'), 'legal plays still glow');
 must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest to highest');
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
@@ -943,8 +943,7 @@ must(!html.includes("showView('inventory')"), 'there is no Inventory view to ope
 must(html.includes('data-equip-border') && html.includes('avatar-frame') && html.includes('bd-crown'), 'avatar borders can be equipped and render around the avatar');
 must(html.includes('function showPresenceToast') && html.includes('went offline') && html.includes('came online'), 'friend online and offline toasts exist');
 must(html.includes("className = 'toast show presence") && html.includes('socialPing'), 'presence toasts are prominent and online still pings Social');
-must(!html.includes('Tap to select · flick or drag onto the pile'), 'match HUD no longer shows the tap-to-select tip');
-must(!html.includes('hintHtml'), 'renderTable does not inject table-hint copy');
+must(!html.includes('Tap to select · flick or drag onto the pile') && !html.includes('flick or drag onto the pile'), 'match HUD no longer shows the tap-to-select tip');
 must(html.includes('id="threadCompose"') && html.includes('sendActiveThread'), 'friend chat compose is pinned outside the scroll body');
 must(html.includes('#pickupBtn') && html.includes('width: 88px') && html.includes('bottom: calc(148px'), 'Take Pile is narrower and lower');
 must(engineSrc.includes('randomBotName') && engineSrc.includes("'Milo'") && engineSrc.includes("'Sofia'"), 'bots pick realistic names from a pool');
