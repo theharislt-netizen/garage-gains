@@ -108,6 +108,10 @@ const profileOpen = await page.evaluate(() => ({
 must(profileOpen.overlay, 'own profile overlay is open');
 must(profileOpen.chips.includes('All') && profileOpen.chips.includes('Card backs') && profileOpen.chips.includes('Borders'), 'profile items have category chips');
 must(profileOpen.items >= 4, 'profile lists owned cosmetics');
+must(await page.evaluate(() => {
+  const row = document.getElementById('profileInvFilter');
+  return !!(row && row.offsetHeight > 20 && row.scrollWidth > 100);
+}), 'category chips are visible in the Profile overlay');
 must(profileOpen.earned === '420', 'coins earned tile is filled');
 must(profileOpen.places.join(',') === '5,3,2,2', '1st-4th placement breakdown is shown');
 must(profileOpen.borders >= 3, 'owned avatar borders are listed');
@@ -137,6 +141,12 @@ const photoInfo = await page.evaluate(async () => {
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#3ec6f0';
   ctx.fillRect(0, 0, 400, 400);
+  for (let y = 0; y < 400; y += 3) {
+    for (let x = 0; x < 400; x += 3) {
+      ctx.fillStyle = 'rgb(' + ((x * 13 + y * 7) % 255) + ',' + ((x * 3 + y * 19) % 255) + ',' + ((x + y * 11) % 255) + ')';
+      ctx.fillRect(x, y, 3, 3);
+    }
+  }
   ctx.fillStyle = '#081018';
   ctx.font = 'bold 180px sans-serif';
   ctx.fillText('P', 110, 270);

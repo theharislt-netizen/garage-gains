@@ -910,7 +910,7 @@
   .inv-primary-ic svg { width: 100%; height: 100%; }
   .inv-primary-label { font-family: 'Barlow Condensed'; font-size: 15px; font-weight: 700; text-transform: uppercase; }
   .inv-primary-sub { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
-  .inv-filter-row { display: flex; gap: 8px; padding: 2px 2px 12px; overflow-x: auto; }
+  .inv-filter-row { display: flex; gap: 8px; padding: 2px 2px 12px; overflow-x: auto; flex-shrink: 0; }
   .inv-filter-chip {
     flex: 0 0 auto; padding: 7px 12px; border-radius: 100px; border: 1px solid var(--line);
     background: var(--panel); color: var(--text-dim); font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
@@ -1243,7 +1243,8 @@
   .profile-hero .avatar-wrap { width: 88px; height: 88px; }
   .profile-hero .avatar { width: 88px; height: 88px; cursor: pointer; }
   .profile-hero .avatar img { border-radius: 50%; }
-  #profileInvGems { margin: 2px 0 8px; }
+  #profileInvGems { margin: 2px 0 8px; flex-shrink: 0; }
+  #profileInvList { flex-shrink: 0; }
   .profile-hero .l2 { text-align: center; }
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .stat-tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -2577,6 +2578,7 @@ function paintProfile() {
       <div class="l2 mono">ID ${id}</div>
     </div>
     ${own ? `<div class="section-title">Avatar border</div><div class="border-pick">${borders || '<div class="empty">No borders yet</div>'}</div>` : ''}
+    ${itemsBlock}
     <div class="section-title">Statistics</div>
     <div class="stat-grid">
       <div class="stat-tile"><div class="n">${stats.coinsEarned || 0}</div><div class="l">Coins earned</div></div>
@@ -2589,8 +2591,7 @@ function paintProfile() {
       <div class="place-cell"><div class="n">${places[2] || 0}</div><div class="l">2nd</div></div>
       <div class="place-cell"><div class="n">${places[3] || 0}</div><div class="l">3rd</div></div>
       <div class="place-cell"><div class="n">${places[4] || 0}</div><div class="l">4th</div></div>
-    </div>
-    ${itemsBlock}`;
+    </div>`;
   if (own) {
     const heroAv = document.querySelector('#profileBody .profile-hero .avatar');
     if (heroAv) heroAv.addEventListener('click', pickProfilePhoto);
