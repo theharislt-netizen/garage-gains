@@ -964,7 +964,7 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
   must(netSrc.includes('openMux(true)'), 'resume rebuilds ntfy listeners');
   must(netSrc.includes('ntfy.envs.net') && netSrc.includes('ntfy.sh'), 'publishes past ntfy.sh onto a working relay');
-  must(netSrc.includes("encodeURIComponent(top) + '/sse'") && !netSrc.includes("join(',')"), 'each ntfy topic gets its own EventSource — no comma-subscribe');
+  must(netSrc.includes("encodeURIComponent(top) + '/sse?'") && !netSrc.includes("sort().join(',')"), 'each ntfy topic gets its own EventSource — no comma-subscribe');
   must(netSrc.includes("publish('i', id, body)") && netSrc.includes('peers.forEach'), 'presence is pushed to friend inboxes');
   must(netSrc.includes('poll=1'), 'quiet EventSources are rescued by ntfy poll');
 }

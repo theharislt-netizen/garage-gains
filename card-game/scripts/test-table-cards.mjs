@@ -97,9 +97,11 @@ try {
     const el = document.querySelector('.play-card');
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return { height: r.height, css: getComputedStyle(el).height };
+    return { height: r.height, css: parseFloat(getComputedStyle(el).height) };
   });
-  must(homeCard && homeCard.height >= 210 && homeCard.height <= 280, 'mode-select cards are the 268px-capped height');
+  console.log('homeCard', homeCard);
+  must(homeCard && homeCard.css >= 210 && homeCard.css <= 280, 'mode-select cards are the 268px-capped height');
+  await page.screenshot({ path: join(artifacts, 'mode_select_card_height.png'), type: 'png' });
 
   await page.evaluate(() => openMode('standard'));
   await page.waitForSelector('.table-card');
@@ -156,7 +158,7 @@ try {
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
   must(layout.fullyOn === 2, 'exactly two table cards fit on screen');
   must(layout.cardW >= layout.vw * 0.42 && layout.cardW <= layout.vw * 0.52, 'each card is about half the screen wide');
-  must(Math.abs(layout.cardH - homeCard.height) <= 4, 'challenge cards use the same height as mode-select cards');
+  must(Math.abs(layout.cardH - homeCard.css) <= 2, 'challenge cards use the same height as mode-select cards');
   must(Math.abs(layout.cardMid - layout.bodyMid) <= 48, 'cards are vertically centered in the mode body');
   must(!layout.themedRows, 'inner rows are not themed sub-names');
 

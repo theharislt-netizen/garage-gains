@@ -92,7 +92,8 @@
     if (typeof EventSource === 'undefined') return;
     closeEs(rec);
     const base = rec.relay || RELAYS[0];
-    const url = base + encodeURIComponent(top) + '/sse?since=' + encodeURIComponent(rec.since || '10m');
+    const since = rec.since || '10m'; // replay since=10m of retained ntfy messages
+    const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since);
     const es = new EventSource(url);
     es.onmessage = (ev) => ingest(ev.data, rec);
     es.onerror = () => {
