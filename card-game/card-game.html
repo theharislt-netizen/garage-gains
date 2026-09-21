@@ -1702,6 +1702,8 @@ let presenceMap = {};
 let pendingFriendQuery = '';
 let netBound = false;
 let lastMatchSnapAt = 0;
+let joinRetryTimer = 0;
+let lobbyPulseTimer = 0;
 const INVITE_COOL_MS = 5000;
 const inviteCoolUntil = {};
 let pendingInviteSeat = null;
@@ -1813,6 +1815,10 @@ function showView(id, opts) {
   if (id === 'inventory') renderInventory();
   if (id === 'shop') renderShop();
   if (id === 'friends') {
+    if (window.PalaceNet) {
+      PalaceNet.resume();
+      (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
+    }
     renderFriends();
     startFriendsPresenceTick();
   }
@@ -3801,9 +3807,18 @@ function slugName(name) {
 function lobbyShareUrl(code) {
   return PLAY_URL + '#j=' + encodeURIComponent(code);
 }
+function sameLobbyCode(a, b) {
+  const clean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const x = clean(a);
+  const y = clean(b);
+  return !!x && x === y;
+}
+function presenceId(id) {
+  return String(id || '').toUpperCase();
+}
 function friendOnline(id) {
-  const row = presenceMap[id];
-  return !!(row && row.online && Date.now() - (row.t || 0) < 28000);
+  const row = presenceMap[presenceId(id)] || presenceMap[id];
+  return !!(row && row.online && Date.now() - (row.t || 0) < 45000);
 }
 function inviteCoolKey(kind, id) {
   return String(kind) + ':' + String(id);
@@ -3851,8 +3866,8 @@ function formatLastOnline(ts, now) {
   return 'Last online ' + days + ' day' + (days === 1 ? '' : 's') + ' ago';
 }
 function friendLastSeen(id) {
-  const row = presenceMap[id];
-  const friend = (state.friends || []).find((f) => f.id === id);
+  const row = presenceMap[presenceId(id)] || presenceMap[id];
+  const friend = (state.friends || []).find((f) => samePlayerId(f.id, id));
   const fromPresence = row && row.t ? Number(row.t) : 0;
   const fromFriend = friend && friend.lastSeen ? Number(friend.lastSeen) : 0;
   return Math.max(fromPresence, fromFriend) || 0;
@@ -3864,7 +3879,7 @@ function friendPresenceLine(f) {
 }
 function rememberFriendSeen(id, t, online) {
   const list = state.friends || [];
-  const idx = list.findIndex((f) => f.id === id);
+  const idx = list.findIndex((f) => samePlayerId(f.id, id));
   if (idx < 0) return;
   const at = Number(t || Date.now());
   const prev = Number(list[idx].lastSeen || 0);
@@ -3885,7 +3900,7 @@ function startFriendsPresenceTick() {
       return;
     }
     renderFriends();
-  }, 30000);
+  }, 4000);
 }
 function needsNameSetup() {
   return !state.profile.nameSet || !String(state.profile.name || '').trim() || !state.profile.id;
@@ -3893,7 +3908,20 @@ function needsNameSetup() {
 
 function publishLobby() {
   if (!session || !window.PalaceNet || !isLobbyHost()) return;
-  PalaceNet.lobbyPub(session.code, {
+  const snap = {
+    type: 'lobby',
+    code: session.code,
+    hostId: session.hostId,
+    cfg: session.cfg,
+    seats: session.seats,
+    started: !!session.started,
+  };
+  PalaceNet.lobbyPub(session.code, snap);
+  return snap;
+}
+function sendLobbySnapshot(toId) {
+  if (!session || !window.PalaceNet || !toId) return;
+  PalaceNet.inbox(toId, {
     type: 'lobby',
     code: session.code,
     hostId: session.hostId,
@@ -3901,6 +3929,21 @@ function publishLobby() {
     seats: session.seats,
     started: !!session.started,
   });
+}
+function stopLobbyPulse() {
+  if (lobbyPulseTimer) clearInterval(lobbyPulseTimer);
+  lobbyPulseTimer = 0;
+}
+function startLobbyPulse() {
+  stopLobbyPulse();
+  if (!session || !isLobbyHost()) return;
+  lobbyPulseTimer = setInterval(() => {
+    if (!session || session.started || !isLobbyHost()) {
+      stopLobbyPulse();
+      return;
+    }
+    publishLobby();
+  }, 2500);
 }
 function publishMatchSnap(force) {
   if (!match || !session || !window.PalaceNet || !isLobbyHost()) return;
@@ -3926,6 +3969,8 @@ function hideNameSetup() {
 }
 
 function leaveSession() {
+  stopLobbyPulse();
+  if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = 0; }
   if (session && window.PalaceNet) {
     if (session.started && match && !isLobbyHost()) {
       PalaceNet.matchPub(session.code, { type: 'drop', seat: match.humanSeat });
@@ -4069,19 +4114,29 @@ function openLobby(cfg) {
   document.getElementById('lobbyOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   if (window.PalaceNet) {
+    PalaceNet.resume();
     PalaceNet.watchLobby(session.code);
     publishLobby();
+    startLobbyPulse();
   }
   paintLobby();
 }
 
+function localPlayerSeated() {
+  return seatIndexForLocalPlayer(session && session.seats) >= 0;
+}
+
 function applyLobbyState(msg) {
   if (!msg || !session) return;
-  if (msg.code && msg.code !== session.code) return;
+  if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
   session.hostId = msg.hostId || session.hostId;
   session.cfg = msg.cfg || session.cfg;
   session.seats = Array.isArray(msg.seats) ? msg.seats : session.seats;
   session.started = !!msg.started;
+  if (localPlayerSeated() && joinRetryTimer) {
+    clearInterval(joinRetryTimer);
+    joinRetryTimer = 0;
+  }
   paintLobby();
 }
 
@@ -4093,6 +4148,10 @@ function joinLobby(code, opts) {
   }
   ensureProfileReady();
   closeMode();
+  hideJoin();
+  if (session && session.code && !sameLobbyCode(session.code, clean) && window.PalaceNet) {
+    PalaceNet.leaveRoom(session.code);
+  }
   session = {
     code: clean,
     hostId: '',
@@ -4103,19 +4162,39 @@ function joinLobby(code, opts) {
   document.getElementById('lobbyOverlay').style.display = 'flex';
   document.body.classList.add('overlay-open');
   paintLobby();
-  if (window.PalaceNet) {
+  if (window.PalaceNet) PalaceNet.resume();
+  const sendJoin = () => {
+    if (!window.PalaceNet || !session || !sameLobbyCode(session.code, clean)) return;
+    if (localPlayerSeated()) return;
     PalaceNet.watchLobby(clean);
-    PalaceNet.lobbyPub(clean, {
+    const payload = {
       type: 'join',
       id: state.profile.id,
       name: state.profile.name || 'Player',
-    });
-  }
+      code: clean,
+    };
+    PalaceNet.lobbyPub(clean, payload);
+    if (session.hostId) PalaceNet.inbox(session.hostId, payload);
+  };
+  sendJoin();
+  if (joinRetryTimer) clearInterval(joinRetryTimer);
+  let tries = 0;
+  joinRetryTimer = setInterval(() => {
+    if (!session || !sameLobbyCode(session.code, clean) || localPlayerSeated()) {
+      clearInterval(joinRetryTimer);
+      joinRetryTimer = 0;
+      return;
+    }
+    tries += 1;
+    if (tries === 12) showToast('Still looking for lobby ' + clean);
+    sendJoin();
+  }, 800);
   showToast((opts && opts.fromInvite) ? 'Joining lobby…' : 'Looking for lobby ' + clean);
 }
 
 function startLobbyMatch() {
   if (!session || !isLobbyHost()) return;
+  stopLobbyPulse();
   const cfg = session.cfg || {};
   const roster = (session.seats || []).map((seat, i) => {
     if (seat && seat.id && !seat.bot) return { name: seat.name, bot: false, id: seat.id };
@@ -4294,10 +4373,11 @@ function sendFriendRequest(query) {
 
 function handleNetMessage(msg) {
   if (!msg || !msg.type) return;
-  if (msg.type === 'presence' && msg.id) {
+  if (msg.type === 'presence' && (msg.id || msg.from)) {
     const at = Date.now();
-    presenceMap[msg.id] = { name: msg.name, online: !!msg.online, t: at };
-    rememberFriendSeen(msg.id, at, !!msg.online);
+    const id = presenceId(msg.id || msg.from);
+    presenceMap[id] = { name: msg.name, online: !!msg.online, t: at };
+    rememberFriendSeen(id, at, !!msg.online);
     renderFriends();
     if (session) paintLobby();
     return;
@@ -4335,13 +4415,15 @@ function handleNetMessage(msg) {
     return;
   }
   if (!session) return;
-  if (msg.type === 'lobby' && msg.code === session.code) {
+  if (msg.type === 'lobby' && session && sameLobbyCode(msg.code, session.code)) {
     applyLobbyState(msg);
     return;
   }
   if (msg.type === 'join' && isLobbyHost() && !session.started && msg.id) {
+    if (msg.code && session.code && !sameLobbyCode(msg.code, session.code)) return;
     if ((session.seats || []).some((s) => s && samePlayerId(s.id, msg.id))) {
       publishLobby();
+      sendLobbySnapshot(msg.id);
       return;
     }
     const open = session.seats.findIndex((s) => !s);
@@ -4352,6 +4434,7 @@ function handleNetMessage(msg) {
     session.seats[open] = { id: msg.id, name: msg.name || 'Player', bot: false };
     if (window.PalaceNet) PalaceNet.presenceOf(msg.id);
     publishLobby();
+    sendLobbySnapshot(msg.id);
     paintLobby();
     return;
   }
@@ -4361,7 +4444,7 @@ function handleNetMessage(msg) {
     paintLobby();
     return;
   }
-  if (msg.type === 'start' && msg.code === session.code && !isLobbyHost()) {
+  if (msg.type === 'start' && session && sameLobbyCode(msg.code, session.code) && !isLobbyHost()) {
     session.started = true;
     applyLobbyState(msg);
     if (window.PalaceNet) PalaceNet.watchMatch(session.code);
@@ -4390,6 +4473,20 @@ function handleNetMessage(msg) {
   }
 }
 
+function resumeNetSession() {
+  if (!window.PalaceNet) return;
+  PalaceNet.resume();
+  (state.friends || []).forEach((f) => { if (f.id) PalaceNet.presenceOf(f.id); });
+  if (session && session.code) {
+    PalaceNet.watchLobby(session.code);
+    if (isLobbyHost() && !session.started) {
+      publishLobby();
+      startLobbyPulse();
+    }
+    if (session.started) PalaceNet.watchMatch(session.code);
+  }
+}
+
 function bootNet() {
   if (!window.PalaceNet || !state.profile.id) return;
   PalaceNet.connect({ id: state.profile.id, name: state.profile.name || 'Player' });
@@ -4403,9 +4500,10 @@ function bootNet() {
     netBound = true;
     PalaceNet.on(handleNetMessage);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) PalaceNet.beat();
+      if (document.hidden) return;
+      resumeNetSession();
     });
-    window.addEventListener('pagehide', () => PalaceNet.disconnect());
+    window.addEventListener('pageshow', () => resumeNetSession());
   }
 }
 
@@ -4493,6 +4591,8 @@ window.openLobby = openLobby;
 window.openJoin = openJoin;
 window.joinLobby = joinLobby;
 window.startLobbyMatch = startLobbyMatch;
+window.publishLobby = publishLobby;
+window.resumeNetSession = resumeNetSession;
 window.__palaceSession = () => session;
 window.seatScreenPlace = seatScreenPlace;
 window.localHumanSeat = localHumanSeat;
