@@ -533,8 +533,11 @@
     50% { transform: translateY(-4px); }
   }
   .fly-card.drag-follow {
-    z-index: 380; transition: none; pointer-events: none;
+    z-index: 380; transition: none; pointer-events: none; overflow: visible;
     filter: drop-shadow(0 16px 22px rgba(0,0,0,0.48));
+  }
+  .fly-card.drag-follow .pcard {
+    position: absolute; margin: 0;
   }
   .pile-stack.drop-target {
     box-shadow: 0 0 0 3px #ffe14a, 0 0 16px 5px rgba(255,210,74,0.42);
@@ -2423,9 +2426,18 @@ function renderTable(opts) {
       hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap a face-down card' : 'Tap a face-down card') + '</div>';
     } else if (selectedIds.length > 0) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
-      const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
-      if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
-      else hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — flick or drag onto the pile' : 'Flick or drag onto the pile') + '</div>';
+      const copies = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank) : [];
+      const more = copies.length - selectedIds.length;
+      const auto = c0 && PalaceEngine.isAutoGroupedRank(c0.rank);
+      if (auto && copies.length > 1 && selectedIds.length === 1) {
+        hintHtml = '<div class="table-hint">Tap to select all ' + c0.rank + 's · flick or drag</div>';
+      } else if (auto && more > 0) {
+        hintHtml = '<div class="table-hint">Tap to drop one · flick or drag onto the pile</div>';
+      } else if (!auto && more > 0) {
+        hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
+      } else {
+        hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — flick or drag onto the pile' : 'Flick or drag onto the pile') + '</div>';
+      }
     } else {
       hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · flick or drag' : 'Tap to select · flick or drag onto the pile') + '</div>';
     }
@@ -2543,6 +2555,29 @@ function positionCarry(ev) {
   gesture.wrap.style.transform = 'translate(' + (ev.clientX - ox) + 'px, ' + (ev.clientY - oy) + 'px) rotate(-4deg) scale(1.16)';
 }
 
+function fillCarryClone(wrap, origin, ids, touchedId) {
+  const ordered = ids.slice();
+  const ti = ordered.indexOf(touchedId);
+  if (ti >= 0) {
+    ordered.splice(ti, 1);
+    ordered.push(touchedId);
+  }
+  ordered.forEach((id, i) => {
+    const src = playSourceEl(match ? match.humanSeat : 0, id);
+    if (!src) return;
+    const clone = src.cloneNode(true);
+    clone.classList.remove('peeking', 'lifted', 'dragging', 'ghost', 'selected', 'legal');
+    clone.style.position = 'absolute';
+    clone.style.left = (i * 6) + 'px';
+    clone.style.top = (-i * 5) + 'px';
+    clone.style.width = origin.width + 'px';
+    clone.style.height = origin.height + 'px';
+    clone.style.transform = 'none';
+    clone.style.zIndex = String(i + 1);
+    wrap.appendChild(clone);
+  });
+}
+
 function enterCarry(ev) {
   if (!gesture || gesture.carrying) return;
   if (!canActOnCards()) return;
@@ -2552,25 +2587,34 @@ function enterCarry(ev) {
   gesture.browseMoved = false;
   gesture.carrying = true;
   gesture.carryStartT = Date.now();
+  pruneSelectedIds();
+  selectedIds = PalaceEngine.ensureRankSelection(liveZoneCards(), selectedIds, gesture.id);
   if (gesture.el) gesture.origin = gesture.el.getBoundingClientRect();
   const origin = gesture.origin || { left: ev.clientX, top: ev.clientY, width: HAND_CARD_W, height: HAND_CARD_H };
   gesture.grabOffX = ev.clientX - origin.left;
   gesture.grabOffY = ev.clientY - origin.top;
-  if (gesture.el) gesture.el.classList.add('ghost');
   const layer = document.getElementById('flyLayer');
   if (!layer) return;
   const wrap = document.createElement('div');
   wrap.className = 'fly-card drag-follow';
   wrap.style.width = origin.width + 'px';
   wrap.style.height = origin.height + 'px';
-  wrap.innerHTML = gesture.el ? gesture.el.outerHTML : '';
-  const inner = wrap.firstElementChild;
-  if (inner) {
-    inner.classList.remove('peeking', 'lifted', 'dragging', 'ghost');
-    inner.style.width = '100%';
-    inner.style.height = '100%';
-    inner.style.transform = 'none';
+  fillCarryClone(wrap, origin, selectedIds, gesture.id);
+  if (!wrap.childElementCount && gesture.el) {
+    wrap.innerHTML = gesture.el.outerHTML;
+    const inner = wrap.firstElementChild;
+    if (inner) {
+      inner.classList.remove('peeking', 'lifted', 'dragging', 'ghost');
+      inner.style.width = '100%';
+      inner.style.height = '100%';
+      inner.style.transform = 'none';
+    }
   }
+  selectedIds.forEach((id) => {
+    const el = playSourceEl(match.humanSeat, id);
+    if (el) el.classList.add('ghost');
+  });
+  if (gesture.el) gesture.el.classList.add('ghost');
   layer.appendChild(wrap);
   gesture.wrap = wrap;
   positionCarry(ev);
@@ -2583,6 +2627,16 @@ function moveCarry(ev) {
   setPileDropCue(nearPile(ev.clientX, ev.clientY));
 }
 
+function unghostSelection(g) {
+  const ids = selectedIds.slice();
+  if (g && g.id && !ids.includes(g.id)) ids.push(g.id);
+  ids.forEach((id) => {
+    const el = playSourceEl(match ? match.humanSeat : 0, id);
+    if (el) el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+  });
+  if (g && g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+}
+
 function restoreCarriedCard(g) {
   setPileDropCue(false);
   if (g && g.wrap) {
@@ -2590,7 +2644,7 @@ function restoreCarriedCard(g) {
     g.wrap = null;
   }
   clearDragClone();
-  if (g && g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+  unghostSelection(g);
 }
 
 function dropCarry(g, clientX, clientY) {
@@ -2606,7 +2660,7 @@ function dropCarry(g, clientX, clientY) {
   }
   clearDragClone();
   if (!canActOnCards()) {
-    if (g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+    unghostSelection(g);
     return;
   }
   if (flick || onPile) {
@@ -2614,7 +2668,8 @@ function dropCarry(g, clientX, clientY) {
     playLiftedCard(g.id);
     return;
   }
-  if (g.el) g.el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+  unghostSelection(g);
+  renderTable();
 }
 
 let lastPointerTs = 0;
@@ -2798,30 +2853,16 @@ function playLiftedCard(id) {
     pendingFlyFrom = null;
     return;
   }
+  selectedIds = PalaceEngine.ensureRankSelection(cards, selectedIds, id);
   const legal = PalaceEngine.legalMoves(match, match.humanSeat).filter((m) => m.type === 'play');
   if (!legal.some((m) => m.rank === card.rank)) {
     pendingFlyFrom = null;
-    const el = document.querySelector('[data-id="' + id + '"]');
-    if (el) el.classList.remove('ghost', 'lifted', 'dragging', 'peeking');
+    unghostSelection({ id, el: playSourceEl(match.humanSeat, id) });
     showToast('That card does not beat the pile');
+    renderTable();
     return;
   }
-  selectedIds = selectedPlayIds(id);
   commitHumanPlay();
-}
-
-function selectedPlayIds(thrownId) {
-  pruneSelectedIds();
-  const cards = liveZoneCards();
-  const thrown = cards.find((c) => c.id === thrownId);
-  if (!thrown) return selectedIds.slice();
-  const first = cards.find((c) => c.id === selectedIds[0]);
-  if (selectedIds.length && first && first.rank === thrown.rank) {
-    const ids = selectedIds.slice();
-    if (!ids.includes(thrown.id)) ids.push(thrown.id);
-    return ids;
-  }
-  return [thrown.id];
 }
 
 function onHumanCardTap(id) {
@@ -2830,18 +2871,10 @@ function onHumanCardTap(id) {
   const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
-  if (!selectedIds.length) {
-    selectedIds = [id];
-  } else {
-    const first = cards.find((c) => c.id === selectedIds[0]);
-    if (first && first.rank === card.rank) {
-      if (selectedIds.includes(id)) selectedIds = selectedIds.filter((x) => x !== id);
-      else selectedIds.push(id);
-    } else {
-      selectedIds = [id];
-      showToast('Matching ranks play together');
-    }
-  }
+  const first = cards.find((c) => c.id === selectedIds[0]);
+  const switched = selectedIds.length && first && first.rank !== card.rank;
+  selectedIds = PalaceEngine.nextRankSelection(cards, selectedIds, id);
+  if (switched) showToast('Matching ranks play together');
   renderTable();
 }
 

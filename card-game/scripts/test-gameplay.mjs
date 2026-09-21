@@ -92,6 +92,22 @@ must(html.includes('Bonus — tap matching ranks'), 'a 5 bonus still lets you ta
 must(!html.includes('bonus && cards.length !== 1'), 'bonus play does not reject a same-rank group');
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
+must(!html.includes('function selectedPlayIds'), 'play consumes the current selection instead of rebuilding from the thrown card');
+must(html.includes('PalaceEngine.ensureRankSelection') && html.includes('PalaceEngine.nextRankSelection'), 'tap and carry share the same selection helpers');
+must(html.includes('function fillCarryClone') && html.includes('fillCarryClone(wrap, origin, selectedIds, gesture.id)'), 'carry clones every selected card as one unit');
+must(html.includes('selectedIds.forEach((id) => {') && html.includes("el.classList.add('ghost')"), 'carry ghosts the whole selection, not only the touched card');
+must(engineSrc.includes("GROUP_SPECIALS = { '2': true, '5': true, '10': true, A: true }"), '2/5/10/Ace are grouping-specials');
+{
+  const startAt = html.indexOf('function startCardPress');
+  const startFn = html.slice(startAt, html.indexOf('function finishCardGesture'));
+  must(startAt >= 0 && !startFn.includes('ensureRankSelection') && !startFn.includes('selectedIds'), 'press-and-hold does not populate selection');
+  const browseAt = html.indexOf('function enterBrowse');
+  const browseFn = html.slice(browseAt, html.indexOf('function positionCarry'));
+  must(browseAt >= 0 && !browseFn.includes('ensureRankSelection') && !browseFn.includes('selectedIds'), 'hold-then-slide preview does not share selection state');
+  const carryAt = html.indexOf('function enterCarry');
+  const carryFn = html.slice(carryAt, html.indexOf('function moveCarry'));
+  must(carryFn.includes('ensureRankSelection') && !carryFn.includes('isAutoGroupedRank('), 'carry pickup is rank-agnostic and consumes the current selection');
+}
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
 must(html.includes('humanFinishedMatch') && html.includes('shouldLeaveForRewards') && html.includes('settleIfDone'), 'going out settles the local client immediately');
 must(html.includes('remainingAreOnlyBots') && html.includes('are not spectated'), 'remaining bots are not spectated after a win');
@@ -765,6 +781,56 @@ must(E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Easy', 30), 'easy 3
 must(!E.isBuyInUnlocked({ medium: 0, hard: -1, expert: -1 }, 'Medium', 200), 'medium 200 starts locked');
 const unlocked = E.nextUnlocks({ medium: 0, hard: -1, expert: -1 }, 'Medium', 100, true);
 must(E.isBuyInUnlocked(unlocked, 'Medium', 200), 'winning medium 100 unlocks 200');
+
+const groupCards = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '4H', rank: '4', suit: 'H' },
+  { id: '4D', rank: '4', suit: 'D' },
+  { id: '4C', rank: '4', suit: 'C' },
+  { id: '5S', rank: '5', suit: 'S' },
+  { id: '5H', rank: '5', suit: 'H' },
+  { id: 'AH', rank: 'A', suit: 'H' },
+  { id: 'AS', rank: 'A', suit: 'S' },
+  { id: 'KS', rank: 'K', suit: 'S' },
+  { id: 'KH', rank: 'K', suit: 'H' },
+];
+must(E.isAutoGroupedRank('4') && E.isAutoGroupedRank('K') && E.isAutoGroupedRank('J'), 'regular ranks auto-group');
+must(!E.isAutoGroupedRank('2') && !E.isAutoGroupedRank('5') && !E.isAutoGroupedRank('10') && !E.isAutoGroupedRank('A'), '2/5/10/Ace are single-select by default');
+must(!E.isSpecial('A'), 'Ace is grouping-special only — engine specials stay 2/5/10');
+must(E.defaultRankSelection(groupCards, '4H').join(',') === '4S,4H,4D,4C', 'touching a regular rank selects every copy');
+must(E.defaultRankSelection(groupCards, '5H').join(',') === '5H', 'touching a special rank selects only that copy');
+must(E.defaultRankSelection(groupCards, 'AH').join(',') === 'AH', 'touching an Ace selects only that Ace');
+{
+  let sel = E.defaultRankSelection(groupCards, '4S');
+  must(sel.length === 4, 'four-of-a-kind starts at 4');
+  sel = E.nextRankSelection(groupCards, sel, '4S');
+  must(sel.join(',') === '4H,4D,4C', 'first tap drops the tapped copy');
+  sel = E.nextRankSelection(groupCards, sel, '4H');
+  must(sel.join(',') === '4D,4C', 'second tap drops one more');
+  sel = E.nextRankSelection(groupCards, sel, '4D');
+  must(sel.join(',') === '4C', 'third tap leaves one');
+  sel = E.nextRankSelection(groupCards, sel, '4C');
+  must(sel.join(',') === '4S,4H,4D,4C', 'tap at 1 wraps back to all copies');
+  sel = E.nextRankSelection(groupCards, sel, '4S');
+  must(sel.length === 3, 'the cycle repeats');
+}
+{
+  let sel = E.defaultRankSelection(groupCards, '5S');
+  must(sel.join(',') === '5S', 'two 5s start as one');
+  sel = E.nextRankSelection(groupCards, sel, '5H');
+  must(sel.join(',') === '5S,5H', 'tapping the other 5 adds it');
+  sel = E.nextRankSelection(groupCards, sel, '5H');
+  must(sel.join(',') === '5S', 'tapping an extra 5 can drop it back to one');
+  sel = E.nextRankSelection(groupCards, [], 'AH');
+  must(sel.join(',') === 'AH', 'empty Ace selection defaults to one');
+  sel = E.nextRankSelection(groupCards, sel, 'AS');
+  must(sel.join(',') === 'AH,AS', 'Aces build up one tap at a time');
+}
+must(E.ensureRankSelection(groupCards, ['4H', '4D'], '4S').join(',') === '4H,4D', 'carry keeps a pared same-rank selection');
+must(E.ensureRankSelection(groupCards, ['4H', '4D'], 'KS').join(',') === 'KS,KH', 'carry on a new regular rank starts a fresh auto-group');
+must(E.ensureRankSelection(groupCards, [], '4S').length === 4, 'empty carry auto-groups regulars');
+must(E.ensureRankSelection(groupCards, [], '5S').join(',') === '5S', 'empty carry on a special stays single');
+must(E.nextRankSelection(groupCards, ['4S', '4H', '4D', '4C'], '5S').join(',') === '5S', 'tapping a different rank replaces the selection');
 
 const auto = E.newMatch({ seats: 4, difficulty: 'Easy', rng: seededRng(99) });
 auto.players.forEach((p) => { p.isBot = true; });
