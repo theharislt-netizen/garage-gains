@@ -181,6 +181,10 @@ try {
   }
   console.log('after AFK', { turnBefore, moved, afterAfk, afkOk });
   must(moved, 'AFK timeout auto-played a card or advanced the turn');
+  await waitEval(guest, () => match && match.turn === 1 || (match && match.pile && match.pile.length), 8000);
+  afterAfk = await Promise.all([host.evaluate(turnView), guest.evaluate(turnView)]);
+  console.log('after AFK synced', afterAfk);
+  must(afterAfk[0].turn === afterAfk[1].turn, 'guest received the AFK play and shares the new turn');
   await host.screenshot({ path: join(artifacts, 'mp_afk_autoplay.png') });
 
   await host.evaluate(() => { if (typeof closeTable === 'function') closeTable(); else if (typeof requestLeaveMatch === 'function') requestLeaveMatch(); });
