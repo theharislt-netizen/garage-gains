@@ -101,9 +101,9 @@ The game is a four-player shedding game where every player keeps playing until t
 
 4th place never scales - it is always a flat total loss of the buy-in, regardless of how many cards that player was holding when the match ended.
 
-### Winner leaves immediately (resolved)
+### Finishing players leave immediately (resolved)
 
-The winner's own client leaves the match the instant they finish 1st. They go straight to a post-match rewards/summary screen showing 1st place and their coin payout (baseline pool share + speed bonus if they qualified). They do not stay in the match to spectate 2nd / 3rd / 4th. Remaining players keep playing on their own devices until only one player is left holding cards (the loser). Underlying match logic and payout math are unchanged - this is only the winner's client experience.
+Each player's own client leaves the match the instant they finish — 1st, 2nd, 3rd, or last. They go straight to a post-match rewards/summary screen showing their place and coin payout (baseline pool share + speed bonus if they qualified). They do not stay in the match to spectate remaining players. Remaining players keep playing on their own devices until only one player is left holding cards (the loser). Underlying match logic and payout math are unchanged - this is only that finishing player's client experience.
 
 ### Speed bonus (separate house-funded top-up, not a pool split)
 

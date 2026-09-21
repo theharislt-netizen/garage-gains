@@ -8,6 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const E = require(join(root, 'palace-engine.js'));
 const html = readFileSync(join(root, 'card-game.html'), 'utf8');
+const engineSrc = readFileSync(join(root, 'palace-engine.js'), 'utf8');
 const fails = [];
 function must(cond, msg) { if (!cond) fails.push(msg); }
 
@@ -39,12 +40,24 @@ must(html.includes('pc-rank') && html.includes('pc-suit'), 'card faces must rend
 must(html.includes('BOT_THINK_MIN') && html.includes('thinking'), 'bots wait with a thinking cue');
 must(html.includes('enterBrowse') && html.includes('updateBrowseTarget') && html.includes('SWIPE_UP_PX'), 'hold-browse and swipe-up play are separate gestures');
 must(html.includes('pcard.peeking') && html.includes('PEEK_MS'), 'press-and-hold peeks a card in place');
+must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it lifts for inspect');
+must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
+must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
+must(html.includes('margin-left: -16px') && html.includes('max-width: 96px'), 'east/west table piles use the old tucked Stage 2 overlap');
+must(html.includes('if (empty) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
+must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 'stage 2/3 stay closed without a match or while the stock remains');
+must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
+must(engineSrc.includes('const moves = legalMoves(match, seat);'), 'bot AI uses the same legalMoves list as the human player');
 must(!html.includes('function startCardDrag') && !html.includes('maybeBeginDrag'), 'holding a card does not start a drag clone');
 must(html.includes('if (g.browseMoved) return;'), 'releasing a hold inspects only — it does not select or play');
 must(html.includes('addEventListener(\'mousedown\', down)'), 'mouse fallback starts a press when pointer events are missing');
 must(html.includes('if (!match || match.ended || match.settled) return;'), 'hand inspect works during bot turns, not only on your turn');
 must(html.includes('handLayout') && html.includes('--overlap'), 'hand overlap tightens so a large hand still fits');
 must(html.includes('hideDrawPile') && html.includes('draw-stack.empty'), 'empty draw pile is removed after the last card flies');
+must(!html.includes('empty-pile'), 'empty discard pile does not render a placeholder card');
+must(html.includes('discardPileCardsHtml') && html.includes('playSourceEl'), 'pile paint only uses real cards and never ghosts the discard');
+must(html.includes('Bonus — tap a face-down card'), 'a 5 bonus at stage 3 asks you to pick a face-down slot');
+must(engineSrc.includes('if (player.isBot) pickupOneDownIfStageThree'), 'only bots auto-flip a face-down card on a 5 bonus');
 must(html.includes('drawEmpty ? \'\' : cardBackHtml()'), 'draw pile card-back is omitted when the stock is empty');
 must(!html.includes('dt < 320'), 'taps are not dropped after a 320ms hold window');
 must(html.includes('pruneSelectedIds') && html.includes('onHumanCardTap(g.id)'), 'a tap selects without auto-playing');
@@ -55,7 +68,9 @@ must(html.includes('sortHand(human.hand)'), 'the visible hand is sorted lowest t
 must(html.includes("ev.type === 'stageUp'") && html.includes('Face-up cards to hand'), 'stage-2 face-up scoop must animate into hand');
 must(html.includes('stageDown') && html.includes('Tap a face-down card') && html.includes('Face-down card to hand'), 'stage-3 face-down cards must be tappable into hand');
 must(html.includes('#humanTableCards') && html.includes('pointer-events: none'), 'empty hand overlay must not swallow table-card taps');
-must(html.includes('selectedPlayIds') && html.includes('Tap matching'), 'matching ranks can be selected together before Play');
+must(html.includes('legalRanks.has(c.rank)'), 'every copy of a playable rank glows, not only the first grouped id');
+must(html.includes('Bonus — tap matching ranks'), 'a 5 bonus still lets you tap a full matching-rank group');
+must(!html.includes('bonus && cards.length !== 1'), 'bonus play does not reject a same-rank group');
 must(html.includes('Matching ranks play together'), 'different-rank tap swaps selection with a match cue');
 must(html.includes('Promise.all(ev.cards.map'), 'a matching set flies to the pile together');
 must(html.includes('humanWonMatch') && html.includes('leaveMatchView') && html.includes('rewards-open') && html.includes('Baseline share'), '1st place leaves the table for a full-screen rewards summary');
@@ -74,7 +89,11 @@ must(html.includes('playBtnHtml') && html.includes('hintHtml') && html.includes(
 must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in the table template');
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
 must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
-must(html.includes("cardFaceHtml(c, 'tiny')"), 'opponent face-up cards use the same tiny card size as the player table row');
+must(html.includes('function tableSlotsHtml') && html.includes('seat-row table-slots') && html.includes('slot-up') && html.includes('slot-down'), 'stage 2 sits on stage 3 in 3 stacked slots');
+must(html.includes("id=\"tableSlots-") || html.includes("id=\"tableSlots-'"), 'every opponent seat gets its own table-slot row');
+must(html.includes('.table-slot.has-up .slot-down'), 'a cleared face-up slot reveals the face-down card underneath');
+must(html.includes('tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks })'), 'every seat, not only the human, renders stacked table piles');
+must(!html.includes("p.up.map((c) => cardFaceHtml(c, 'tiny'))"), 'opponents are not a face-up-only spread row');
 must(html.includes('palace-lobby.js') && html.includes('id="lobbyOverlay"') && html.includes('id="joinOverlay"'), 'pre-match lobby and join session overlays required');
 must(html.includes('id="joinSessionBtn"') && html.includes('Play with Friends'), 'Home has a Play with Friends / Join Session entry');
 must(html.includes('function openLobby') && html.includes('startFromLobby') && html.includes('Open lobby'), 'Start opens a lobby instead of launching the table');
@@ -191,8 +210,14 @@ must(five.phase === 'bonus', '5 enters bonus play');
 must(five.turn === 0, '5 keeps the turn for bonus');
 must(five.players[0].hand.length >= 2, '5 keeps a 2-card floor for bonus');
 const bonusMoves = E.legalMoves(five, 0);
-must(bonusMoves.every((mv) => mv.count === 1), 'bonus is a single card');
-must(bonusMoves.length >= 1, 'bonus has at least one card');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 1 && mv.cardIds.includes('4S')), 'bonus can play a single 4');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 1 && mv.cardIds.includes('4C')), 'every copy of a playable rank is legal on bonus, not only the first');
+must(bonusMoves.some((mv) => mv.rank === '4' && mv.count === 2), 'bonus can play both 4s together as one play');
+const evBonusPair = E.applyMove(five, { type: 'play', seat: 0, cardIds: ['4S', '4C'], zone: 'hand' });
+must(evBonusPair.some((e) => e.type === 'play' && e.bonus && e.cards.length === 2), 'both 4s leave as one bonus play');
+must(five.players[0].hand.every((c) => c.rank !== '4'), 'both bonus 4s are gone from hand');
+must(five.phase === 'playing', 'a non-5 bonus group ends the 5 chain');
+must(five.turn === 1, 'turn passes after the grouped bonus play');
 
 const chain = E.newMatch({ seats: 2, rng: seededRng(31) });
 chain.pile = [{ id: 'QH', rank: 'Q', suit: 'H' }];
@@ -420,6 +445,35 @@ E.syncSeat(earlyUp, earlyUp.players[0]);
 must(earlyUp.players[0].hand.length === 2, 'syncSeat draws back up to 2 from stock');
 must(earlyUp.players[0].up.length === 3, 'syncSeat does not scoop face-up cards while stock remains');
 
+const botEarly = E.newMatch({ seats: 2, rng: seededRng(19), humanSeat: 0 });
+botEarly.turn = 1;
+botEarly.phase = 'playing';
+botEarly.pile = [{ id: '3C', rank: '3', suit: 'C' }];
+botEarly.draw = [
+  { id: '2C', rank: '2', suit: 'C' },
+  { id: '6D', rank: '6', suit: 'D' },
+  { id: '7H', rank: '7', suit: 'H' },
+];
+botEarly.players[1].hand = [];
+botEarly.players[1].up = [
+  { id: 'KH', rank: 'K', suit: 'H' },
+  { id: '9D', rank: '9', suit: 'D' },
+  { id: '8S', rank: '8', suit: 'S' },
+];
+botEarly.players[1].down = [
+  { id: '4C', rank: '4', suit: 'C' },
+  { id: 'JS', rank: 'J', suit: 'S' },
+  { id: 'QD', rank: 'Q', suit: 'D' },
+];
+const botEarlyMove = E.chooseBotMove(botEarly, botEarly.players[1], seededRng(21));
+must(botEarly.players[1].hand.length === 2, 'a bot with an empty hand draws from stock before table stages');
+must(botEarly.players[1].up.length === 3 && botEarly.players[1].down.length === 3, 'bot Stage 2/3 cards stay on the table while the stock remains');
+must(botEarlyMove && botEarlyMove.zone !== 'up' && botEarlyMove.type !== 'flip', 'bot AI cannot play Stage 2/3 while the draw pile remains');
+must(!E.tableStagesOpen(botEarly, botEarly.players[1]), 'shared tableStagesOpen is false for that bot');
+const stealBotUp = E.applyMove(botEarly, { type: 'play', seat: 1, cardIds: ['KH'], zone: 'up' });
+must(!stealBotUp.some((e) => e.type === 'play'), 'applyMove rejects a bot Stage 2 play while the stock remains');
+must(botEarly.players[1].up.some((c) => c.id === 'KH'), 'the bot face-up king stays on the table');
+
 const fiveEdge = E.newMatch({ seats: 2, rng: seededRng(10) });
 fiveEdge.draw = [];
 fiveEdge.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
@@ -440,9 +494,38 @@ must(fiveEdge.players[0].hand.length === 3, '5-at-boundary hand is the 3 scooped
 must(fiveEdge.phase === 'bonus', '5 at the stage-2 boundary still grants bonus play');
 must(fiveEdge.turn === 0, '5 at the stage-2 boundary keeps the turn');
 const fiveBonus = E.legalMoves(fiveEdge, 0);
-must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone === 'hand' && m.count === 1), 'bonus is chosen from the scooped hand, not the table');
+must(fiveBonus.length >= 1 && fiveBonus.every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is chosen from the scooped hand, not the table');
 must(fiveBonus.some((m) => m.cardIds.includes('3S')), 'bonus can pick a scooped face-up card');
 must(!evFiveEdge.some((e) => e.type === 'draw'), 'empty draw pile does not draw before the scooped bonus');
+
+const fivePairEdge = E.newMatch({ seats: 2, rng: seededRng(16) });
+fivePairEdge.draw = [];
+fivePairEdge.pile = [{ id: 'KH', rank: 'K', suit: 'H' }];
+fivePairEdge.turn = 0;
+fivePairEdge.phase = 'playing';
+fivePairEdge.players[0].hand = [{ id: '5D', rank: '5', suit: 'D' }];
+fivePairEdge.players[0].up = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '4H', rank: '4', suit: 'H' },
+  { id: 'QD', rank: 'Q', suit: 'D' },
+];
+fivePairEdge.players[0].down = [
+  { id: '3S', rank: '3', suit: 'S' },
+  { id: '8H', rank: '8', suit: 'H' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+const evFivePairEdge = E.applyMove(fivePairEdge, { type: 'play', seat: 0, cardIds: ['5D'], zone: 'hand' });
+must(evFivePairEdge.some((e) => e.type === 'stageUp'), 'playing the last hand 5 scoops Stage 2 into hand');
+must(fivePairEdge.phase === 'bonus', 'the last Stage 1 5 still grants bonus play');
+must(fivePairEdge.players[0].hand.map((c) => c.rank).sort().join() === '4,4,Q', 'bonus hand is the three scooped face-up cards');
+const pairBonus = E.legalMoves(fivePairEdge, 0);
+must(pairBonus.some((m) => m.rank === '4' && m.count === 1 && m.cardIds.includes('4S')), 'each scooped 4 is legal on the Stage 1→2 bonus');
+must(pairBonus.some((m) => m.rank === '4' && m.count === 1 && m.cardIds.includes('4H')), 'the other scooped 4 is also legal on that bonus');
+must(pairBonus.some((m) => m.rank === '4' && m.count === 2), 'the Stage 1→2 bonus can play both matching 4s together');
+const evPairBonus = E.applyMove(fivePairEdge, { type: 'play', seat: 0, cardIds: ['4S', '4H'], zone: 'hand' });
+must(evPairBonus.some((e) => e.type === 'play' && e.bonus && e.cards.length === 2), 'both scooped 4s leave as one bonus play');
+must(fivePairEdge.players[0].hand.every((c) => c.rank !== '4'), 'both bonus 4s are gone after the Stage 1→2 group');
+must(fivePairEdge.phase === 'playing', 'a non-5 group ends the bonus after the Stage 1→2 scoop');
 
 const stage3 = E.newMatch({ seats: 2, rng: seededRng(13) });
 stage3.draw = [];
@@ -480,11 +563,37 @@ fiveDown.players[0].down = [
   { id: 'JC', rank: 'J', suit: 'C' },
 ];
 const evFiveDown = E.applyMove(fiveDown, { type: 'play', seat: 0, cardIds: ['5C'], zone: 'hand' });
-must(evFiveDown.some((e) => e.type === 'stageDown'), '5 at stage 3 auto-places one face-down card into hand');
-must(fiveDown.players[0].hand.length === 1, 'exactly one face-down card is placed for the 5 bonus');
-must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
+must(!evFiveDown.some((e) => e.type === 'stageDown'), 'a human 5 at stage 3 does not auto-flip a face-down card');
+must(fiveDown.players[0].hand.length === 0, 'the hand stays empty so the player can choose a slot');
+must(fiveDown.players[0].down.length === 3, 'all three face-down cards stay until a slot is chosen');
 must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, '5 at stage 3 still grants bonus play');
-must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is played from the revealed hand card');
+const bonusFlips = E.legalMoves(fiveDown, 0);
+must(bonusFlips.filter((m) => m.type === 'flip').length === 3, 'the bonus is choosing which face-down slot to flip');
+must(!bonusFlips.some((m) => m.type === 'pickup'), 'bonus play cannot take the pile');
+const evPickDown = E.applyMove(fiveDown, { type: 'flip', seat: 0, index: 2 });
+must(evPickDown.some((e) => e.type === 'stageDown' && e.card && e.card.id === 'JC'), 'the chosen face-down slot is the one revealed');
+must(fiveDown.players[0].hand.map((c) => c.id).join() === 'JC', 'only the chosen face-down card enters the hand');
+must(fiveDown.players[0].down.length === 2, 'the other two face-down cards stay put');
+must(fiveDown.phase === 'bonus' && fiveDown.turn === 0, 'after the chosen flip, the bonus play is the revealed card');
+must(E.legalMoves(fiveDown, 0).every((m) => m.type === 'play' && m.zone === 'hand'), 'bonus is then played from the revealed hand card');
+
+const botFiveDown = E.newMatch({ seats: 2, rng: seededRng(15) });
+botFiveDown.draw = [];
+botFiveDown.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];
+botFiveDown.turn = 0;
+botFiveDown.phase = 'playing';
+botFiveDown.players[0].isBot = true;
+botFiveDown.players[0].hand = [{ id: '5C', rank: '5', suit: 'C' }];
+botFiveDown.players[0].up = [];
+botFiveDown.players[0].down = [
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '9H', rank: '9', suit: 'H' },
+  { id: 'JC', rank: 'J', suit: 'C' },
+];
+const evBotFiveDown = E.applyMove(botFiveDown, { type: 'play', seat: 0, cardIds: ['5C'], zone: 'hand' });
+must(evBotFiveDown.some((e) => e.type === 'stageDown'), 'bots still auto-place one face-down card for a 5 bonus');
+must(botFiveDown.players[0].hand.length === 1, 'the bot bonus hand is the auto-flipped card');
+must(botFiveDown.phase === 'bonus', 'the bot still gets the 5 bonus play');
 
 const stuck = E.newMatch({ seats: 2, rng: seededRng(5) });
 stuck.pile = [{ id: 'AS', rank: 'A', suit: 'S' }];

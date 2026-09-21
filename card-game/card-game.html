@@ -235,6 +235,7 @@
     background: linear-gradient(180deg, #fffdf8, #efe6d6);
     box-shadow: 0 6px 12px rgba(0,0,0,0.35), inset 0 0 0 2px #1b1524;
     color: #1b1524; flex-shrink: 0; user-select: none;
+    -webkit-user-select: none; -webkit-touch-callout: none;
   }
   .pcard.red { color: #c62828; }
   .pcard .pc-corner {
@@ -278,7 +279,6 @@
     box-shadow: 0 0 0 2px #163056;
   }
   .pcard.tiny.back .pc-back-inner, .pcard.mini.back .pc-back-inner { inset: 2px; border-width: 1px; box-shadow: inset 0 0 0 1px #163056; }
-  .pcard.back.empty-pile { opacity: 0.28; }
   .pile-count {
     position: absolute; right: -6px; bottom: -6px; z-index: 2;
     min-width: 22px; height: 22px; padding: 0 6px;
@@ -412,7 +412,7 @@
   #tableWindow {
     position: fixed; inset: 0; z-index: 280; display: none; flex-direction: column;
     background: #071910;
-    overflow: hidden;
+    overflow: hidden; touch-action: none; overscroll-behavior: none;
   }
   #tableWindow.show { display: flex; }
   .table-topbar {
@@ -648,6 +648,7 @@
   }
   .table-felt {
     flex: 1; position: relative; min-height: 0; overflow: hidden;
+    touch-action: none; overscroll-behavior: none;
     background:
       radial-gradient(ellipse 68% 52% at 50% 46%, rgba(86, 168, 112, 0.5) 0%, transparent 64%),
       radial-gradient(ellipse 125% 95% at 50% 50%, transparent 40%, rgba(4, 16, 10, 0.7) 100%),
@@ -699,9 +700,6 @@
   .seat.east, .seat.west { max-width: 46%; }
   .seat.east { align-items: flex-end; }
   .seat.west { align-items: flex-start; }
-  .seat.east .seat-row, .seat.west .seat-row { flex-wrap: nowrap; justify-content: center; gap: 0; max-width: 96px; }
-  .seat.east .seat-row .pcard, .seat.west .seat-row .pcard { margin-left: -16px; }
-  .seat.east .seat-row .pcard:first-child, .seat.west .seat-row .pcard:first-child { margin-left: 0; }
   .seat-name {
     font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
     background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 100px; color: #f7efe0;
@@ -709,19 +707,53 @@
   }
   .seat.active .seat-name { background: var(--gain); color: #120c18; }
   .seat-row { display: flex; gap: 6px; justify-content: center; }
+  .table-slots {
+    display: flex; align-items: flex-end; justify-content: center; gap: 6px;
+    overflow: visible; pointer-events: none;
+  }
+  .table-slot {
+    position: relative; width: 40px; height: 58px; flex: 0 0 40px;
+    pointer-events: none;
+  }
+  .table-slot .pcard {
+    position: absolute; left: 0; top: 0; margin: 0;
+    pointer-events: auto;
+  }
+  .table-slot .slot-down {
+    top: 0; left: 0; z-index: 1;
+  }
+  .table-slot.has-up .slot-down {
+    pointer-events: none;
+  }
+  .table-slot .slot-up {
+    top: 0; left: 0; z-index: 2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+  /* Same tucked Stage-2 row as before; Stage 3 sits fully underneath. */
+  .seat.north .table-slots { margin-top: -14px; }
+  .seat.east .table-slots, .seat.west .table-slots {
+    gap: 0; max-width: 96px; margin-top: -8px;
+  }
+  .seat.east .table-slot, .seat.west .table-slot { margin-left: -16px; }
+  .seat.east .table-slot:first-child, .seat.west .table-slot:first-child { margin-left: 0; }
+  .seat:not(.south) .table-slot .pcard { pointer-events: none; }
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
-    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
-    padding: 0 8px 6px; touch-action: none; pointer-events: none;
+    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 8;
+    padding: 0 8px 6px; touch-action: none; pointer-events: none; overflow: visible;
     --overlap: 16px;
+    -webkit-user-select: none;
   }
   .human-hand .pcard {
     margin-left: calc(-1 * var(--overlap, 16px)); cursor: grab; z-index: var(--z, 1); pointer-events: auto;
     transition: transform 0.16s ease; transform-origin: bottom center;
-    transform: rotate(var(--fan, 0deg));
+    transform: rotate(var(--fan, 0deg)); touch-action: none;
+    -webkit-user-select: none; -webkit-touch-callout: none;
   }
-  #humanTableCards { position: relative; z-index: 7; }
+  #humanTableCards { position: relative; z-index: 7; pointer-events: none; }
+  #humanTableCards .pcard { pointer-events: auto; }
   #humanTableCards .pcard.back.legal { cursor: pointer; }
+  #humanTableCards .table-slot.has-up .slot-down { pointer-events: none; }
   .human-hand .pcard:first-child { margin-left: 0; }
   .human-hand .pcard.selected { transform: translateY(-16px) scale(1.06) rotate(var(--fan, 0deg)); }
   .human-hand .pcard.peeking, .human-hand .pcard.selected.peeking {
@@ -1822,7 +1854,7 @@ function closeProfile() {
 const PLAY_FLY_MS = 260;
 const PLAY_LAND_MS = 100;
 const SPECIAL_PULSE_MS = 340;
-const PEEK_MS = 200;
+const PEEK_MS = 140;
 const DRAG_PX = 14;
 const SWIPE_UP_PX = 64;
 const HAND_CARD_W = 64;
@@ -2063,6 +2095,34 @@ function seatDestRect(seat) {
   return seatEl ? seatEl.getBoundingClientRect() : pileRect();
 }
 
+function hideSeatFaceUps(seat) {
+  document.querySelectorAll('#seat-' + seat + ' .slot-up').forEach((el) => el.classList.add('ghost'));
+}
+
+function paintSeatTable(seat) {
+  if (!match || !match.players[seat]) return;
+  const p = match.players[seat];
+  const seatEl = document.getElementById('seat-' + seat);
+  if (!seatEl) return;
+  const isHuman = seat === match.humanSeat;
+  const human = match.players[match.humanSeat];
+  const zone = PalaceEngine.activeZone(human, match);
+  const html = tableSlotsHtml(p, {
+    isHuman,
+    zone,
+    active: match.turn === seat && !match.ended && !uiBusy,
+    legalIds: new Set(),
+    legalRanks: new Set(),
+  });
+  const existing = seatEl.querySelector('.table-slots');
+  if (existing) {
+    if (html) existing.outerHTML = html;
+    else existing.remove();
+  } else if (html) {
+    seatEl.insertAdjacentHTML('beforeend', html);
+  }
+}
+
 function updateSeatHud(seat) {
   if (!match || !match.players[seat]) return;
   const p = match.players[seat];
@@ -2080,6 +2140,8 @@ function updateSeatHud(seat) {
     badge.remove();
   }
   if (seat !== match.humanSeat) setFanCount(seat, p.hand.length);
+  if (!p.up.length) hideSeatFaceUps(seat);
+  paintSeatTable(seat);
 }
 
 function flyArc(fromRect, toRect, html, opts) {
@@ -2148,14 +2210,18 @@ function flyArc(fromRect, toRect, html, opts) {
   });
 }
 
-function paintDiscardPile(landedId) {
+function discardPileCardsHtml(cards, landedId) {
+  const shown = cards && cards.length ? cards : [];
+  return shown.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
+    + '<div class="accept-ripple" id="acceptRipple"></div>';
+}
+
+function paintDiscardPile(playedCards, landedId) {
   const stack = document.getElementById('discardPile');
-  if (!stack || !match) return;
-  const pileCards = match.pile.slice(-3);
-  const ripple = '<div class="accept-ripple" id="acceptRipple"></div>';
-  stack.innerHTML = (pileCards.length
-    ? pileCards.map((c) => cardFaceHtml(c, c.id === landedId ? 'just-landed' : '')).join('')
-    : cardBackHtml('empty-pile')) + ripple;
+  if (!stack) return;
+  const fromMatch = match && match.pile.length ? match.pile.slice(-3) : [];
+  const shown = fromMatch.length ? fromMatch : (playedCards && playedCards.length ? playedCards.slice(-3) : []);
+  stack.innerHTML = discardPileCardsHtml(shown, landedId);
 }
 
 function fireSpecialPulse(kind) {
@@ -2167,9 +2233,16 @@ function fireSpecialPulse(kind) {
   return sleep(SPECIAL_PULSE_MS);
 }
 
+function playSourceEl(seat, id) {
+  if (!id) return null;
+  return document.querySelector('#humanHand [data-id="' + id + '"]')
+    || document.querySelector('#humanTableCards [data-id="' + id + '"]')
+    || document.querySelector('#seat-' + seat + ' [data-id="' + id + '"]');
+}
+
 function playOriginRect(seat, card) {
   if (card) {
-    const src = document.querySelector('[data-id="' + card.id + '"]');
+    const src = playSourceEl(seat, card.id);
     if (src) {
       const r = src.getBoundingClientRect();
       if (r.width >= 8 && r.height >= 8) return r;
@@ -2247,6 +2320,36 @@ function maybeBotEmote(seat) {
   showEmote(seat, e.icon);
 }
 
+function tableSlotsHtml(p, opts) {
+  const o = opts || {};
+  const n = PalaceEngine.TABLE_DOWN;
+  if (p.out || (!p.up.length && !p.down.length)) return '';
+  const legalIds = o.legalIds || new Set();
+  const legalRanks = o.legalRanks || new Set();
+  const slots = [];
+  for (let i = 0; i < n; i++) {
+    const up = p.up[i] || null;
+    const down = p.down[i] || null;
+    const empty = !up && !down;
+    if (empty) continue;
+    let downHtml = '';
+    let upHtml = '';
+    if (down) {
+      const canFlip = !!(o.isHuman && o.zone === 'down' && o.active && !uiBusy && !up);
+      downHtml = cardBackHtml('tiny slot-down' + (canFlip ? ' legal' : ''), 'down-' + i);
+    }
+    if (up) {
+      let extra = 'tiny slot-up';
+      if (o.isHuman && o.zone === 'up' && o.active && !uiBusy && (legalIds.has(up.id) || legalRanks.has(up.rank))) extra += ' legal';
+      if (o.isHuman && selectedIds.includes(up.id)) extra += ' selected';
+      upHtml = cardFaceHtml(up, extra);
+    }
+    slots.push(`<div class="table-slot${up ? ' has-up' : ''}${down ? ' has-down' : ''}" data-slot="${i}">${downHtml}${upHtml}</div>`);
+  }
+  const rowId = o.isHuman ? ' id="humanTableCards"' : ' id="tableSlots-' + p.seat + '"';
+  return `<div class="seat-row table-slots"${rowId}>${slots.join('')}</div>`;
+}
+
 function renderTable(opts) {
   if (!match) return;
   const felt = document.getElementById('tableFelt');
@@ -2258,7 +2361,11 @@ function renderTable(opts) {
   const legal = (!uiBusy && !dealing && match.turn === match.humanSeat && !match.ended)
     ? PalaceEngine.legalMoves(match, match.humanSeat) : [];
   const legalIds = new Set();
-  legal.filter((m) => m.type === 'play').forEach((m) => m.cardIds.forEach((id) => legalIds.add(id)));
+  const legalRanks = new Set();
+  legal.filter((m) => m.type === 'play').forEach((m) => {
+    m.cardIds.forEach((id) => legalIds.add(id));
+    if (m.rank) legalRanks.add(m.rank);
+  });
   const canPickup = legal.some((m) => m.type === 'pickup');
   const pileCards = match.pile.slice(-3);
   const seatsHtml = match.players.map((p) => {
@@ -2270,16 +2377,7 @@ function renderTable(opts) {
     const fanCount = dealing ? 0 : p.hand.length;
     const tableCards = dealing
       ? ''
-      : isHuman
-      ? `<div class="seat-row" id="humanTableCards">
-          ${p.up.map((c) => cardFaceHtml(c, 'tiny'
-            + (zone === 'up' && active && !uiBusy && legalIds.has(c.id) ? ' legal' : '')
-            + (selectedIds.includes(c.id) ? ' selected' : ''))).join('')}
-          ${p.down.map((c, i) => cardBackHtml('tiny' + (zone === 'down' && active && !uiBusy ? ' legal' : ''), 'down-' + i)).join('')}
-        </div>`
-      : `<div class="seat-row">
-          ${p.up.map((c) => cardFaceHtml(c, 'tiny')).join('')}
-        </div>`;
+      : tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks });
     const remainBadge = remain > 0 ? '<div class="count-badge">' + remain + '</div>' : '';
     return `<div class="seat ${place}${active ? ' active' : ''}${thinking ? ' thinking' : ''}" id="seat-${p.seat}" data-seat="${p.seat}">
       <div class="seat-id">
@@ -2305,7 +2403,7 @@ function renderTable(opts) {
   const layout = handLayout(handN);
   const handHtml = dealing ? '' : handCards.map((c, i) => {
     const sel = selectedIds.includes(c.id) ? ' selected' : '';
-    const lg = legalIds.has(c.id) ? ' legal' : '';
+    const lg = (legalIds.has(c.id) || legalRanks.has(c.rank)) ? ' legal' : '';
     const fan = handN <= 1 ? 0 : (-layout.spread / 2 + layout.spread * i / Math.max(1, handN - 1));
     const html = cardFaceHtml(c, sel + lg);
     return html.replace('class="pcard', `style="--fan:${fan}deg;--z:${i + 1}" class="pcard`);
@@ -2323,17 +2421,15 @@ function renderTable(opts) {
     : '';
   let hintHtml = '';
   if (!dealing && match.turn === match.humanSeat) {
-    if (match.phase === 'bonus') {
-      hintHtml = '<div class="table-hint">Bonus card — any rank</div>';
-    } else if (zone === 'down') {
-      hintHtml = '<div class="table-hint">Tap a face-down card</div>';
+    if (zone === 'down') {
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap a face-down card' : 'Tap a face-down card') + '</div>';
     } else if (selectedIds.length > 0) {
       const c0 = human.hand.concat(human.up).find((c) => c.id === selectedIds[0]);
       const more = c0 ? human.hand.concat(human.up).filter((c) => c.rank === c0.rank).length - selectedIds.length : 0;
       if (more > 0) hintHtml = '<div class="table-hint">Tap matching ' + c0.rank + 's to add</div>';
-      else hintHtml = '<div class="table-hint">Swipe up to play</div>';
+      else hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — swipe up to play' : 'Swipe up to play') + '</div>';
     } else {
-      hintHtml = '<div class="table-hint">Tap to select · swipe up to play</div>';
+      hintHtml = '<div class="table-hint">' + (match.phase === 'bonus' ? 'Bonus — tap matching ranks · swipe up' : 'Tap to select · swipe up to play') + '</div>';
     }
   }
   felt.innerHTML = `
@@ -2341,11 +2437,7 @@ function renderTable(opts) {
     ${seatsHtml}
     <div class="table-center">
       <div class="draw-stack${drawEmpty ? ' empty' : ''}" id="drawPile">${drawInner}</div>
-      <div class="pile-stack" id="discardPile">${
-        pileCards.length
-          ? pileCards.map((c) => cardFaceHtml(c, '')).join('')
-          : cardBackHtml('empty-pile')
-      }<div class="accept-ripple" id="acceptRipple"></div></div>
+      <div class="pile-stack" id="discardPile">${discardPileCardsHtml(pileCards)}</div>
     </div>
     <div class="human-hand" id="humanHand" style="--overlap:${layout.overlap}px">${handHtml}</div>
     <div class="table-actions">${playBtnHtml}${pickupBtnHtml}${hintHtml}</div>`;
@@ -2382,20 +2474,21 @@ function clearPeeking() {
   document.querySelectorAll('.pcard.peeking').forEach((el) => el.classList.remove('peeking'));
 }
 
-function cardAtPoint(x, y, from) {
+function cardAtPoint(x, y, from, opts) {
   const root = from === 'up'
     ? document.getElementById('humanTableCards')
     : document.getElementById('humanHand');
   if (!root) return null;
   const cards = [...root.querySelectorAll('.pcard')];
+  const ignoreY = !!(opts && opts.ignoreY);
   let best = null;
   let bestDist = Infinity;
   cards.forEach((el) => {
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    if (y < r.top - 48 || y > r.bottom + 28) return;
-    const dist = Math.abs(x - cx) + Math.abs(y - cy) * 0.25;
+    if (!ignoreY && (y < r.top - 56 || y > r.bottom + 96)) return;
+    const dist = ignoreY ? Math.abs(x - cx) : Math.abs(x - cx) + Math.abs(y - cy) * 0.25;
     if (dist < bestDist) {
       bestDist = dist;
       best = el;
@@ -2430,13 +2523,14 @@ function updateBrowseTarget(ev) {
   if (!gesture) return;
   const dx = ev.clientX - gesture.startX;
   if (Math.abs(dx) >= DRAG_PX) gesture.browseMoved = true;
-  const hit = cardAtPoint(ev.clientX, ev.clientY, gesture.from);
+  const hit = cardAtPoint(ev.clientX, ev.clientY, gesture.from, { ignoreY: true });
   clearPeeking();
-  if (!hit) return;
-  if (gesture.id && hit.dataset.id !== gesture.id) gesture.browseMoved = true;
-  hit.classList.add('peeking');
-  gesture.el = hit;
-  gesture.id = hit.dataset.id;
+  const use = hit || gesture.el;
+  if (!use) return;
+  if (gesture.id && use.dataset.id !== gesture.id) gesture.browseMoved = true;
+  use.classList.add('peeking');
+  gesture.el = use;
+  gesture.id = use.dataset.id;
 }
 
 let lastPointerTs = 0;
@@ -2453,6 +2547,7 @@ function ensureDragListeners() {
   const move = (ev) => {
     if (!gesture) return;
     if (isMouseEcho(ev)) return;
+    if (ev.cancelable) ev.preventDefault();
     notePointer(ev);
     gesture.lastX = ev.clientX;
     gesture.lastY = ev.clientY;
@@ -2483,11 +2578,18 @@ function ensureDragListeners() {
     notePointer(ev);
     finishCardGesture(ev);
   };
-  document.addEventListener('pointermove', move);
+  document.addEventListener('pointermove', move, { passive: false });
   document.addEventListener('pointerup', end);
   document.addEventListener('pointercancel', end);
-  document.addEventListener('mousemove', move);
+  document.addEventListener('mousemove', move, { passive: false });
   document.addEventListener('mouseup', end);
+  document.addEventListener('touchmove', (ev) => {
+    if (!gesture) return;
+    if (ev.cancelable) ev.preventDefault();
+    const t = ev.touches[0] || ev.changedTouches[0];
+    if (!t) return;
+    move({ clientX: t.clientX, clientY: t.clientY, pointerType: 'touch', cancelable: false });
+  }, { passive: false });
 }
 
 function startCardPress(el, ev, from) {
@@ -2551,13 +2653,14 @@ function bindTableGestures(zone) {
   if (hand) {
     hand.querySelectorAll('.pcard').forEach((el) => bindCardGesture(el, 'hand'));
   }
-  document.querySelectorAll('#humanTableCards .pcard.tiny').forEach((el) => {
+  document.querySelectorAll('#humanTableCards .slot-up').forEach((el) => {
     if (zone === 'up' && el.dataset.id) bindCardGesture(el, 'up');
   });
-  document.querySelectorAll('#humanTableCards .pcard.back[data-id^="down"]').forEach((el) => {
+  document.querySelectorAll('#humanTableCards .slot-down[data-id^="down"]').forEach((el) => {
     el.addEventListener('pointerdown', (ev) => {
       if (!canActOnCards()) return;
       if (PalaceEngine.activeZone(match.players[match.humanSeat], match) !== 'down') return;
+      if (el.closest('.table-slot.has-up')) return;
       ev.preventDefault();
       ev.stopPropagation();
       onHumanFlip(Number((el.dataset.id || 'down-0').split('-')[1]));
@@ -2606,7 +2709,6 @@ function selectedPlayIds(thrownId) {
   pruneSelectedIds();
   const cards = liveZoneCards();
   const thrown = cards.find((c) => c.id === thrownId);
-  if (match.phase === 'bonus') return thrown ? [thrown.id] : selectedIds.slice(0, 1);
   if (!thrown) return selectedIds.slice();
   const first = cards.find((c) => c.id === selectedIds[0]);
   if (selectedIds.length && first && first.rank === thrown.rank) {
@@ -2623,11 +2725,6 @@ function onHumanCardTap(id) {
   const cards = liveZoneCards();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
-  if (match.phase === 'bonus') {
-    selectedIds = selectedIds.includes(id) ? [] : [id];
-    renderTable();
-    return;
-  }
   if (!selectedIds.length) {
     selectedIds = [id];
   } else {
@@ -2668,13 +2765,17 @@ function stillThisMatch(token) {
 async function animateEvents(events) {
   if (!match) return;
   const token = matchToken;
+  events.forEach((ev) => {
+    if (ev.type === 'stageUp') hideSeatFaceUps(ev.seat);
+  });
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
     if (!stillThisMatch(token)) return;
     if (ev.type === 'play') {
       const dest = pileRect();
+      if (match.players[ev.seat] && !match.players[ev.seat].up.length) hideSeatFaceUps(ev.seat);
       await Promise.all(ev.cards.map((card, idx) => {
-        const src = document.querySelector('[data-id="' + card.id + '"]');
+        const src = playSourceEl(ev.seat, card.id);
         const from = playOriginRect(ev.seat, card);
         if (src) src.classList.add('ghost');
         pendingFlyFrom = null;
@@ -2688,7 +2789,7 @@ async function animateEvents(events) {
         });
       }));
       if (!stillThisMatch(token)) return;
-      paintDiscardPile(ev.cards[ev.cards.length - 1].id);
+      paintDiscardPile(ev.cards, ev.cards[ev.cards.length - 1].id);
       updateSeatHud(ev.seat);
       const pulse = specialPulseKind(ev.cards[ev.cards.length - 1], events, i);
       if (pulse) await fireSpecialPulse(pulse);
@@ -2710,22 +2811,23 @@ async function animateEvents(events) {
       if (stack) stack.classList.add('burn');
       playTone(180, 0.18);
       await sleep(560);
+      paintDiscardPile([]);
     } else if (ev.type === 'stageDown' || ev.type === 'flip') {
       const dest = seatDestRect(ev.seat);
       const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
-        || document.querySelector('#seat-' + ev.seat + ' .pcard.back.tiny');
+        || document.querySelector('#seat-' + ev.seat + ' .table-slot .slot-down');
       const from = src ? src.getBoundingClientRect() : dest;
       if (src) src.classList.add('ghost');
       const face = ev.card ? cardFaceHtml(ev.card) : cardBackHtml();
       await flyArc(from || dest, dest, face, { duration: 480, spin: 140, comet: false });
       updateSeatHud(ev.seat);
       playTone(400, 0.1);
+      renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
       /* Face-down card to hand — no pile-status text; animation is the cue */
     } else if (ev.type === 'stageUp') {
       const dest = seatDestRect(ev.seat);
       await Promise.all((ev.cards || []).map((card, i) => {
-        const src = document.querySelector('#seat-' + ev.seat + ' [data-id="' + card.id + '"]')
-          || document.querySelector('[data-id="' + card.id + '"]');
+        const src = playSourceEl(ev.seat, card.id);
         const from = src ? src.getBoundingClientRect() : dest;
         if (src) src.classList.add('ghost');
         return flyArc(from || dest, dest, cardFaceHtml(card), {
@@ -2737,6 +2839,7 @@ async function animateEvents(events) {
       }));
       updateSeatHud(ev.seat);
       playTone(400, 0.1);
+      renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
       /* Face-up cards to hand — no pile-status text; animation is the cue */
     } else if (ev.type === 'reset') {
       /* 5 bonus play / 2 pile reset — avatar ring + pulse, no center label */
