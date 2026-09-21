@@ -240,18 +240,22 @@ try {
 
   await host.evaluate(() => leaveSession());
   await guest.evaluate(() => leaveSession());
-  await sleep(800);
+  await sleep(1500);
+  await host.evaluate(() => resumeNetSession());
+  await guest.evaluate(() => resumeNetSession());
+  await sleep(500);
 
   await guest.evaluate(() => openLobby({ mode: 'standard', seats: 4, difficulty: 'Medium', buyIn: 100 }));
   const code2 = await guest.evaluate(() => (document.getElementById('lobbyCodeText') || {}).textContent.trim());
   await guest.evaluate((hid) => inviteFriendToLobby(hid), HOST_ID);
-  await host.waitForFunction(() => {
+  const hostInvite = await waitEval(host, () => {
     const el = document.getElementById('inviteBanner');
-    return !!(el && el.classList.contains('show') && /invited you/i.test(el.innerText || ''));
-  }, { timeout: 20000 });
-  const reverseCopy = await host.evaluate(() => (document.getElementById('inviteBanner') || {}).innerText || '');
-  console.log('host invite', reverseCopy.replace(/\s+/g, ' ').trim());
-  must(new RegExp(code2, 'i').test(reverseCopy), 'reverse invite carries the guest-hosted lobby code');
+    const text = (el && el.innerText) || '';
+    return el && el.classList.contains('show') && /invited you/i.test(text) ? text : '';
+  }, 30000);
+  console.log('host invite', String(hostInvite || '').replace(/\s+/g, ' ').trim());
+  must(hostInvite, 'host received the reverse lobby invite');
+  must(new RegExp(code2, 'i').test(String(hostInvite)), 'reverse invite carries the guest-hosted lobby code');
   await host.screenshot({ path: join(artifacts, 'mp_invite_received_host.png') });
   await host.evaluate(() => {
     const btn = document.getElementById('inviteAcceptBtn');
