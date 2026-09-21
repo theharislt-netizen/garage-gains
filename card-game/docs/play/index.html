@@ -693,7 +693,14 @@
   .seat-id {
     display: flex; flex-direction: column; align-items: center; gap: 5px;
   }
-  .seat.south { bottom: 138px; left: 50%; transform: translateX(-50%); }
+  /* 158px + safe-area keeps stacked Stage 2/3 above the 148px hand.
+     138px drops that row into the cards and they look oversized. */
+  .seat.south {
+    bottom: calc(158px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+  }
   .seat.north { top: 10px; left: 50%; transform: translateX(-50%); }
   .seat.east { right: 8px; top: 20%; }
   .seat.west { left: 8px; top: 20%; }
@@ -739,7 +746,7 @@
   .seat:not(.south) .table-slot .pcard { pointer-events: none; }
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
-    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 8;
+    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
     padding: 0 8px 6px; touch-action: none; pointer-events: none; overflow: visible;
     --overlap: 16px;
     -webkit-user-select: none;

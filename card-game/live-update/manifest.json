@@ -1,17 +1,19 @@
 {
-  "version": "0.1.0-g55cb85fd89",
-  "checksum": "5a68b304e35dfc40c39885d2f6268546b7d09285f37fa9efd07b32dd10da8166",
+  "version": "0.1.0-gade34d04d2",
+  "checksum": "27956e14b5d12e0b894b7eda2471d6e5ed551a82d7d7ce5da18b21650f4f3f13",
   "url": "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
   "urls": [
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/winner-kick-rewards-e78b/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/card-game-setup-e78b/card-game/live-update/www.zip",
     "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/palace-lobby-afk-web-b503/card-game/live-update/www.zip",
-    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/card-game/live-update/www.zip"
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/main/card-game/live-update/www.zip",
+    "https://raw.githubusercontent.com/theharislt-netizen/garage-gains/cursor/hand-stage-overlap-b503/card-game/live-update/www.zip"
   ],
   "refs": [
     "cursor/winner-kick-rewards-e78b",
     "cursor/card-game-setup-e78b",
     "cursor/palace-lobby-afk-web-b503",
-    "main"
+    "main",
+    "cursor/hand-stage-overlap-b503"
   ]
 }

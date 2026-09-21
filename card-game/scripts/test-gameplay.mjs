@@ -90,6 +90,9 @@ must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
 must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
 must(html.includes('function tableSlotsHtml') && html.includes('seat-row table-slots') && html.includes('slot-up') && html.includes('slot-down'), 'stage 2 sits on stage 3 in 3 stacked slots');
+must(html.includes('bottom: calc(158px + env(safe-area-inset-bottom))'), 'south Stage 2/3 row sits above the 148px hand, not inside it');
+must(/\.human-hand \{[\s\S]{0,280}z-index: 5/.test(html), 'hand paints under the south table row except when peeking');
+must(!/\.human-hand \{[\s\S]{0,280}z-index: 8/.test(html), 'hand z-index 8 covers Stage 2 and must not return');
 must(html.includes("id=\"tableSlots-") || html.includes("id=\"tableSlots-'"), 'every opponent seat gets its own table-slot row');
 must(html.includes('.table-slot.has-up .slot-down'), 'a cleared face-up slot reveals the face-down card underneath');
 must(html.includes('tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks })'), 'every seat, not only the human, renders stacked table piles');
