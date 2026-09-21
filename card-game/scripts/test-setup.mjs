@@ -55,6 +55,9 @@ must(html.includes('Starting balance') || html.includes('400'), 'starter coins (
 must(html.includes('function buildBackupPayload') || html.includes('window.buildBackupPayload'), 'backup payload must be exposed');
 must(html.includes('applyImportedBackupText'), 'import hook must be exposed');
 must(html.includes('showToast'), 'toast helper required');
+must(html.includes('function handleAppBack'), 'card-game.html owns Android back navigation');
+must(bridge.includes('handleAppBack') && bridge.includes("result === 'exit'"), 'native back button asks PALACE before exiting');
+must(!bridge.includes('canGoBack'), 'native back must not treat WebView history as the app stack');
 
 must(bridge.includes("STORE_KEY = 'palaceCards_v1'"), 'native-bridge must use palaceCards_v1');
 must(!bridge.includes('garageGains_v1'), 'native-bridge must not use garageGains_v1');

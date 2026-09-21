@@ -915,7 +915,8 @@
     overflow: hidden; padding: 0;
     display: none; flex-direction: column;
   }
-  #lobbyOverlay, #nameSetupOverlay, #joinOverlay { z-index: 270; }
+  #joinOverlay, #nameSetupOverlay { z-index: 270; }
+  #lobbyOverlay { z-index: 274; }
   .lobby-code {
     font-family: 'JetBrains Mono'; font-size: 22px; letter-spacing: 0.18em; text-align: center;
     padding: 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--panel);
@@ -1471,6 +1472,8 @@ let gesture = null;
 let pendingFlyFrom = null;
 let dragListenersBound = false;
 let session = null;
+let tabStack = [];
+let homeBackAt = 0;
 let presenceMap = {};
 let pendingFriendQuery = '';
 let netBound = false;
@@ -1566,7 +1569,11 @@ function syncHeaderHeight() {
 }
 window.syncHeaderHeight = syncHeaderHeight;
 
-function showView(id) {
+function showView(id, opts) {
+  if (!(opts && opts.fromBack)) {
+    if (id === 'home') tabStack = [];
+    else if (tabStack[tabStack.length - 1] !== id) tabStack.push(id);
+  }
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + id));
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === id));
   document.body.classList.toggle('on-home', id === 'home');
@@ -1577,6 +1584,118 @@ function showView(id) {
   if (id === 'friends') renderFriends();
   if (id === 'settings') renderSettings();
 }
+
+function currentViewId() {
+  const tab = document.querySelector('.tab.active');
+  return (tab && tab.dataset.view) || 'home';
+}
+
+function layerOpen(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  if (el.style.display === 'none') return false;
+  const s = getComputedStyle(el);
+  return s.display !== 'none' && s.visibility !== 'hidden';
+}
+
+function syncOverlayLock() {
+  const open = ['enchantWindow', 'craftWindow', 'profileOverlay', 'modeOverlay', 'lobbyOverlay', 'nameSetupOverlay', 'joinOverlay'].some(layerOpen);
+  document.body.classList.toggle('overlay-open', open || document.body.classList.contains('in-match'));
+}
+
+function requestLeaveMatch() {
+  if (match && !match.ended && !confirm('Leave this match?')) return false;
+  closeTable();
+  return true;
+}
+
+function handleAppBack() {
+  const invite = document.getElementById('inviteBanner');
+  if (invite && invite.classList.contains('show')) {
+    const decline = document.getElementById('inviteDeclineBtn');
+    if (decline) decline.click();
+    else invite.classList.remove('show');
+    return 'stay';
+  }
+  if (layerOpen('itemDetailPopup')) {
+    closeItemDetail();
+    return 'stay';
+  }
+  const enchantPicker = document.getElementById('enchantPicker');
+  if (enchantPicker && enchantPicker.classList.contains('show')) {
+    enchantPicker.classList.remove('show');
+    return 'stay';
+  }
+  const emote = document.getElementById('emotePicker');
+  if (emote && emote.classList.contains('show')) {
+    hideEmotePicker();
+    return 'stay';
+  }
+  if (layerOpen('nameSetupOverlay')) {
+    if (needsNameSetup()) {
+      showToast('Pick a name to continue');
+      return 'stay';
+    }
+    hideNameSetup();
+    syncOverlayLock();
+    return 'stay';
+  }
+  if (document.body.classList.contains('rewards-open') || (layerOpen('matchOver') && document.getElementById('matchOver').classList.contains('show'))) {
+    hideRewards();
+    showView('home');
+    renderHeader();
+    return 'stay';
+  }
+  if (document.body.classList.contains('in-match') || (document.getElementById('tableWindow') && document.getElementById('tableWindow').classList.contains('show'))) {
+    requestLeaveMatch();
+    return 'stay';
+  }
+  if (layerOpen('lobbyOverlay')) {
+    leaveSession();
+    syncOverlayLock();
+    return 'stay';
+  }
+  if (layerOpen('joinOverlay')) {
+    hideJoin();
+    syncOverlayLock();
+    return 'stay';
+  }
+  if (layerOpen('modeOverlay')) {
+    closeMode();
+    return 'stay';
+  }
+  if (layerOpen('enchantWindow')) {
+    closeEnchant();
+    return 'stay';
+  }
+  if (layerOpen('craftWindow')) {
+    closeCraft();
+    return 'stay';
+  }
+  if (layerOpen('profileOverlay')) {
+    closeProfile();
+    return 'stay';
+  }
+  if (tabStack.length > 1) {
+    tabStack.pop();
+    showView(tabStack[tabStack.length - 1], { fromBack: true });
+    return 'stay';
+  }
+  if (tabStack.length === 1 || currentViewId() !== 'home') {
+    tabStack = [];
+    showView('home', { fromBack: true });
+    return 'stay';
+  }
+  const now = Date.now();
+  if (now - homeBackAt < 2000) {
+    homeBackAt = 0;
+    return 'exit';
+  }
+  homeBackAt = now;
+  showToast('Press back again to exit');
+  return 'stay';
+}
+window.handleAppBack = handleAppBack;
 
 function bindHomeScrollLock() {
   const isHome = () => document.body.classList.contains('on-home');
@@ -1876,10 +1995,10 @@ function openEnchant() {
 }
 
 function closeEnchant() {
-  document.body.classList.remove('overlay-open');
   const el = document.getElementById('enchantWindow');
   el.style.display = 'none';
   el.classList.remove('book-open');
+  syncOverlayLock();
 }
 
 function openCraft() {
@@ -1916,10 +2035,10 @@ function openCraft() {
 }
 
 function closeCraft() {
-  document.body.classList.remove('overlay-open');
   const el = document.getElementById('craftWindow');
   el.style.display = 'none';
   el.classList.remove('book-open');
+  syncOverlayLock();
 }
 
 function openProfile() {
@@ -1948,8 +2067,8 @@ function openProfile() {
 }
 
 function closeProfile() {
-  document.body.classList.remove('overlay-open');
   document.getElementById('profileOverlay').style.display = 'none';
+  syncOverlayLock();
 }
 
 const PLAY_FLY_MS = 260;
@@ -3443,7 +3562,7 @@ function publishMatchSnap(force) {
 function hideLobby(keepSession) {
   const el = document.getElementById('lobbyOverlay');
   if (el) el.style.display = 'none';
-  if (!keepSession && !match) document.body.classList.remove('overlay-open');
+  if (!keepSession) syncOverlayLock();
 }
 function hideJoin() {
   const el = document.getElementById('joinOverlay');
@@ -3465,7 +3584,6 @@ function leaveSession() {
   }
   session = null;
   hideLobby(false);
-  hideJoin();
 }
 
 function emptySeats(count) {
@@ -3542,7 +3660,6 @@ function paintLobby() {
 
 function openLobby(cfg) {
   ensureProfileReady();
-  closeMode();
   hideJoin();
   hideRewards();
   const seats = emptySeats(cfg.seats || 4);
@@ -3587,7 +3704,6 @@ function joinLobby(code, opts) {
     return;
   }
   ensureProfileReady();
-  hideJoin();
   closeMode();
   session = {
     code: clean,
@@ -3928,7 +4044,7 @@ function openNameSetup() {
     state.profile.nameSet = true;
     saveState();
     hideNameSetup();
-    document.body.classList.remove('overlay-open');
+    syncOverlayLock();
     renderHeader();
     bootNet();
     consumeJoinHash();
@@ -4213,9 +4329,7 @@ function openMode(mode) {
 
 function closeMode() {
   document.getElementById('modeOverlay').style.display = 'none';
-  const lobbyOpen = document.getElementById('lobbyOverlay') && document.getElementById('lobbyOverlay').style.display === 'flex';
-  const joinOpen = document.getElementById('joinOverlay') && document.getElementById('joinOverlay').style.display === 'flex';
-  if (!match && !lobbyOpen && !joinOpen) document.body.classList.remove('overlay-open');
+  syncOverlayLock();
 }
 
 function renderFriends() {
@@ -4300,10 +4414,9 @@ function init() {
   const lobbyLeave = document.getElementById('lobbyLeaveBtn');
   if (lobbyLeave) lobbyLeave.addEventListener('click', () => leaveSession());
   const joinLeave = document.getElementById('joinLeaveBtn');
-  if (joinLeave) joinLeave.addEventListener('click', () => { hideJoin(); document.body.classList.remove('overlay-open'); });
+  if (joinLeave) joinLeave.addEventListener('click', () => { hideJoin(); syncOverlayLock(); });
   document.getElementById('tableLeaveBtn').addEventListener('click', () => {
-    if (match && !match.ended && !confirm('Leave this match?')) return;
-    closeTable();
+    requestLeaveMatch();
   });
   document.getElementById('tableWindow').addEventListener('pointerdown', (ev) => {
     if (!ev.target.closest('#emotePicker') && !ev.target.closest('.emote-btn')) hideEmotePicker();
