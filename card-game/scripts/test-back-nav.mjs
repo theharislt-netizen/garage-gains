@@ -98,8 +98,8 @@ const modeClosed = await snap();
 await page.screenshot({ path: join(artifacts, 'back_mode_to_home.png'), type: 'png' });
 
 await page.evaluate(() => openMode('practice'));
-await page.waitForSelector('#startPracticeBtn');
-await page.click('#startPracticeBtn');
+await page.waitForSelector('.tier-play');
+await page.click('.tier-play');
 await page.waitForFunction(() => layerOpen('lobbyOverlay'));
 const lobbyOpen = await snap();
 await page.screenshot({ path: join(artifacts, 'back_lobby_open.png'), type: 'png' });
