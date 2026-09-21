@@ -1205,9 +1205,9 @@
   .cosmetic-slot .l { font-family: 'Barlow Condensed'; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: var(--text-dim); }
   .cosmetic-slot .n { margin-top: 8px; color: var(--text); font-size: 14px; }
   .friend-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--line); gap: 10px; cursor: pointer; }
-  .friend-row > div:first-child { min-width: 0; flex: 1; }
+  .friend-row .friend-copy, .friend-row > div:not(.friend-ava):not(.friend-menu) { min-width: 0; flex: 1; }
   .friend-row .l2 { white-space: normal; overflow-wrap: anywhere; }
-  .friend-ava { width: 44px; height: 44px; flex-shrink: 0; }
+  .friend-ava { width: 44px; height: 44px; flex: 0 0 44px; }
   .friend-ava .avatar-wrap { width: 44px; height: 44px; }
   .friend-ava .avatar { width: 44px; height: 44px; border-width: 2px; }
   .friend-menu { display: flex; gap: 6px; flex-shrink: 0; }
@@ -5641,7 +5641,7 @@ function renderFriends() {
     const av = framedAvatarHtml({ seat: seatFromId(f.id), photo: f.photo, border: f.border });
     return `<div class="friend-row" data-fid="${f.id}">
       <div class="friend-ava">${av}</div>
-      <div><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div>
+      <div class="friend-copy"><span class="${on ? 'dot-on' : 'dot-off'}"></span>${f.name}<div class="l2">${friendPresenceLine(f)} · ${f.id || ''}</div></div>
       <div class="friend-menu">
         <button class="inv-btn" data-friend-msg="${f.id}" type="button">Chat</button>
         <button class="inv-btn" data-friend-del="${f.id}" type="button">Remove</button>
