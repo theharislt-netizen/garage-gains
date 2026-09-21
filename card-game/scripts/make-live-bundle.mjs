@@ -9,13 +9,17 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  UPDATE_REPO as REPO,
+  UPDATE_DIR,
+  UPDATE_REFS as STABLE_REFS,
+  INSTALL_CHANNEL,
+  uniqueRefs,
+} from './live-update-select.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const www = join(root, 'www');
 const outDir = join(root, 'live-update');
-const REPO = 'theharislt-netizen/garage-gains';
-const REFS = ['cursor/card-game-setup-e78b', 'main'];
-const UPDATE_DIR = 'card-game/live-update';
 
 async function walk(dir) {
   const out = [];
@@ -73,12 +77,14 @@ print('zipped', len(files), 'files')
   }
 
   const zipBytes = await readFile(zipPath);
+  const refs = uniqueRefs([INSTALL_CHANNEL, ...STABLE_REFS]);
   const checksum = createHash('sha256').update(zipBytes).digest('hex');
   const manifest = {
     version,
     checksum,
-    url: `https://raw.githubusercontent.com/${REPO}/${REFS[0]}/${UPDATE_DIR}/www.zip`,
-    urls: REFS.map((ref) => `https://raw.githubusercontent.com/${REPO}/${ref}/${UPDATE_DIR}/www.zip`),
+    url: `https://raw.githubusercontent.com/${REPO}/${INSTALL_CHANNEL}/${UPDATE_DIR}/www.zip`,
+    urls: refs.map((ref) => `https://raw.githubusercontent.com/${REPO}/${ref}/${UPDATE_DIR}/www.zip`),
+    refs,
   };
   await writeFile(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   console.log(`live-update bundle ${version} (${(zipBytes.length / 1024).toFixed(0)} KB)`);
