@@ -1096,8 +1096,8 @@
   .table-rail::-webkit-scrollbar { display: none; }
   .table-card {
     width: 100%;
-    height: min(56vh, 380px);
-    min-height: min(52vh, 340px);
+    height: min(56vh, 268px);
+    min-height: 220px;
     max-height: 100%;
     align-self: center;
     margin: 0;
@@ -4510,7 +4510,7 @@ function startLobbyPulse() {
       return;
     }
     publishLobby();
-  }, 2500);
+  }, 8000);
 }
 function publishMatchSnap(force) {
   if (!match || !session || !window.PalaceNet || !isLobbyHost()) return;
@@ -4768,6 +4768,9 @@ function joinLobby(code, opts) {
     };
     PalaceNet.lobbyPub(clean, payload);
     if (session.hostId) PalaceNet.inbox(session.hostId, payload);
+    (state.friends || []).forEach((f) => {
+      if (f && f.id && !samePlayerId(f.id, state.profile.id)) PalaceNet.inbox(f.id, payload);
+    });
   };
   sendJoin();
   if (joinRetryTimer) clearInterval(joinRetryTimer);
@@ -4779,9 +4782,9 @@ function joinLobby(code, opts) {
       return;
     }
     tries += 1;
-    if (tries === 12) showToast('Still looking for lobby ' + clean);
+    if (tries === 8) showToast('Still looking for lobby ' + clean);
     sendJoin();
-  }, 800);
+  }, 2000);
   showToast((opts && opts.fromInvite) ? 'Joining lobby…' : 'Looking for lobby ' + clean);
 }
 

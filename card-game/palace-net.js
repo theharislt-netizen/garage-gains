@@ -1,27 +1,33 @@
 /**
  * PALACE lobby / friends net.
- * Same-origin tabs use BroadcastChannel. Phones and browsers publish over ntfy.sh.
- *
- * One EventSource covers every wanted topic (ntfy comma-subscribe). Separate
- * SSE sockets per topic hit the browser's 6-connection cap and silently drop
- * match snaps or friend presence — the phone-only stall / Offline bug.
+ * Same-origin tabs use BroadcastChannel. Phones publish over public ntfy
+ * relays. ntfy.sh 429s and comma-subscribe EventSource URLs fail on Android
+ * WebView (one dead socket, no presence / no joins), so we:
+ *   - listen per topic (inbox, lobby, match) with no commas
+ *   - publish to several relays
+ *   - push presence into friends' inboxes instead of extra presence sockets
+ *   - poll as a fallback when EventSource goes quiet
  */
 (function (root, factory) {
   const net = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = net;
   root.PalaceNet = net;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  const NTFY = 'https://ntfy.sh/';
+  const RELAYS = [
+    'https://ntfy.envs.net/',
+    'https://ntfy.sh/',
+    'https://ntfy.adminforge.de/',
+  ];
   const CHAN = 'palace-net-v1';
   const handlers = [];
   const wanted = new Set();
+  const peers = new Set();
+  const live = new Map();
   const seen = [];
   let bc = null;
   let me = { id: '', name: 'Player' };
   let heartbeat = 0;
-  let mux = null;
   let muxTimer = 0;
-  let muxBackoff = 1200;
 
   function topic(kind, id) {
     return ('pal1' + kind + String(id || '').toLowerCase()).replace(/[^a-z0-9_-]/g, '').slice(0, 64);
@@ -49,55 +55,128 @@
     });
   }
 
-  function parseNtfy(raw) {
+  function parseWrap(raw) {
     try {
       const wrap = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (!wrap || wrap.event && wrap.event !== 'message') return null;
-      const body = wrap.message != null ? wrap.message : wrap;
-      return typeof body === 'string' ? JSON.parse(body) : body;
+      if (!wrap || (wrap.event && wrap.event !== 'message')) return { wrap: wrap || null, msg: null, id: '' };
+      let body = wrap.message != null ? wrap.message : wrap;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch (_) { return { wrap, msg: null, id: wrap.id || '' }; }
+      }
+      return { wrap, msg: body && typeof body === 'object' ? body : null, id: wrap.id || '' };
     } catch (_) {
-      return null;
+      return { wrap: null, msg: null, id: '' };
     }
   }
 
-  function wantedKey() {
-    return [...wanted].filter(Boolean).sort().join(',');
+  function parseNtfy(raw) {
+    return parseWrap(raw).msg;
+  }
+
+  function ingest(raw, rec) {
+    const parsed = parseWrap(raw);
+    if (parsed.id && rec) rec.since = parsed.id;
+    if (parsed.msg) {
+      if (rec) rec.lastAt = Date.now();
+      emit(parsed.msg);
+    }
+  }
+
+  function closeEs(rec) {
+    if (!rec || !rec.es) return;
+    try { rec.es.close(); } catch (_) { /* ignore */ }
+    rec.es = null;
+  }
+
+  function openEs(top, rec) {
+    if (typeof EventSource === 'undefined') return;
+    closeEs(rec);
+    const base = rec.relay || RELAYS[0];
+    const url = base + encodeURIComponent(top) + '/sse?since=' + encodeURIComponent(rec.since || '10m');
+    const es = new EventSource(url);
+    es.onmessage = (ev) => ingest(ev.data, rec);
+    es.onerror = () => {
+      if (es.readyState !== 2) return;
+      if (rec.es === es) rec.es = null;
+      try { es.close(); } catch (_) { /* ignore */ }
+      const idx = RELAYS.indexOf(rec.relay);
+      rec.relay = RELAYS[(idx + 1) % RELAYS.length];
+      rec.esTimer = setTimeout(() => {
+        if (live.get(top) === rec) openEs(top, rec);
+      }, rec.backoff || 1200);
+      rec.backoff = Math.min(15000, Math.round((rec.backoff || 1200) * 1.7));
+    };
+    rec.es = es;
+    rec.backoff = 1200;
+  }
+
+  async function pollRelay(base, top, rec) {
+    const url = base + encodeURIComponent(top) + '/json?poll=1&since=' + encodeURIComponent(rec.since || '2m');
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const text = await res.text();
+    String(text || '').split('\n').forEach((line) => {
+      if (line.trim()) ingest(line, rec);
+    });
+  }
+
+  async function tickPoll(top, rec) {
+    if (rec.pollBusy) return;
+    rec.pollBusy = true;
+    try {
+      const healthy = rec.es && rec.es.readyState === 1 && Date.now() - (rec.lastAt || 0) < 20000;
+      const bases = healthy
+        ? RELAYS.filter((r) => r !== rec.relay)
+        : RELAYS.slice();
+      for (let i = 0; i < bases.length; i++) {
+        try { await pollRelay(bases[i], top, rec); } catch (_) { /* relay down */ }
+      }
+    } finally {
+      rec.pollBusy = false;
+    }
+  }
+
+  function listenTopic(top) {
+    if (live.has(top)) return;
+    const rec = {
+      es: null,
+      relay: RELAYS[0],
+      since: '10m',
+      lastAt: 0,
+      backoff: 1200,
+      esTimer: 0,
+      pollTimer: 0,
+      pollBusy: false,
+    };
+    live.set(top, rec);
+    openEs(top, rec);
+    rec.pollTimer = setInterval(() => { tickPoll(top, rec); }, 4000);
+    tickPoll(top, rec);
+  }
+
+  function unlistenTopic(top) {
+    const rec = live.get(top);
+    if (!rec) return;
+    clearTimeout(rec.esTimer);
+    clearInterval(rec.pollTimer);
+    closeEs(rec);
+    live.delete(top);
+  }
+
+  function syncListeners() {
+    wanted.forEach((top) => listenTopic(top));
+    [...live.keys()].forEach((top) => {
+      if (!wanted.has(top)) unlistenTopic(top);
+    });
   }
 
   function closeMux() {
-    if (!mux) return;
-    try { mux.es.close(); } catch (_) { /* ignore */ }
-    mux = null;
+    [...live.keys()].forEach(unlistenTopic);
   }
 
   function openMux(force) {
-    if (typeof EventSource === 'undefined') return;
-    const key = wantedKey();
-    if (!key) {
-      closeMux();
-      return;
-    }
-    if (!force && mux && mux.key === key && mux.es && mux.es.readyState !== 2) return;
-    closeMux();
-    const es = new EventSource(NTFY + key + '/sse?since=10m');
-    es.onmessage = (ev) => {
-      muxBackoff = 1200;
-      const msg = parseNtfy(ev.data);
-      if (msg) emit(msg);
-    };
-    es.onerror = () => {
-      if (es.readyState === 2 && wanted.size) {
-        if (mux && mux.es === es) {
-          try { mux.es.close(); } catch (_) { /* ignore */ }
-          mux = null;
-        }
-        clearTimeout(muxTimer);
-        const wait = muxBackoff;
-        muxBackoff = Math.min(15000, Math.round(muxBackoff * 1.7));
-        muxTimer = setTimeout(() => { if (wanted.size) openMux(true); }, wait);
-      }
-    };
-    mux = { es, key };
+    if (force) closeMux();
+    syncListeners();
   }
 
   function scheduleMux(force) {
@@ -106,7 +185,21 @@
   }
 
   function openSource() { openMux(); }
-  function closeSource() { /* multiplexed — openMux() rebuilds from `wanted` */ }
+  function closeSource() { /* per-topic — openMux() rebuilds from `wanted` */ }
+
+  async function postRelay(base, top, packed, msg) {
+    const res = await fetch(base + encodeURIComponent(top), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Title: String(msg.type || 'msg').slice(0, 80),
+        Tags: 'card',
+        Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' || msg.type === 'dm' || msg.type === 'chat' ? 'high' : 'default',
+      },
+      body: packed,
+    });
+    return res;
+  }
 
   async function publish(kind, id, payload) {
     const msg = Object.assign({
@@ -119,23 +212,16 @@
       if (bc) bc.postMessage({ kind, id, msg });
     } catch (_) { /* ignore */ }
     const top = topic(kind, id);
-    for (let i = 0; i < 3; i++) {
-      try {
-        const res = await fetch(NTFY + encodeURIComponent(top), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Title: String(msg.type || kind).slice(0, 80),
-            Tags: 'card',
-            Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' || msg.type === 'dm' || msg.type === 'chat' ? 'high' : 'default',
-          },
-          body: packed,
-        });
-        if (res.ok) break;
-        if (res.status !== 429 && res.status < 500) break;
-      } catch (_) { /* offline */ break; }
-      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
-    }
+    await Promise.all(RELAYS.map(async (base) => {
+      for (let i = 0; i < 4; i++) {
+        try {
+          const res = await postRelay(base, top, packed, msg);
+          if (res.ok) return;
+          if (res.status !== 429 && res.status < 500) return;
+        } catch (_) { /* relay down */ return; }
+        await new Promise((r) => setTimeout(r, 800 * Math.pow(2, i)));
+      }
+    }));
     return msg;
   }
 
@@ -149,9 +235,23 @@
     scheduleMux();
   }
 
+  function presenceBody(online) {
+    return {
+      type: 'presence',
+      id: me.id,
+      name: me.name,
+      online: online !== false,
+      border: me.border || null,
+    };
+  }
+
   function beat() {
     if (!me.id) return;
-    publish('p', me.id, { type: 'presence', id: me.id, name: me.name, online: true, border: me.border || null });
+    const body = presenceBody(true);
+    publish('p', me.id, body);
+    peers.forEach((id) => {
+      if (!sameNetId(id, me.id)) publish('i', id, body);
+    });
   }
 
   function ensureChannel() {
@@ -167,7 +267,7 @@
 
   function resume(force) {
     ensureChannel();
-    if (force || !mux || !mux.es || mux.es.readyState === 2) scheduleMux(true);
+    if (force) openMux(true);
     else scheduleMux(false);
     if (me.id) {
       if (!heartbeat) heartbeat = setInterval(beat, 12000);
@@ -184,7 +284,6 @@
     ensureChannel();
     if (me.id) {
       subscribe('i', me.id);
-      subscribe('p', me.id);
       resume();
     }
   }
@@ -193,7 +292,13 @@
     if (heartbeat) clearInterval(heartbeat);
     heartbeat = 0;
     clearTimeout(muxTimer);
-    if (me.id) publish('p', me.id, { type: 'presence', id: me.id, name: me.name, online: false });
+    if (me.id) {
+      const body = presenceBody(false);
+      publish('p', me.id, body);
+      peers.forEach((id) => {
+        if (!sameNetId(id, me.id)) publish('i', id, body);
+      });
+    }
     closeMux();
     if (bc) {
       try { bc.close(); } catch (_) { /* ignore */ }
@@ -210,8 +315,16 @@
   }
 
   function inbox(to, payload) { return publish('i', to, payload); }
-  function presenceOf(id) { subscribe('p', id); }
-  function dropPresence(id) { if (id && !sameNetId(id, me.id)) unsubscribe('p', id); }
+  function presenceOf(id) {
+    if (!id) return;
+    const n = String(id);
+    const fresh = !peers.has(n);
+    peers.add(n);
+    if (fresh && me.id) publish('i', n, presenceBody(true));
+  }
+  function dropPresence(id) {
+    if (id) peers.delete(String(id));
+  }
   function lobbyPub(code, payload) { return publish('l', code, payload); }
   function matchPub(code, payload) { return publish('m', code, payload); }
   function watchLobby(code) { subscribe('l', code); }
@@ -225,6 +338,7 @@
     topic, connect, disconnect, resume, on, publish, subscribe, unsubscribe,
     inbox, presenceOf, dropPresence, lobbyPub, matchPub, watchLobby, watchMatch, leaveRoom, beat,
     openMux, closeMux, openSource, closeSource,
+    RELAYS,
     get me() { return me; },
     get wantedSize() { return wanted.size; },
   };

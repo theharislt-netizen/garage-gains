@@ -93,6 +93,14 @@ try {
   must(loaded.friend && loaded.friend.id === 'RIM1' && loaded.friend.lastSeen === 1700000000000, 'carried friend lastSeen');
   must(loaded.key && loaded.key.startsWith('palaceCards_v1'), 'still palaceCards_v1');
 
+  const homeCard = await page.evaluate(() => {
+    const el = document.querySelector('.play-card');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { height: r.height, css: getComputedStyle(el).height };
+  });
+  must(homeCard && homeCard.height >= 210 && homeCard.height <= 280, 'mode-select cards are the 268px-capped height');
+
   await page.evaluate(() => openMode('standard'));
   await page.waitForSelector('.table-card');
   const layout = await page.evaluate(() => {
@@ -148,7 +156,7 @@ try {
   must(layout.rot.every((t) => !t || t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'), 'cards are upright');
   must(layout.fullyOn === 2, 'exactly two table cards fit on screen');
   must(layout.cardW >= layout.vw * 0.42 && layout.cardW <= layout.vw * 0.52, 'each card is about half the screen wide');
-  must(layout.cardH >= 320 && layout.cardH <= layout.vh * 0.62, 'cards are tall and card-like, not stretched full-screen');
+  must(Math.abs(layout.cardH - homeCard.height) <= 4, 'challenge cards use the same height as mode-select cards');
   must(Math.abs(layout.cardMid - layout.bodyMid) <= 48, 'cards are vertically centered in the mode body');
   must(!layout.themedRows, 'inner rows are not themed sub-names');
 

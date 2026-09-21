@@ -21,7 +21,7 @@ must(!html.includes('Candlelight') && html.includes('Velvet Room') && html.inclu
 must(html.includes("const DIFF_ORDER = ['Medium', 'Hard', 'Expert', 'Legend', 'Mythic', 'Dragon']"), 'Standard ladder is six tables after Candlelight');
 must(html.includes('Ember Gallery') && html.includes('Obsidian Court') && html.includes('Dragon Crown'), 'three new themed tables follow Midnight Crown');
 must(html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('scroll-snap-align: start'), 'table cards are two-up and snap along the rail');
-must(html.includes('min(56vh, 380px)') && html.includes('min(52vh, 340px)') && html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('justify-content: center'), 'tier cards are two-up, tall, and vertically centered');
+must(html.includes('min(56vh, 268px)') && html.includes('min-height: 220px') && html.includes('grid-auto-columns: calc(50% - 8px)') && html.includes('justify-content: center'), 'tier cards match mode-select height and stay two-up');
 must(html.includes('Tier I') && html.includes('Tier II') && html.includes('Tier III'), 'stake rows are Tier I / II / III');
 must(!html.includes('Side Table') && !html.includes('Main Felt') && !html.includes('High Roller'), 'Velvet rows are not themed sub-names');
 must(!html.includes('Audience') && !html.includes("'Council'") && !html.includes('Throne'), 'High Court rows are not themed sub-names');
@@ -962,12 +962,16 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   const netSrc = readFileSync(join(root, 'palace-net.js'), 'utf8');
   must(netSrc.includes('since=10m'), 'ntfy SSE replays recent lobby and presence');
   must(netSrc.includes('wanted.add'), 'subscriptions survive a background resume');
-  must(netSrc.includes('openMux(true)'), 'resume force-reopens the multiplexed ntfy SSE');
-  must(netSrc.includes("join(',')") && netSrc.includes('wantedKey'), 'one EventSource covers every ntfy topic');
+  must(netSrc.includes('openMux(true)'), 'resume rebuilds ntfy listeners');
+  must(netSrc.includes('ntfy.envs.net') && netSrc.includes('ntfy.sh'), 'publishes past ntfy.sh onto a working relay');
+  must(netSrc.includes("encodeURIComponent(top) + '/sse'") && !netSrc.includes("join(',')"), 'each ntfy topic gets its own EventSource — no comma-subscribe');
+  must(netSrc.includes("publish('i', id, body)") && netSrc.includes('peers.forEach'), 'presence is pushed to friend inboxes');
+  must(netSrc.includes('poll=1'), 'quiet EventSources are rescued by ntfy poll');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
 must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
 must(html.includes('if (session.hostId) PalaceNet.inbox(session.hostId, payload)'), 'guest DMs the host inbox after learning hostId');
+must(html.includes('PalaceNet.inbox(f.id, payload)'), 'guest also DMs friends so join does not depend on lobby SSE');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
 must(html.includes("type: 'want-snap'") && html.includes('pendingNet') && html.includes('inboxSnapSent'), 'missed snaps are requested, busy moves are queued, inbox is not flooded');
