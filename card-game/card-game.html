@@ -2201,7 +2201,18 @@ function cardFaceHtml(card, extra) {
 
 function cardBackHtml(extra, id, style) {
   const st = style ? ' style="' + style + '"' : '';
-  return `<div class="pcard back ${extra || ''}"${st} ${id ? 'data-id="' + id + '"' : ''}"><div class="pc-back-inner"><div class="pc-back-diamond"></div></div></div>`;
+  const did = id ? ' data-id="' + String(id).replace(/"/g, '') + '"' : '';
+  const klass = ('pcard back ' + (extra || '')).trim();
+  return '<div class="' + klass + '"' + st + did + '><div class="pc-back-inner"><div class="pc-back-diamond"></div></div></div>';
+}
+
+function isLocalSeat(seat) {
+  return !!(match && seat === match.humanSeat);
+}
+
+function blindFlyHtml(card, extra, reveal) {
+  if (reveal && card) return cardFaceHtml(card, extra || '');
+  return cardBackHtml(extra || '');
 }
 
 function remainingCount(p) {
@@ -3291,27 +3302,31 @@ async function animateEvents(events) {
         || document.querySelector('#seat-' + ev.seat + ' .table-slot .slot-down');
       const from = src ? src.getBoundingClientRect() : dest;
       if (src) src.classList.add('ghost');
-      const face = ev.card ? cardFaceHtml(ev.card, 'tiny') : cardBackHtml('tiny');
+      const hide = !isLocalSeat(ev.seat);
       const next = events[i + 1];
       const played = !!(next && next.type === 'play' && next.seat === ev.seat);
-      await flyArc(from || dest, from || dest, face, { duration: played ? 280 : 360, spin: 110, comet: false });
+      const revealBlind = !hide || played;
+      await flyArc(from || dest, from || dest, blindFlyHtml(ev.card, 'tiny', revealBlind), {
+        duration: played ? 280 : 360,
+        spin: revealBlind ? 110 : 180,
+        comet: false,
+      });
       if (played) {
         pendingFlyFrom = from;
       } else {
-        const hide = !match || ev.seat !== match.humanSeat;
         const folded = hide ? cardBackHtml() : (ev.card ? cardFaceHtml(ev.card) : cardBackHtml());
         await flyArc(from || dest, dest, folded, { duration: 420, spin: hide ? 180 : 130, comet: false });
         updateSeatHud(ev.seat);
       }
       playTone(400, 0.1);
-      renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
+      if (!played) renderTable({ thinking: match.turn !== match.humanSeat ? match.turn : -1 });
     } else if (ev.type === 'stageDown') {
       const dest = seatDestRect(ev.seat);
       const src = document.querySelector('#seat-' + ev.seat + ' [data-id="down-' + (ev.index || 0) + '"]')
         || document.querySelector('#seat-' + ev.seat + ' .table-slot .slot-down');
       const from = src ? src.getBoundingClientRect() : dest;
       if (src) src.classList.add('ghost');
-      const hide = !match || ev.seat !== match.humanSeat;
+      const hide = !isLocalSeat(ev.seat);
       const html = hide ? cardBackHtml() : (ev.card ? cardFaceHtml(ev.card) : cardBackHtml());
       await flyArc(from || dest, dest, html, { duration: 480, spin: hide ? 180 : 140, comet: false });
       updateSeatHud(ev.seat);
