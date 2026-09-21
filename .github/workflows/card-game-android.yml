@@ -1,0 +1,67 @@
+name: PALACE Android APK
+
+on:
+  push:
+    paths:
+      - 'card-game/**'
+      - '.github/workflows/card-game-android.yml'
+  pull_request:
+    paths:
+      - 'card-game/**'
+      - '.github/workflows/card-game-android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: card-game
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: card-game/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Verify live-update zip
+        run: |
+          npm run test:setup
+          npm run test:game
+          npm run prepare:www
+          python3 - <<'PY'
+          import json, zipfile
+          z = zipfile.ZipFile("live-update/www.zip")
+          names = z.namelist()
+          assert "index.html" in names, names[:20]
+          assert "native-bridge.js" in names
+          man = json.load(open("live-update/manifest.json"))
+          print("live-update ok", man["version"], "files", len(names))
+          PY
+
+      - name: Build signed release APK
+        run: |
+          chmod +x scripts/build-apk.sh
+          mkdir -p android
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+          ./scripts/build-apk.sh
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PALACE
+          path: card-game/dist/PALACE.apk
