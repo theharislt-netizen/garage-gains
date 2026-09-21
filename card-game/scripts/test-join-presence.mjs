@@ -156,7 +156,34 @@ try {
   console.log('lobby code', code);
   must(code && code.length >= 4, 'host has a join code');
 
-  await guest.evaluate((c) => joinLobby(c), code);
+  await host.evaluate((gid) => inviteFriendToLobby(gid), GUEST_ID);
+  await guest.waitForFunction(() => {
+    const el = document.getElementById('inviteBanner');
+    return !!(el && el.classList.contains('show') && /invited you/i.test(el.innerText || ''));
+  }, { timeout: 20000 });
+  const inviteCopy = await guest.evaluate(() => (document.getElementById('inviteBanner') || {}).innerText || '');
+  console.log('guest invite', inviteCopy.replace(/\s+/g, ' ').trim());
+  must(new RegExp(code, 'i').test(inviteCopy), 'invite carries the host lobby code');
+  await guest.screenshot({ path: join(artifacts, 'mp_invite_received_guest.png') });
+
+  await guest.evaluate(() => {
+    const btn = document.getElementById('inviteAcceptBtn');
+    if (btn) btn.click();
+  });
+  const joiningSnap = await guest.evaluate(() => {
+    const s = window.__palaceSession && window.__palaceSession();
+    const body = (document.getElementById('lobbyBody') || {}).innerText || '';
+    const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
+    return {
+      body,
+      seated: !!(s && s.hostId) && ids.includes(window.__hostId),
+      host: typeof isLobbyHost === 'function' && isLobbyHost(),
+      emptyPads: document.querySelectorAll('.lobby-pad.open').length,
+    };
+  });
+  console.log('joining snap', joiningSnap);
+  must(/joining host lobby/i.test(joiningSnap.body) || joiningSnap.seated, 'accepting an invite does not open a new empty lobby');
+  must(!joiningSnap.host, 'guest is never marked as host of the invite lobby');
 
   const [hostSeated, guestSeated] = await Promise.all([
     waitEval(host, () => {
@@ -167,11 +194,12 @@ try {
     waitEval(guest, () => {
       const s = window.__palaceSession && window.__palaceSession();
       const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
-      return !!(s && s.hostId) && ids.includes(window.__hostId) && ids.includes(window.__guestId);
+      return !!(s && s.hostId) && ids.includes(window.__hostId) && ids.includes(window.__guestId)
+        && !/joining host lobby/i.test((document.getElementById('lobbyBody') || {}).innerText || '');
     }, 25000),
   ]);
-  console.log('seated after join-by-code', [!!hostSeated, !!guestSeated], await host.evaluate(dumpNet), await guest.evaluate(dumpNet));
-  must(hostSeated, 'host lobby received the guest after join-by-code');
+  console.log('seated after invite', [!!hostSeated, !!guestSeated]);
+  must(hostSeated, 'host lobby received the guest after they accepted the invite');
   must(guestSeated, 'guest joined the host lobby, not an empty session');
 
   const views = await Promise.all([
@@ -180,6 +208,7 @@ try {
       names: [...document.querySelectorAll('.lobby-pad .pad-name')].map((n) => n.textContent.trim()),
       empty: document.querySelectorAll('.lobby-pad.open').length,
       origin: location.origin,
+      host: typeof isLobbyHost === 'function' && isLobbyHost(),
     })),
     guest.evaluate(() => ({
       code: (document.getElementById('lobbyCodeText') || {}).textContent.trim(),
@@ -187,16 +216,67 @@ try {
       hostId: window.__palaceSession().hostId,
       you: ((document.querySelector('.lobby-pad.you .pad-name') || {}).textContent || '').trim(),
       origin: location.origin,
+      host: typeof isLobbyHost === 'function' && isLobbyHost(),
+      joining: /joining host lobby/i.test((document.getElementById('lobbyBody') || {}).innerText || ''),
     })),
   ]);
   console.log('lobby views', views);
   must(views[0].origin !== views[1].origin, 'join used two origins');
   must(views[0].code === views[1].code, 'both show the same lobby code');
   must(views[1].hostId === HOST_ID, 'guest session is hosted by the original host');
+  must(views[0].host && !views[1].host, 'only the original host is the lobby host');
   must(views[0].names.some((n) => /guest/i.test(n)), 'host sees Guest seated');
   must(views[1].names.some((n) => /host/i.test(n)), 'guest sees Host seated');
+  must(!views[1].joining, 'guest left the joining screen after seating');
   await host.screenshot({ path: join(artifacts, 'mp_join_code_host_lobby.png') });
   await guest.screenshot({ path: join(artifacts, 'mp_join_code_guest_lobby.png') });
+
+  const onlineAfter = await Promise.all([
+    host.evaluate(() => friendOnline(window.__guestId)),
+    guest.evaluate(() => friendOnline(window.__hostId)),
+  ]);
+  console.log('online after join', onlineAfter);
+  must(onlineAfter[0] && onlineAfter[1], 'presence stays live both ways after the invite join');
+
+  await host.evaluate(() => leaveSession());
+  await guest.evaluate(() => leaveSession());
+  await sleep(1500);
+  await host.evaluate(() => resumeNetSession());
+  await guest.evaluate(() => resumeNetSession());
+  await sleep(500);
+
+  await guest.evaluate(() => openLobby({ mode: 'standard', seats: 4, difficulty: 'Medium', buyIn: 100 }));
+  const code2 = await guest.evaluate(() => (document.getElementById('lobbyCodeText') || {}).textContent.trim());
+  await guest.evaluate((hid) => inviteFriendToLobby(hid), HOST_ID);
+  const hostInvite = await waitEval(host, () => {
+    const el = document.getElementById('inviteBanner');
+    const text = (el && el.innerText) || '';
+    return el && el.classList.contains('show') && /invited you/i.test(text) ? text : '';
+  }, 30000);
+  console.log('host invite', String(hostInvite || '').replace(/\s+/g, ' ').trim());
+  must(hostInvite, 'host received the reverse lobby invite');
+  must(new RegExp(code2, 'i').test(String(hostInvite)), 'reverse invite carries the guest-hosted lobby code');
+  await host.screenshot({ path: join(artifacts, 'mp_invite_received_host.png') });
+  await host.evaluate(() => {
+    const btn = document.getElementById('inviteAcceptBtn');
+    if (btn) btn.click();
+  });
+  const reverseSeated = await Promise.all([
+    waitEval(guest, () => {
+      const s = window.__palaceSession && window.__palaceSession();
+      const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
+      return ids.includes(window.__hostId);
+    }, 25000),
+    waitEval(host, () => {
+      const s = window.__palaceSession && window.__palaceSession();
+      const ids = ((s && s.seats) || []).map((row) => String((row && row.id) || '').toUpperCase());
+      return s && String(s.hostId).toUpperCase() === window.__guestId && ids.includes(window.__hostId);
+    }, 25000),
+  ]);
+  console.log('reverse seated', reverseSeated);
+  must(reverseSeated[0] && reverseSeated[1], 'invite works in the other direction into the same lobby');
+  await guest.screenshot({ path: join(artifacts, 'mp_reverse_invite_guest_host.png') });
+  await host.screenshot({ path: join(artifacts, 'mp_reverse_invite_host_guest.png') });
 } catch (err) {
   fails.push(String(err && err.stack ? err.stack : err));
   try { await host.screenshot({ path: join(artifacts, 'mp_join_presence_host_fail.png') }); } catch (_) { /* ignore */ }

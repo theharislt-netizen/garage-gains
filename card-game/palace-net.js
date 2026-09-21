@@ -1,12 +1,13 @@
 /**
  * PALACE lobby / friends net.
- * Same-origin tabs use BroadcastChannel. Phones publish over public ntfy
- * relays. ntfy.sh 429s and comma-subscribe EventSource URLs fail on Android
- * WebView (one dead socket, no presence / no joins), so we:
- *   - listen per topic (inbox, lobby, match) with no commas
- *   - publish to several relays
- *   - push presence into friends' inboxes instead of extra presence sockets
- *   - poll as a fallback when EventSource goes quiet
+ * Same-origin tabs use BroadcastChannel. Phones use public ntfy relays.
+ *
+ * Root causes this file guards against:
+ * - ntfy.sh 429 / JSON-API POST swallowing invite bodies
+ * - Android CORS preflight on application/json + custom headers
+ * - comma-subscribe EventSource URLs that never deliver on WebView
+ * - one `since` cursor shared across relays (message ids are per-server,
+ *   so a ntfy.sh id used on envs.net silently drops new invites/joins)
  */
 (function (root, factory) {
   const net = factory();
@@ -24,6 +25,7 @@
   const peers = new Set();
   const live = new Map();
   const seen = [];
+  const relayFailUntil = {};
   let bc = null;
   let me = { id: '', name: 'Player' };
   let heartbeat = 0;
@@ -69,17 +71,26 @@
     }
   }
 
-  function parseNtfy(raw) {
-    return parseWrap(raw).msg;
-  }
-
-  function ingest(raw, rec) {
+  function ingest(raw, rec, base) {
     const parsed = parseWrap(raw);
-    if (parsed.id && rec) rec.since = parsed.id;
+    if (parsed.id && rec && base) rec.since[base] = parsed.id;
     if (parsed.msg) {
       if (rec) rec.lastAt = Date.now();
       emit(parsed.msg);
     }
+  }
+
+  function sinceOf(rec, base) {
+    return (rec && rec.since && rec.since[base]) || '10m';
+  }
+
+  function relayOk(base) {
+    return Date.now() >= (relayFailUntil[base] || 0);
+  }
+
+  function markRelay(base, status) {
+    if (status === 429) relayFailUntil[base] = Date.now() + 20000;
+    else if (status >= 500) relayFailUntil[base] = Date.now() + 8000;
   }
 
   function closeEs(rec) {
@@ -91,11 +102,13 @@
   function openEs(top, rec) {
     if (typeof EventSource === 'undefined') return;
     closeEs(rec);
-    const base = rec.relay || RELAYS[0];
-    const since = rec.since || '10m'; // replay since=10m of retained ntfy messages
-    const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since);
+    const usable = RELAYS.filter(relayOk);
+    const base = usable.includes(rec.relay) ? rec.relay : (usable[0] || RELAYS[0]);
+    rec.relay = base;
+    const since = sinceOf(rec, base);
+    const url = base + encodeURIComponent(top) + '/sse?' + 'since=' + encodeURIComponent(since); // since=10m replay when cursor is fresh
     const es = new EventSource(url);
-    es.onmessage = (ev) => ingest(ev.data, rec);
+    es.onmessage = (ev) => ingest(ev.data, rec, base);
     es.onerror = () => {
       if (es.readyState !== 2) return;
       if (rec.es === es) rec.es = null;
@@ -111,13 +124,44 @@
     rec.backoff = 1200;
   }
 
+  async function nativeGet(url) {
+    const CapHttp = (typeof window !== 'undefined' && (window.CapacitorHttp || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp)));
+    if (!CapHttp || !CapHttp.get) return null;
+    try {
+      const r = await CapHttp.get({ url, connectTimeout: 8000, readTimeout: 8000 });
+      if (r && r.status === 200) return typeof r.data === 'string' ? r.data : JSON.stringify(r.data);
+    } catch (_) { /* fall through */ }
+    return null;
+  }
+
+  async function nativePost(url, body) {
+    const CapHttp = (typeof window !== 'undefined' && (window.CapacitorHttp || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp)));
+    if (!CapHttp || !CapHttp.post) return null;
+    try {
+      return await CapHttp.post({
+        url,
+        data: body,
+        headers: { 'Content-Type': 'text/plain' },
+        connectTimeout: 8000,
+        readTimeout: 8000,
+      });
+    } catch (_) { return null; }
+  }
+
   async function pollRelay(base, top, rec) {
-    const url = base + encodeURIComponent(top) + '/json?poll=1&since=' + encodeURIComponent(rec.since || '2m');
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const text = await res.text();
+    if (!relayOk(base)) return;
+    const url = base + encodeURIComponent(top) + '/json?poll=1&since=' + encodeURIComponent(sinceOf(rec, base));
+    let text = '';
+    try {
+      const res = await fetch(url);
+      if (res.status === 429 || res.status >= 500) { markRelay(base, res.status); return; }
+      if (!res.ok) return;
+      text = await res.text();
+    } catch (_) {
+      text = (await nativeGet(url)) || '';
+    }
     String(text || '').split('\n').forEach((line) => {
-      if (line.trim()) ingest(line, rec);
+      if (line.trim()) ingest(line, rec, base);
     });
   }
 
@@ -125,16 +169,18 @@
     if (rec.pollBusy) return;
     rec.pollBusy = true;
     try {
-      const healthy = rec.es && rec.es.readyState === 1 && Date.now() - (rec.lastAt || 0) < 20000;
-      const bases = healthy
-        ? RELAYS.filter((r) => r !== rec.relay)
-        : RELAYS.slice();
-      for (let i = 0; i < bases.length; i++) {
-        try { await pollRelay(bases[i], top, rec); } catch (_) { /* relay down */ }
+      for (let i = 0; i < RELAYS.length; i++) {
+        try { await pollRelay(RELAYS[i], top, rec); } catch (_) { /* relay down */ }
       }
     } finally {
       rec.pollBusy = false;
     }
+  }
+
+  function freshSince() {
+    const s = {};
+    RELAYS.forEach((r) => { s[r] = '10m'; });
+    return s;
   }
 
   function listenTopic(top) {
@@ -142,7 +188,7 @@
     const rec = {
       es: null,
       relay: RELAYS[0],
-      since: '10m',
+      since: freshSince(),
       lastAt: 0,
       backoff: 1200,
       esTimer: 0,
@@ -151,7 +197,7 @@
     };
     live.set(top, rec);
     openEs(top, rec);
-    rec.pollTimer = setInterval(() => { tickPoll(top, rec); }, 4000);
+    rec.pollTimer = setInterval(() => { tickPoll(top, rec); }, 2000);
     tickPoll(top, rec);
   }
 
@@ -176,7 +222,12 @@
   }
 
   function openMux(force) {
-    if (force) closeMux();
+    if (force) {
+      live.forEach((rec, top) => {
+        closeEs(rec);
+        openEs(top, rec);
+      });
+    }
     syncListeners();
   }
 
@@ -188,18 +239,24 @@
   function openSource() { openMux(); }
   function closeSource() { /* per-topic — openMux() rebuilds from `wanted` */ }
 
-  async function postRelay(base, top, packed, msg) {
-    const res = await fetch(base + encodeURIComponent(top), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Title: String(msg.type || 'msg').slice(0, 80),
-        Tags: 'card',
-        Priority: msg.type === 'invite' || msg.type === 'join' || msg.type === 'lobby' || msg.type === 'snap' || msg.type === 'move' || msg.type === 'timeout' || msg.type === 'dm' || msg.type === 'chat' ? 'high' : 'default',
-      },
-      body: packed,
-    });
-    return res;
+  async function postRelay(base, top, packed) {
+    const url = base + encodeURIComponent(top);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: packed,
+      });
+      markRelay(base, res.status);
+      return res;
+    } catch (_) {
+      const native = await nativePost(url, packed);
+      if (native) {
+        markRelay(base, native.status);
+        return { ok: native.status >= 200 && native.status < 300, status: native.status };
+      }
+      throw _;
+    }
   }
 
   async function publish(kind, id, payload) {
@@ -213,14 +270,16 @@
       if (bc) bc.postMessage({ kind, id, msg });
     } catch (_) { /* ignore */ }
     const top = topic(kind, id);
-    await Promise.all(RELAYS.map(async (base) => {
-      for (let i = 0; i < 4; i++) {
+    const order = RELAYS.filter(relayOk).concat(RELAYS.filter((r) => !relayOk(r)));
+    await Promise.all(order.map(async (base) => {
+      if (!relayOk(base) && base !== order[0]) return;
+      for (let i = 0; i < 3; i++) {
         try {
-          const res = await postRelay(base, top, packed, msg);
-          if (res.ok) return;
-          if (res.status !== 429 && res.status < 500) return;
-        } catch (_) { /* relay down */ return; }
-        await new Promise((r) => setTimeout(r, 800 * Math.pow(2, i)));
+          const res = await postRelay(base, top, packed);
+          if (res && res.ok) return;
+          if (res && res.status !== 429 && res.status < 500) return;
+        } catch (_) { return; }
+        await new Promise((r) => setTimeout(r, 700 * (i + 1)));
       }
     }));
     return msg;

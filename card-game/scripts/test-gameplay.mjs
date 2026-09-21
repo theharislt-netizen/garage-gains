@@ -966,11 +966,15 @@ must(typeof Net.resume === 'function', 'net can resume lobby and presence subscr
   must(netSrc.includes('ntfy.envs.net') && netSrc.includes('ntfy.sh'), 'publishes past ntfy.sh onto a working relay');
   must(netSrc.includes("encodeURIComponent(top) + '/sse?'") && !netSrc.includes("sort().join(',')"), 'each ntfy topic gets its own EventSource — no comma-subscribe');
   must(netSrc.includes("publish('i', id, body)") && netSrc.includes('peers.forEach'), 'presence is pushed to friend inboxes');
+  must(netSrc.includes('text/plain'), 'ntfy POST is raw text so CORS and JSON-API do not swallow invites');
+  must(netSrc.includes('rec.since[base]') || netSrc.includes('since[base]'), 'each ntfy relay keeps its own since cursor');
   must(netSrc.includes('poll=1'), 'quiet EventSources are rescued by ntfy poll');
 }
 must(html.includes('sendLobbySnapshot') && html.includes('joinRetryTimer'), 'join-by-code retries and DMs the lobby snapshot');
 must(html.includes('localPlayerSeated') && html.includes('Still looking for lobby'), 'join retries until the guest is actually seated');
-must(html.includes('if (session.hostId) PalaceNet.inbox(session.hostId, payload)'), 'guest DMs the host inbox after learning hostId');
+must(html.includes('Joining host lobby') && html.includes('session.joining'), 'guests do not paint an empty host lobby while connecting');
+must(html.includes('if (hostId) PalaceNet.inbox(hostId, payload)'), 'guest DMs the host inbox after learning hostId');
+must(html.includes("joinLobby(payload.code, { fromInvite: true, hostId: payload.fromId || payload.from })"), 'accepting an invite joins that host id and code');
 must(html.includes('PalaceNet.inbox(f.id, payload)'), 'guest also DMs friends so join does not depend on lobby SSE');
 must(html.includes('function resumeNetSession') && html.includes('publishLobby()'), 'host republishes the lobby after a background resume');
 must(!html.includes("pagehide', () => PalaceNet.disconnect()"), 'copying a lobby code must not drop ntfy listeners');
