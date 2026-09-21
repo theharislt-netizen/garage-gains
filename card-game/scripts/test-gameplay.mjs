@@ -44,7 +44,7 @@ must(html.includes('y > r.bottom + 96'), 'hold-browse still hits a card after it
 must(html.includes('ignoreY: true') && html.includes('const use = hit || gesture.el'), 'hold-browse tracks cards by X and keeps inspect while the finger stays down');
 must(html.includes('hideSeatFaceUps') && html.includes('paintSeatTable'), 'scooped Stage 2 cards leave the table as soon as the engine takes them');
 must(html.includes('margin-left: -16px') && html.includes('max-width: 96px'), 'east/west table piles use the old tucked Stage 2 overlap');
-must(html.includes('if (empty) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
+must(html.includes('if (empty) continue') || html.includes('if (!up && !down) continue'), 'empty table slots are omitted so piles stay tucked like the old Stage 2 row');
 must(engineSrc.includes('if (!match || !stockEmpty(match)) return \'hand\''), 'stage 2/3 stay closed without a match or while the stock remains');
 must(engineSrc.includes('tableStagesOpen(match, player)'), 'bot moves and applyMove share the same stage-open gate');
 must(engineSrc.includes('const moves = legalMoves(match, seat);'), 'bot AI uses the same legalMoves list as the human player');
@@ -90,10 +90,18 @@ must(!html.includes("})() : ''}"), 'matching-rank hint is not an inlined IIFE in
 must(html.includes('avatarArtHtml') && html.includes('table-watermark') && html.includes('table-leave-btn'), 'portrait avatars, table watermark, and HUD leave treatment required');
 must(!html.includes('sp-5">+1'), '5s do not show a +1 overlay');
 must(html.includes('function tableSlotsHtml') && html.includes('seat-row table-slots') && html.includes('slot-up') && html.includes('slot-down'), 'stage 2 sits on stage 3 in 3 stacked slots');
+must(html.includes('.seat.south { bottom: 138px;'), 'south seat stays at the original offset');
+must(!html.includes('bottom: calc(158px'), 'do not lift the whole PLAYER seat');
+must(!html.includes('margin-top: -14px') && !html.includes('margin-top: -8px'), 'stacked slots must not tuck up into opponent hand fans');
+must(html.includes('.table-slot {') && html.includes('width: 40px; height: 58px'), 'every table slot is the same 40x58 tiny card size');
+must(!html.includes('width: 34px; height: 50px') && !html.includes('width: 48px; height: 78px'), 'east/west piles are not a second smaller or peek-sized card');
+must(!html.includes('left: 8px; z-index: 2') && !html.includes('top: 18px; left: 0; z-index: 1'), 'Stage 2 sits flush on Stage 3 with no peek offset');
 must(html.includes("id=\"tableSlots-") || html.includes("id=\"tableSlots-'"), 'every opponent seat gets its own table-slot row');
 must(html.includes('.table-slot.has-up .slot-down'), 'a cleared face-up slot reveals the face-down card underneath');
+must(html.includes('function cardInTableSlot') && html.includes('c.slot === slot'), 'a slot keeps its own Stage 3 card after a different Stage 2 is played');
 must(html.includes('tableSlotsHtml(p, { isHuman, zone, active, legalIds, legalRanks })'), 'every seat, not only the human, renders stacked table piles');
 must(!html.includes("p.up.map((c) => cardFaceHtml(c, 'tiny'))"), 'opponents are not a face-up-only spread row');
+must(engineSrc.includes('c.slot = i') && engineSrc.includes('if (c && c.slot != null) out.slot = c.slot'), 'dealt Stage 2/3 cards keep a stable slot id');
 must(html.includes('palace-lobby.js') && html.includes('id="lobbyOverlay"') && html.includes('id="joinOverlay"'), 'pre-match lobby and join session overlays required');
 must(html.includes('id="joinSessionBtn"') && html.includes('Play with Friends'), 'Home has a Play with Friends / Join Session entry');
 must(html.includes('function openLobby') && html.includes('startFromLobby') && html.includes('Open lobby'), 'Start opens a lobby instead of launching the table');
@@ -120,7 +128,15 @@ must(m0.players.length === 4, '4-seat match');
 must(E.HAND_SIZE === 2, 'working hand size is 2');
 must(m0.players[0].hand.length === 2, 'starting hand is 2');
 must(m0.players[0].up.length === 3 && m0.players[0].down.length === 3, '3 up and 3 down');
+must(m0.players[0].up.every((c, i) => c.slot === i) && m0.players[0].down.every((c, i) => c.slot === i), 'each dealt pile keeps a 0..2 slot id');
 must(m0.draw.length === 52 - 4 * 8, 'remaining cards form the draw pile');
+
+const stacked = E.newMatch({ seats: 2, rng: seededRng(21) });
+const removedUp = stacked.players[0].up.splice(1, 1)[0];
+must(removedUp.slot === 1, 'taking the middle Stage 2 card keeps its slot id');
+must(stacked.players[0].up.map((c) => c.slot).join() === '0,2', 'the other Stage 2 cards keep slots 0 and 2');
+must(stacked.players[0].down[1].slot === 1, 'clearing slot 1 leaves that same slot\'s Stage 3 in place');
+must(E.cloneCard(stacked.players[0].down[1]).slot === 1, 'cloneCard preserves the pile slot');
 
 const refill = E.newMatch({ seats: 2, rng: seededRng(12) });
 refill.turn = 0;

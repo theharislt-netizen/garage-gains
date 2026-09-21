@@ -58,8 +58,8 @@ must(
   'dated candidates beat undated ones (commit date lookup is required)'
 );
 must(
-  pickNewestCandidate([undatedNew, { ...older, committedAt: '' }]).version === undatedNew.version,
-  'when no dates exist, do not prefer the stale install channel over another version'
+  pickNewestCandidate([undatedNew, { ...older, committedAt: '' }]).ref === INSTALL_CHANNEL,
+  'when no dates exist, prefer the installed APK channel so probes cannot flap'
 );
 
 must(committedAtMs('2026-09-21T00:00:00Z') > committedAtMs('2026-04-01T00:00:00Z'), 'date parse order');
@@ -82,11 +82,15 @@ const bridge = readFileSync(join(root, 'scripts/native-bridge.mjs'), 'utf8');
 must(bridge.includes('pickNewestCandidate'), 'native-bridge must pick newest, not first-match');
 must(bridge.includes('live-update-select.mjs'), 'native-bridge shares the channel list');
 must(bridge.includes('commit?.sha || ref'), 'raw fallback must use the commit SHA, not the cached branch URL');
+must(!bridge.includes('Last-Modified'), 'CDN Last-Modified must not rank zips — it flaps between channels');
+must(!bridge.includes('for (const extra of candidate.extraRefs'), 'manifest extra refs must not enqueue more channels');
+must(bridge.includes('APPLIED_KEY') && bridge.includes("reason === 'resume'"), 'one apply per session and a resume cooldown stop update loops');
 must(!/for \(const ref of UPDATE_REFS\) \{\s*try \{\s*const api = await fetchManifestFromApi/.test(bridge),
   'native-bridge must not first-match-return inside the ref loop');
 
 const makeLive = readFileSync(join(root, 'scripts/make-live-bundle.mjs'), 'utf8');
 must(makeLive.includes('INSTALL_CHANNEL') || makeLive.includes('live-update-select'), 'bundle script shares the channel list');
+must(!makeLive.includes('rev-parse --abbrev-ref'), 'the zip manifest does not advertise the working git branch');
 must(UPDATE_REFS[0] === INSTALL_CHANNEL, 'install channel stays first so old APKs still find a zip');
 
 if (fails.length) {

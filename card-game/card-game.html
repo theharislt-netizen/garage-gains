@@ -688,7 +688,7 @@
   }
   .seat {
     position: absolute; display: flex; flex-direction: column; align-items: center; gap: 5px;
-    z-index: 3;
+    z-index: 3; overflow: visible;
   }
   .seat-id {
     display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -700,6 +700,7 @@
   .seat.east, .seat.west { max-width: 46%; }
   .seat.east { align-items: flex-end; }
   .seat.west { align-items: flex-start; }
+  .seat.east .seat-row, .seat.west .seat-row { flex-wrap: nowrap; justify-content: center; gap: 0; max-width: 96px; }
   .seat-name {
     font-family: 'Barlow Condensed'; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
     background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 100px; color: #f7efe0;
@@ -717,29 +718,22 @@
   }
   .table-slot .pcard {
     position: absolute; left: 0; top: 0; margin: 0;
+    width: 40px; height: 58px;
     pointer-events: auto;
   }
-  .table-slot .slot-down {
-    top: 0; left: 0; z-index: 1;
+  .table-slot .slot-down { z-index: 1; }
+  .table-slot.has-up .slot-down { pointer-events: none; }
+  .table-slot .slot-up { z-index: 2; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+  .seat.east .table-slots, .seat.west .table-slots { gap: 0; max-width: 96px; }
+  .seat.east .table-slot, .seat.west .table-slot {
+    margin-left: -16px; width: 40px; height: 58px; flex: 0 0 40px;
   }
-  .table-slot.has-up .slot-down {
-    pointer-events: none;
-  }
-  .table-slot .slot-up {
-    top: 0; left: 0; z-index: 2;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  }
-  /* Same tucked Stage-2 row as before; Stage 3 sits fully underneath. */
-  .seat.north .table-slots { margin-top: -14px; }
-  .seat.east .table-slots, .seat.west .table-slots {
-    gap: 0; max-width: 96px; margin-top: -8px;
-  }
-  .seat.east .table-slot, .seat.west .table-slot { margin-left: -16px; }
   .seat.east .table-slot:first-child, .seat.west .table-slot:first-child { margin-left: 0; }
+  .seat.east .table-slot .pcard, .seat.west .table-slot .pcard { margin-left: 0; width: 40px; height: 58px; }
   .seat:not(.south) .table-slot .pcard { pointer-events: none; }
   .human-hand {
     position: absolute; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom));
-    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 8;
+    height: 148px; display: flex; justify-content: center; align-items: flex-end; z-index: 5;
     padding: 0 8px 6px; touch-action: none; pointer-events: none; overflow: visible;
     --overlap: 16px;
     -webkit-user-select: none;
@@ -2320,23 +2314,44 @@ function maybeBotEmote(seat) {
   showEmote(seat, e.icon);
 }
 
+function cardInTableSlot(arr, slot) {
+  if (!arr || !arr.length) return { card: null, index: -1 };
+  const tagged = arr.findIndex((c) => c && c.slot === slot);
+  if (tagged >= 0) return { card: arr[tagged], index: tagged };
+  if (arr.some((c) => c && c.slot != null)) return { card: null, index: -1 };
+  const card = arr[slot] || null;
+  return { card, index: card ? slot : -1 };
+}
+
+function ensureTableSlotIds(p) {
+  const tag = (arr) => {
+    if (!arr || !arr.length) return;
+    if (arr.some((c) => c && c.slot != null)) return;
+    arr.forEach((c, i) => { if (c) c.slot = i; });
+  };
+  tag(p.up);
+  tag(p.down);
+}
+
 function tableSlotsHtml(p, opts) {
   const o = opts || {};
   const n = PalaceEngine.TABLE_DOWN;
   if (p.out || (!p.up.length && !p.down.length)) return '';
+  ensureTableSlotIds(p);
   const legalIds = o.legalIds || new Set();
   const legalRanks = o.legalRanks || new Set();
   const slots = [];
   for (let i = 0; i < n; i++) {
-    const up = p.up[i] || null;
-    const down = p.down[i] || null;
-    const empty = !up && !down;
-    if (empty) continue;
+    const upHit = cardInTableSlot(p.up, i);
+    const downHit = cardInTableSlot(p.down, i);
+    const up = upHit.card;
+    const down = downHit.card;
+    if (!up && !down) continue;
     let downHtml = '';
     let upHtml = '';
     if (down) {
       const canFlip = !!(o.isHuman && o.zone === 'down' && o.active && !uiBusy && !up);
-      downHtml = cardBackHtml('tiny slot-down' + (canFlip ? ' legal' : ''), 'down-' + i);
+      downHtml = cardBackHtml('tiny slot-down' + (canFlip ? ' legal' : ''), 'down-' + downHit.index);
     }
     if (up) {
       let extra = 'tiny slot-up';
@@ -3763,6 +3778,15 @@ function init() {
       lobby() { return lobbySession; },
       match() { return match; },
       role() { return netRole; },
+      startMatch,
+      renderTable,
+      paintNow() {
+        matchToken += 1;
+        uiBusy = false;
+        selectedIds = [];
+        if (match) match.players.forEach((p) => { p.isBot = false; });
+        renderTable();
+      },
     };
   }
 }
