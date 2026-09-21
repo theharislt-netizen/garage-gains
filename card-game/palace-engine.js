@@ -684,7 +684,7 @@
       draw: unpackCards(src.d),
       pile: unpackCards(src.p),
       burned: unpackCards(src.b),
-      turn: src.turn || 0,
+      turn: src.turn == null || src.turn === '' ? 0 : Number(src.turn),
       phase: src.phase || 'playing',
       ended: !!src.ended,
       finishOrder: src.finishOrder || [],
