@@ -13,6 +13,9 @@
   const TABLE_UP = 3;
   const TABLE_DOWN = 3;
   const SPECIALS = { '2': true, '5': true, '10': true };
+  // Grouping-only: 2/5/10/Ace start as a single card. Regular ranks auto-select every copy.
+  // Engine play rules still use SPECIALS (Ace is not a 2/5/10).
+  const GROUP_SPECIALS = { '2': true, '5': true, '10': true, A: true };
   const BUYINS = {
     Easy: [30],
     Medium: [100, 200, 300],
@@ -27,6 +30,55 @@
   }
   function isRed(s) { return s === 'H' || s === 'D'; }
   function isSpecial(rank) { return !!SPECIALS[rank]; }
+  function isAutoGroupedRank(rank) { return !GROUP_SPECIALS[rank]; }
+
+  function rankCopyIds(cards, rank) {
+    return (cards || []).filter((c) => c.rank === rank).map((c) => c.id);
+  }
+
+  function defaultRankSelection(cards, touchedId) {
+    const card = (cards || []).find((c) => c.id === touchedId);
+    if (!card) return [];
+    if (isAutoGroupedRank(card.rank)) return rankCopyIds(cards, card.rank);
+    return [card.id];
+  }
+
+  function nextRankSelection(cards, currentIds, tappedId) {
+    const list = cards || [];
+    const tapped = list.find((c) => c.id === tappedId);
+    if (!tapped) return (currentIds || []).slice();
+    const current = (currentIds || []).filter((id) => list.some((c) => c.id === id));
+    const first = list.find((c) => c.id === current[0]);
+    if (!current.length || !first || first.rank !== tapped.rank) {
+      return defaultRankSelection(list, tappedId);
+    }
+    const allIds = rankCopyIds(list, tapped.rank);
+    if (isAutoGroupedRank(tapped.rank)) {
+      const selected = current.filter((id) => allIds.includes(id));
+      if (selected.length <= 1) return allIds.slice();
+      if (selected.includes(tappedId)) return selected.filter((id) => id !== tappedId);
+      return selected.slice(0, -1);
+    }
+    if (current.includes(tappedId)) {
+      const next = current.filter((id) => id !== tappedId);
+      return next.length ? next : [tappedId];
+    }
+    return current.concat([tappedId]);
+  }
+
+  function ensureRankSelection(cards, currentIds, touchedId) {
+    const list = cards || [];
+    const touched = list.find((c) => c.id === touchedId);
+    if (!touched) return (currentIds || []).slice();
+    const current = (currentIds || []).filter((id) => list.some((c) => c.id === id));
+    const first = list.find((c) => c.id === current[0]);
+    if (current.length && first && first.rank === touched.rank) {
+      const live = rankCopyIds(list, touched.rank);
+      const kept = current.filter((id) => live.includes(id));
+      return kept.length ? kept : defaultRankSelection(list, touchedId);
+    }
+    return defaultRankSelection(list, touchedId);
+  }
 
   function rankValue(rank) {
     const map = { '3': 1, '4': 2, '6': 3, '7': 4, '8': 5, '9': 6, J: 7, Q: 8, K: 9, A: 10 };
@@ -598,7 +650,8 @@
 
   return {
     SUITS, RANKS, HAND_SIZE, TABLE_UP, TABLE_DOWN, BUYINS, XP_WIN, BOT_NAMES,
-    suitGlyph, isRed, isSpecial, rankValue, faceOrder,
+    suitGlyph, isRed, isSpecial, isAutoGroupedRank, rankValue, faceOrder,
+    rankCopyIds, defaultRankSelection, nextRankSelection, ensureRankSelection,
     makeDeck, shuffle, cloneCard, topCard, canPlayCardOnPile, canPlayCards,
     completesFour, activeZone, zoneCards, tableStagesOpen, legalMoves, applyMove, chooseBotMove, syncSeat,
     newMatch, sortHand, payoutFor, nextUnlocks, isBuyInUnlocked, nextSeat, livingSeats,
