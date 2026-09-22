@@ -110,7 +110,7 @@ function patchHtml(html) {
 <script src="./native-bridge.js"></script>
 `;
   if (!html.includes('native-bridge.js')) {
-    html = html.replace('</body>', `${inject}</body>`);
+    html = html.replace(/<body([^>]*)>/i, (open) => open + inject);
   }
   if (!html.includes('apple-mobile-web-app-capable')) {
     html = html.replace(

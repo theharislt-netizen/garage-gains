@@ -436,6 +436,18 @@ function wireWebInstallHint() {
   });
 }
 
+function markNativeReady() {
+  if (window.__rigcoreReadySent || !Capacitor.isNativePlatform()) return;
+  window.__rigcoreReadySent = true;
+  CapacitorUpdater.notifyAppReady().catch(() => {});
+}
+window.__rigcoreMarkReady = markNativeReady;
+
+async function hideSplashSoon() {
+  if (!Capacitor.isNativePlatform()) return;
+  try { await SplashScreen.hide(); } catch (_) { /* auto-hide is enough */ }
+}
+
 async function setup() {
   if (window.navigator.standalone) hideHomeScreenShortcut();
   if (!Capacitor.isNativePlatform()) {
@@ -444,16 +456,14 @@ async function setup() {
   }
 
   document.documentElement.classList.add('native-app');
-  document.body.classList.add('native-app');
+  if (document.body) document.body.classList.add('native-app');
 
-  try { await CapacitorUpdater.notifyAppReady(); } catch (_) { /* builtin bundle */ }
+  await hideSplashSoon();
 
   try {
     await StatusBar.setOverlaysWebView({ overlay: true });
     await StatusBar.setStyle({ style: Style.Light });
   } catch (_) { /* older WebViews / Android 16 ignores overlay */ }
-
-  try { await SplashScreen.hide(); } catch (_) { /* auto-hide is enough */ }
 
   hideHomeScreenShortcut();
   if (typeof window.syncHeaderHeight === 'function') {
@@ -466,7 +476,8 @@ async function setup() {
   wireImport();
   wireHaptics();
   localBundleVersion().then((v) => wireUpdateStatus(v));
-  checkAndApplyUpdate();
+  setTimeout(() => checkAndApplyUpdate(), 1800);
+  setTimeout(markNativeReady, 8000);
 
   App.addListener('backButton', ({ canGoBack }) => {
     if (closeTopOverlay()) return;
@@ -478,6 +489,7 @@ async function setup() {
   });
 }
 
+hideSplashSoon();
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', setup);
 } else {
